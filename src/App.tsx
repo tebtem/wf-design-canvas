@@ -4,6 +4,7 @@ import { Toolbar } from './components/Toolbar';
 import { SessionBrief } from './components/SessionBrief';
 import { TimeBlocksSection } from './components/TimeBlocks/TimeBlocksSection';
 import { FlowFunction } from './components/FlowFunction';
+import { Footer } from './components/Footer';
 import { ActivityIdeation } from './components/ActivityIdeation';
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
           </div>
         </main>
       </div>
+      <Footer />
     </CanvasProvider>
   );
 }

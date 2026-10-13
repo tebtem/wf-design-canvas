@@ -64,6 +64,10 @@ const blocks = await page.locator('.tblock').count();
 console.log('Blocks after reload:', blocks);
 if (blocks < 2) fail('expected blocks to persist');
 
+for (const name of [/^Women Facilitating website/, /^Women Facilitating \(opens/]) {
+  const href = await page.getByRole('link', { name }).getAttribute('href');
+  if (href !== 'https://womenfacilitating.com') fail(`link ${name} has href ${href}`);
+}
 const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
 for (const v of axe.violations) console.log('AXE', v.id, v.impact, v.nodes.length, v.nodes[0]?.target);
 if (axe.violations.length) fail(`${axe.violations.length} axe violations`);

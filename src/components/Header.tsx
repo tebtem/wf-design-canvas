@@ -1,3 +1,4 @@
+import { SITE_URL } from './Footer';
 import wordmark from '../assets/designing-facilitated-experiences.png';
 
 export function Logo() {
@@ -24,7 +25,10 @@ export function Header() {
       </h1>
       <div className="canvas-header__right">
         <p className="canvas-name">Facilitation Design Canvas</p>
-        <Logo />
+        <a className="logo-link" href={SITE_URL} target="_blank" rel="noopener noreferrer">
+          <Logo />
+          <span className="sr-only">Women Facilitating website (opens in a new tab)</span>
+        </a>
       </div>
     </header>
   );

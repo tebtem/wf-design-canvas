@@ -44,6 +44,9 @@
     max-width: none;
     margin: 0;
   }
+  .site-footer {
+    padding: 12px 0 0;
+  }
   .canvas-body {
     grid-template-columns: minmax(340px, 0.38fr) 1fr;
   }

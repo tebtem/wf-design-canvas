@@ -146,7 +146,7 @@ button {
 /* ---------- Canvas frame ---------- */
 .canvas {
   max-width: 1800px;
-  margin: 0 auto 32px;
+  margin: 0 auto 16px;
   border: 8px solid var(--frame);
   background: var(--frame);
 }
@@ -180,9 +180,40 @@ button {
   color: var(--frame); /* 3.2:1, large text */
 }
 .logo {
+  display: block;
   width: clamp(56px, 6vw, 92px);
   height: auto;
+}
+.logo-link {
+  display: inline-flex;
   flex: none;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+.logo-link:hover {
+  transform: scale(1.05);
+}
+.logo-link:focus-visible {
+  outline-offset: 3px;
+}
+
+/* ---------- Footer ---------- */
+.site-footer {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0 16px 32px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--navy-soft);
+}
+.site-footer a {
+  color: var(--navy);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.site-footer a:hover {
+  text-decoration-thickness: 2px;
 }
 
 .canvas-body {
