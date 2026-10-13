@@ -84,6 +84,7 @@ const blocks = await page.locator('.tblock').count();
 console.log('Blocks after reload:', blocks);
 if (blocks < 2) fail('expected blocks to persist');
 
+if ((await page.getByRole('link', { name: /^Learn about facilitation design/ }).getAttribute('href')) !== 'https://www.womenfacilitating.com/facilitation-design') fail('Learn link href wrong');
 for (const name of [/^Women Facilitating website/, /^Women Facilitating \(opens/]) {
   const href = await page.getByRole('link', { name }).getAttribute('href');
   if (href !== 'https://womenfacilitating.com') fail(`link ${name} has href ${href}`);

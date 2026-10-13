@@ -1,6 +1,8 @@
 import { useRef } from 'react';
 import { useCanvas } from '../state/CanvasContext';
-import { PrintIcon } from './Icons';
+import { ExternalIcon, PrintIcon } from './Icons';
+
+const LEARN_URL = 'https://www.womenfacilitating.com/facilitation-design';
 
 export function Toolbar() {
   const { dispatch, saveStatus } = useCanvas();
@@ -14,9 +16,15 @@ export function Toolbar() {
 
   return (
     <aside className="toolbar no-print" aria-label="Canvas tools">
-      <p className={`toolbar__status${saveStatus === 'error' ? ' is-error' : ''}`} role="status">
-        {status}
-      </p>
+      <div className="toolbar__start">
+        <a className="btn btn--pink" href={LEARN_URL} target="_blank" rel="noopener noreferrer">
+          Learn<span className="sr-only"> about facilitation design (opens in a new tab)</span>
+          <ExternalIcon />
+        </a>
+        <p className={`toolbar__status${saveStatus === 'error' ? ' is-error' : ''}`} role="status">
+          {status}
+        </p>
+      </div>
       <div className="toolbar__actions">
         <button type="button" className="btn btn--primary" onClick={() => window.print()}>
           <PrintIcon />

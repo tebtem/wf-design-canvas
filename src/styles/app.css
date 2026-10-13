@@ -78,6 +78,12 @@ button {
   align-items: center;
   justify-content: space-between;
 }
+.toolbar__start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
 .toolbar__status {
   font-size: 0.9rem;
   color: var(--navy-soft);
@@ -112,6 +118,14 @@ button {
 }
 .btn--primary:hover {
   background: #343d7a;
+}
+.btn--pink {
+  background: var(--brand-pink); /* navy text 5:1 */
+  color: var(--navy);
+  text-decoration: none;
+}
+.btn--pink:hover {
+  background: #ee93cf;
 }
 .btn--danger {
   background: var(--danger);

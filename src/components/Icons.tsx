@@ -76,3 +76,8 @@ export const MoveIcon = () => (
     <path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3" />
   </svg>
 );
+export const ExternalIcon = () => (
+  <svg {...base} width={14} height={14}>
+    <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+  </svg>
+);
