@@ -2,7 +2,7 @@ import { useId, useRef, useState } from 'react';
 import { newId, useCanvas } from '../state/CanvasContext';
 import type { Cell } from '../state/types';
 import { StickyNote } from './StickyNote';
-import { PlusIcon } from './Icons';
+import { PlusIcon, StickyIcon } from './Icons';
 
 interface Props {
   cellId: string;
@@ -71,9 +71,16 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           ))}
         </ul>
       )}
-      <button ref={addRef} type="button" className="add-sticky no-print" onClick={addSticky}>
+      <button
+        ref={addRef}
+        type="button"
+        className="add-sticky no-print"
+        title="Add sticky note"
+        onClick={addSticky}
+      >
         <PlusIcon />
-        Sticky<span className="sr-only"> note in {fullTitle}</span>
+        <StickyIcon />
+        <span className="sr-only">Add sticky note in {fullTitle}</span>
       </button>
     </div>
   );

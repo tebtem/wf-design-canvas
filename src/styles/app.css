@@ -328,15 +328,17 @@ button {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  min-height: 28px;
+  gap: 1px;
+  min-height: 30px;
   margin-top: 6px;
-  padding: 2px 10px 2px 8px;
+  padding: 2px 8px 2px 6px;
   border: 1px dashed var(--placeholder);
   border-radius: 999px;
   background: rgb(111 136 212 / 0.1);
-  font-size: 0.8rem;
-  font-weight: 600;
+}
+.add-sticky > svg:first-child {
+  width: 14px;
+  height: 14px;
 }
 .add-sticky:hover {
   background: rgb(111 136 212 / 0.22);

@@ -19,7 +19,7 @@ await page.goto(APP_URL);
 
 // Typing and stickies persist.
 await page.getByRole('textbox', { name: 'Purpose', exact: true }).fill('Align on Q3 goals');
-await page.getByRole('button', { name: 'Sticky note in Activity ideas' }).click();
+await page.getByRole('button', { name: 'Add sticky note in Activity ideas' }).click();
 await page.keyboard.type('Gallery walk');
 
 // Mouse drag: 30 min bank block into Draft 1.
