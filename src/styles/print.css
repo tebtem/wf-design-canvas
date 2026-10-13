@@ -18,6 +18,7 @@
   .note-cell__text,
   .sticky__text,
   .tblock__label,
+  .tblock__notes-text,
   .tblock__handle svg,
   .bank-item__handle svg {
     display: none !important;
@@ -33,6 +34,10 @@
   .tblock .print-text {
     padding: 0;
     font-weight: 600;
+  }
+  .tblock__notes .print-text {
+    font-weight: 400;
+    font-size: 0.85rem;
   }
 
   .canvas {

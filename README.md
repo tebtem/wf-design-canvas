@@ -3,7 +3,7 @@
 An interactive version of the "Designing Facilitated Experiences" canvas.
 
 - Type in any section, or add sticky notes (change color, delete).
-- Drag time blocks (15, 20, 30, 45, 60 min) from the Time Block Bank into Session Draft 1 or 2. Name, reorder, move between drafts, or remove them. Drafts show running times and totals.
+- Drag time blocks (15, 20, 30, 45, 60 min) from the Time Block Bank into Session Draft 1 or 2. Name them, add bullet-point notes (Enter starts a new bullet; Enter on an empty bullet ends the list), reorder, move between drafts, or remove them. Drafts show running times and totals.
 - Everything autosaves in your browser. **Save as PDF** opens the print dialog, sized to fit the canvas.
 
 ## Accessibility

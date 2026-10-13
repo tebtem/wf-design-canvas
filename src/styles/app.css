@@ -479,6 +479,10 @@ button {
 .tblock {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'handle body actions'
+    'handle notes notes';
   min-height: var(--h);
   border: 1px solid #9aa3c7;
   border-radius: 6px;
@@ -543,7 +547,38 @@ button {
   font-weight: 600;
   color: var(--navy);
 }
+.tblock__handle {
+  grid-area: handle;
+}
+.tblock__body {
+  grid-area: body;
+}
+.tblock__notes {
+  grid-area: notes;
+  padding: 0 8px 6px;
+}
+.tblock__notes-text {
+  display: block;
+  width: 100%;
+  min-height: 1.6em;
+  padding: 3px 6px;
+  border: 1px dashed transparent;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.45);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  resize: vertical;
+  field-sizing: content;
+}
+.tblock__notes-text:hover {
+  border-color: #9aa3c7;
+}
+.tblock__notes-text:focus-visible {
+  outline-offset: 0;
+  background: var(--white);
+}
 .tblock__actions {
+  grid-area: actions;
   display: flex;
   align-items: center;
   gap: 0;

@@ -1,5 +1,8 @@
 import { initialState } from './reducer';
-import { STICKY_COLORS, type CanvasState, type Cell } from './types';
+import { STICKY_COLORS, type CanvasState, type Cell, type TimeBlock } from './types';
+
+/** Blocks saved before notes existed get an empty notes field. */
+const migrateBlocks = (blocks: TimeBlock[] = []) => blocks.map((b) => ({ ...b, notes: b.notes ?? '' }));
 
 /** Keep stickies saved with a color that no longer exists (e.g. the old "green") readable. */
 function migrateCells(cells: Record<string, Cell>): Record<string, Cell> {
@@ -24,7 +27,7 @@ export function loadState(): CanvasState {
     return {
       version: 1,
       cells: migrateCells(parsed.cells ?? {}),
-      drafts: { d1: parsed.drafts.d1 ?? [], d2: parsed.drafts.d2 ?? [] },
+      drafts: { d1: migrateBlocks(parsed.drafts.d1), d2: migrateBlocks(parsed.drafts.d2) },
     };
   } catch {
     return initialState();

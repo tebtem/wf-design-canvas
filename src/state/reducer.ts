@@ -7,7 +7,7 @@ export type Action =
   | { type: 'deleteSticky'; cellId: string; id: string }
   | { type: 'addBlock'; draftId: DraftId; id: string; minutes: BlockMinutes; index?: number }
   | { type: 'moveBlock'; id: string; toDraft: DraftId; toIndex: number }
-  | { type: 'editBlockLabel'; id: string; label: string }
+  | { type: 'editBlock'; id: string; label?: string; notes?: string }
   | { type: 'removeBlock'; id: string }
   | { type: 'reset' };
 
@@ -75,7 +75,7 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
     case 'addBlock': {
       const list = [...state.drafts[action.draftId]];
       const index = clamp(action.index ?? list.length, 0, list.length);
-      list.splice(index, 0, { id: action.id, minutes: action.minutes, label: '' });
+      list.splice(index, 0, { id: action.id, minutes: action.minutes, label: '', notes: '' });
       return { ...state, drafts: { ...state.drafts, [action.draftId]: list } };
     }
 
@@ -90,11 +90,13 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
       return { ...state, drafts };
     }
 
-    case 'editBlockLabel': {
+    case 'editBlock': {
       const loc = findBlock(state, action.id);
       if (!loc) return state;
       const list = state.drafts[loc.draftId].map((b) =>
-        b.id === action.id ? { ...b, label: action.label } : b,
+        b.id === action.id
+          ? { ...b, label: action.label ?? b.label, notes: action.notes ?? b.notes }
+          : b,
       );
       return { ...state, drafts: { ...state.drafts, [loc.draftId]: list } };
     }

@@ -48,11 +48,18 @@ if (total1 !== 'Total 45 min') fail('expected Draft 1 to total 45 min');
 // Button alternative.
 await page.getByRole('button', { name: 'Add 60 min block to Session Draft 2' }).click();
 await page.getByRole('textbox', { name: /^Activity for 60 minute block/ }).fill('Deep work');
+const notes = page.getByRole('textbox', { name: /^Notes for 60 minute block/ });
+await notes.click();
+await page.keyboard.type('Pairs discuss');
+await page.keyboard.press('Enter');
+await page.keyboard.type('Share out');
 
 await page.waitForTimeout(600);
 await page.reload();
 if ((await page.getByRole('textbox', { name: 'Purpose', exact: true }).inputValue()) !== 'Align on Q3 goals') fail('text did not persist');
 if ((await page.getByRole('textbox', { name: /Sticky note 1 in Activity ideas/ }).inputValue()) !== 'Gallery walk') fail('sticky did not persist');
+const savedNotes = await page.getByRole('textbox', { name: /^Notes for 60 minute block/ }).inputValue();
+if (savedNotes !== '• Pairs discuss\n• Share out') fail(`block notes wrong: ${JSON.stringify(savedNotes)}`);
 const blocks = await page.locator('.tblock').count();
 console.log('Blocks after reload:', blocks);
 if (blocks < 2) fail('expected blocks to persist');

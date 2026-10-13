@@ -20,6 +20,8 @@ export interface TimeBlock {
   id: string;
   minutes: BlockMinutes;
   label: string;
+  /** Free-form details, e.g. bullet points about what happens in this block. */
+  notes: string;
 }
 
 export interface CanvasState {

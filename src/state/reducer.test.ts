@@ -27,8 +27,9 @@ describe('time blocks', () => {
   });
 
   it('labels and removes blocks', () => {
-    let s = reducer(withBlocks(), { type: 'editBlockLabel', id: 'b', label: 'Check-in' });
-    expect(s.drafts.d1[2].label).toBe('Check-in');
+    let s = reducer(withBlocks(), { type: 'editBlock', id: 'b', label: 'Check-in' });
+    s = reducer(s, { type: 'editBlock', id: 'b', notes: '• Pairs\n• Share out' });
+    expect(s.drafts.d1[2]).toMatchObject({ label: 'Check-in', notes: '• Pairs\n• Share out' });
     s = reducer(s, { type: 'removeBlock', id: 'b' });
     expect(s.drafts.d1).toHaveLength(2);
   });
@@ -57,6 +58,14 @@ describe('persistence', () => {
     const s = withBlocks();
     expect(saveState(s)).toBe(true);
     expect(loadState()).toEqual(s);
+  });
+
+  it('adds empty notes to blocks saved before notes existed', () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ version: 1, cells: {}, drafts: { d1: [{ id: 'a', minutes: 15, label: 'x' }], d2: [] } }),
+    );
+    expect(loadState().drafts.d1[0].notes).toBe('');
   });
 
   it('migrates retired sticky colors', () => {

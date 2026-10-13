@@ -1,9 +1,31 @@
+import { useLayoutEffect, useRef, type KeyboardEvent } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useCanvas } from '../../state/CanvasContext';
 import { DRAFT_NAMES, type DraftId, type TimeBlock } from '../../state/types';
 import { DownIcon, GripIcon, SwapIcon, UpIcon, XIcon } from '../Icons';
 import { clock, type DragData } from './dnd';
+
+const BULLET = '• ';
+
+/** Enter on a bulleted line starts the next bullet; Enter on an empty bullet ends the list. */
+function continueBullets(
+  e: KeyboardEvent<HTMLTextAreaElement>,
+  setValue: (v: string, caret: number) => void,
+) {
+  if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
+  const { value, selectionStart, selectionEnd } = e.currentTarget;
+  const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
+  const line = value.slice(lineStart, selectionStart);
+  if (!line.startsWith(BULLET)) return;
+  e.preventDefault();
+  const empty = line === BULLET;
+  const next = empty
+    ? value.slice(0, lineStart) + value.slice(selectionEnd)
+    : value.slice(0, selectionStart) + '\n' + BULLET + value.slice(selectionEnd);
+  const caret = empty ? lineStart : selectionStart + 1 + BULLET.length;
+  setValue(next, caret);
+}
 
 interface Props {
   block: TimeBlock;
@@ -24,6 +46,19 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
   const name = `${block.minutes} minute block${block.label ? ` "${block.label}"` : ''}`;
   const where = `position ${index + 1} of ${count} in ${DRAFT_NAMES[draftId]}`;
   const inputId = `label-${block.id}`;
+  const notesId = `notes-${block.id}`;
+  const notesRef = useRef<HTMLTextAreaElement>(null);
+  const pendingCaret = useRef<number | null>(null);
+  const setNotes = (notes: string, caret?: number) => {
+    pendingCaret.current = caret ?? null;
+    dispatch({ type: 'editBlock', id: block.id, notes });
+  };
+  // Place the caret after React writes the new value, before the next keystroke lands.
+  useLayoutEffect(() => {
+    if (pendingCaret.current === null) return;
+    notesRef.current?.setSelectionRange(pendingCaret.current, pendingCaret.current);
+    pendingCaret.current = null;
+  }, [block.notes]);
 
   const move = (toIndex: number) => {
     if (toIndex < 0 || toIndex >= count) return;
@@ -76,7 +111,7 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
           className="tblock__label"
           value={block.label}
           placeholder="Name this block"
-          onChange={(e) => dispatch({ type: 'editBlockLabel', id: block.id, label: e.target.value })}
+          onChange={(e) => dispatch({ type: 'editBlock', id: block.id, label: e.target.value })}
         />
         <span className="print-text" aria-hidden="true">
           {block.label}
@@ -88,6 +123,30 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
           <span className="sr-only"> to </span>
           {clock(start + block.minutes)}
         </span>
+      </div>
+      <div className="tblock__notes">
+        <label htmlFor={notesId} className="sr-only">
+          Notes for {name}, {where}
+        </label>
+        <textarea
+          ref={notesRef}
+          id={notesId}
+          className="tblock__notes-text"
+          value={block.notes}
+          placeholder="• Add details"
+          rows={1}
+          onFocus={(e) => {
+            if (!e.currentTarget.value) setNotes(BULLET, BULLET.length);
+          }}
+          onBlur={(e) => {
+            if (e.currentTarget.value.trim() === BULLET.trim()) setNotes('');
+          }}
+          onKeyDown={(e) => continueBullets(e, setNotes)}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+        <div className="print-text" aria-hidden="true">
+          {block.notes}
+        </div>
       </div>
       <div className="tblock__actions no-print">
         <button
