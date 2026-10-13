@@ -215,7 +215,7 @@ button {
 }
 .band__title {
   color: var(--navy-deep);
-  font-weight: 700;
+  font-weight: 800;
   font-size: clamp(1.4rem, 2vw, 2rem);
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -230,9 +230,6 @@ button {
   font-size: clamp(1.05rem, 1.3vw, 1.3rem);
   line-height: 1.25;
   margin-bottom: 8px;
-}
-.sub-heading--right {
-  text-align: right;
 }
 .participant-grid .sub-heading {
   font-size: clamp(0.95rem, 1.1vw, 1.15rem);
@@ -711,9 +708,6 @@ button {
   }
   .flow-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .sub-heading--right {
-    text-align: left;
   }
 }
 

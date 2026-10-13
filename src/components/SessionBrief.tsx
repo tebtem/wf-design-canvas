@@ -27,7 +27,7 @@ export function SessionBrief() {
           <QuadrantCell prefix="before" title="Participant Before" />
         </section>
         <section aria-labelledby="after-h">
-          <h2 id="after-h" className="sub-heading sub-heading--right">
+          <h2 id="after-h" className="sub-heading">
             Participant After
           </h2>
           <QuadrantCell prefix="after" title="Participant After" />
@@ -51,10 +51,10 @@ export function SessionBrief() {
           Facilitator at the Center
         </h2>
         {grid('facilitator', [
-          'My Goals as the Facilitator…',
-          'What I Want to Learn…',
-          'How I Want to Feel…',
-          'What I Want to Try…',
+          'My goals as a facilitator…',
+          'What I want to learn…',
+          'How I want to feel…',
+          'What I want to try…',
         ])}
       </section>
     </div>
