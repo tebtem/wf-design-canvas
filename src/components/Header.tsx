@@ -1,9 +1,9 @@
 export function Logo() {
   return (
-    <svg className="logo" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-      <circle cx="50" cy="50" r="50" fill="#232A5C" />
-      <path d="M14 30h13l5 22 6-22h10l6 22 5-22h13l-12 40H55l-6-20-6 20H27z" fill="#F9CF4A" />
-      <path d="M58 46h28v10H70v6h14v9H70v14H58z" fill="#E86FC4" />
+    <svg className="logo" viewBox="106 103 868 868" aria-hidden="true" focusable="false">
+      <circle cx="540" cy="537" r="434" fill="#252a5c" />
+      <path d="M242 330H403L417 435L439 330H567L590 432L604 330H757L674 625H518L496 521L474 625H325Z" fill="#fbd36b" />
+      <path d="M556 496H830V608H702V621H818V729H702V778H556Z" fill="#e875c2" />
     </svg>
   );
 }

@@ -1,5 +1,15 @@
 import { initialState } from './reducer';
-import type { CanvasState } from './types';
+import { STICKY_COLORS, type CanvasState, type Cell } from './types';
+
+/** Keep stickies saved with a color that no longer exists (e.g. the old "green") readable. */
+function migrateCells(cells: Record<string, Cell>): Record<string, Cell> {
+  return Object.fromEntries(
+    Object.entries(cells).map(([id, c]) => [
+      id,
+      { ...c, stickies: c.stickies.map((st) => (STICKY_COLORS.includes(st.color) ? st : { ...st, color: 'orange' })) },
+    ]),
+  );
+}
 
 export const STORAGE_KEY = 'wf-design-canvas:v1';
 
@@ -13,7 +23,7 @@ export function loadState(): CanvasState {
     }
     return {
       version: 1,
-      cells: parsed.cells ?? {},
+      cells: migrateCells(parsed.cells ?? {}),
       drafts: { d1: parsed.drafts.d1 ?? [], d2: parsed.drafts.d2 ?? [] },
     };
   } catch {

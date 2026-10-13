@@ -1,4 +1,4 @@
-export type StickyColor = 'yellow' | 'pink' | 'green' | 'blue';
+export type StickyColor = 'yellow' | 'pink' | 'orange' | 'blue';
 
 export interface Sticky {
   id: string;
@@ -34,4 +34,4 @@ export const DRAFT_NAMES: Record<DraftId, string> = {
   d2: 'Session Draft 2',
 };
 
-export const STICKY_COLORS: StickyColor[] = ['yellow', 'pink', 'green', 'blue'];
+export const STICKY_COLORS: StickyColor[] = ['yellow', 'pink', 'orange', 'blue'];

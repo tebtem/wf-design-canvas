@@ -59,6 +59,14 @@ describe('persistence', () => {
     expect(loadState()).toEqual(s);
   });
 
+  it('migrates retired sticky colors', () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ version: 1, drafts: { d1: [], d2: [] }, cells: { x: { text: '', stickies: [{ id: 's', text: '', color: 'green' }] } } }),
+    );
+    expect(loadState().cells.x.stickies[0].color).toBe('orange');
+  });
+
   it('falls back to an empty canvas on bad data', () => {
     window.localStorage.setItem(STORAGE_KEY, '{not json');
     expect(loadState()).toEqual(initialState());

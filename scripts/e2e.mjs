@@ -71,6 +71,9 @@ await page.setViewportSize({ width: 375, height: 800 });
 const scrollW = await page.evaluate(() => document.documentElement.scrollWidth);
 if (scrollW > 375) fail(`horizontal scroll at 375px (${scrollW})`);
 await page.screenshot({ path: out + 'mobile.png', fullPage: true });
+const axeMobile = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+for (const v of axeMobile.violations) console.log('AXE mobile', v.id, v.impact, v.nodes.length, v.nodes[0]?.target);
+if (axeMobile.violations.length) fail(`${axeMobile.violations.length} axe violations at 375px`);
 
 await browser.close();
 console.log(process.exitCode ? 'Done with failures' : 'All checks passed');

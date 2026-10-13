@@ -163,20 +163,20 @@ button {
 .title {
   display: flex;
   flex-direction: column;
-  font-family: var(--font-display);
-  font-weight: 400;
-  line-height: 0.9;
+  font-family: var(--font-title);
+  word-spacing: 0.18em;
+  font-weight: 900;
+  line-height: 1;
 }
 .title__big {
-  font-size: clamp(2.5rem, 7vw, 6rem);
+  font-size: clamp(1.6rem, 4.6vw, 4.4rem);
   text-transform: uppercase;
-  letter-spacing: -0.02em;
+  margin-bottom: 0.1em;
   color: var(--navy);
 }
 .title__small {
-  font-size: clamp(1.5rem, 3.6vw, 3.1rem);
+  font-size: clamp(1.2rem, 2.25vw, 2.15rem); /* min 19.2px black weight keeps it "large text" for 3:1 contrast */
   color: var(--frame); /* 3.2:1, large text */
-  letter-spacing: -0.01em;
 }
 .canvas-header__right {
   display: flex;
@@ -184,7 +184,7 @@ button {
   gap: 12px;
 }
 .canvas-name {
-  font-size: clamp(1.5rem, 3vw, 3rem);
+  font-size: clamp(1.5rem, 2.4vw, 2.6rem);
   font-weight: 600;
   color: var(--frame); /* 3.2:1, large text */
 }
@@ -224,10 +224,11 @@ button {
 }
 .band__title {
   color: var(--navy-deep);
+  word-spacing: 0.18em;
   font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(1.6rem, 2.4vw, 2.4rem);
-  line-height: 1.1;
+  font-weight: 900;
+  font-size: clamp(1.3rem, 1.8vw, 1.9rem);
+  line-height: 1.15;
   margin-bottom: 12px;
 }
 .band__title--center {
@@ -235,14 +236,19 @@ button {
 }
 .sub-heading {
   color: var(--navy-deep);
+  word-spacing: 0.18em;
   font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(1.15rem, 1.4vw, 1.4rem);
-  line-height: 1.1;
+  font-weight: 900;
+  font-size: clamp(0.95rem, 1.05vw, 1.1rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
   margin-bottom: 8px;
 }
 .sub-heading--right {
   text-align: right;
+}
+.participant-grid .sub-heading {
+  font-size: clamp(0.8rem, 0.85vw, 0.95rem);
 }
 
 .panel {
@@ -270,7 +276,7 @@ button {
 }
 .note-cell__title {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 400;
 }
 .note-cell__text {
   flex: 1 1 auto;
@@ -333,7 +339,7 @@ button {
 }
 .sticky--yellow { background: var(--sticky-yellow); }
 .sticky--pink { background: var(--sticky-pink); }
-.sticky--green { background: var(--sticky-green); }
+.sticky--orange { background: var(--sticky-orange); }
 .sticky--blue { background: var(--sticky-blue); }
 .sticky__text {
   width: 100%;
@@ -439,7 +445,7 @@ button {
 .draft.is-over {
   outline: 3px dashed var(--accent-text);
   outline-offset: -3px;
-  background: #f3f5ff;
+  background: #fff8e4;
 }
 .draft__head {
   display: flex;
@@ -514,7 +520,7 @@ button {
 }
 .tblock__minutes {
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 .tblock__body {
   display: flex;

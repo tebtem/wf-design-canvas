@@ -1,8 +1,8 @@
 :root {
   color-scheme: light;
 
-  --frame: #6f88d4;
-  --navy: #232a5c;
+  --frame: #708bd6;
+  --navy: #252a5c;
   --navy-deep: #161b42; /* 4.8:1 on frame blue, for headings on the blue bands */
   --navy-soft: #3b4270;
   --accent-text: #3e52a3; /* 7:1 on cream, used for small blue labels */
@@ -26,13 +26,22 @@
   --b45: #f1eafd;
   --b60: #e6f7ec;
 
-  --sticky-yellow: #fff1a8;
-  --sticky-pink: #ffd6ec;
-  --sticky-green: #d2f4dc;
-  --sticky-blue: #d6e2ff;
+  /* Brand palette */
+  --brand-yellow: #fbd36b;
+  --brand-yellow-light: #ffdc83;
+  --brand-pink: #e875c2;
+  --brand-magenta: #d755b3;
+  --brand-orange: #f27c22;
 
-  --font-display: 'Bowlby One', 'Arial Black', Impact, sans-serif;
-  --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Sticky notes: brand colors and tints, all 7:1+ with navy text */
+  --sticky-yellow: var(--brand-yellow-light);
+  --sticky-pink: #f6c8e6;
+  --sticky-orange: #fbcfae;
+  --sticky-blue: #d4dcf5;
+
+  --font-title: 'Gaude Expanded', 'Arial Black', Impact, sans-serif;
+  --font-display: 'Gaude Expanded Round', 'Arial Black', Impact, sans-serif;
+  --font-body: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   --radius-card: 16px;
   --radius-panel: 24px;
