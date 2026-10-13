@@ -1,0 +1,40 @@
+:root {
+  color-scheme: light;
+
+  --frame: #6f88d4;
+  --navy: #232a5c;
+  --navy-deep: #161b42; /* 4.8:1 on frame blue, for headings on the blue bands */
+  --navy-soft: #3b4270;
+  --accent-text: #3e52a3; /* 7:1 on cream, used for small blue labels */
+  --placeholder: #5a6091;
+  --pink: #fff3f3;
+  --cream: #fffef7;
+  --white: #ffffff;
+  --page: #e9ecf7;
+  --divider: #eef1fb;
+  --line: #7a80a3; /* 3.9:1 on white for drop-zone outlines */
+  --danger: #b3261e;
+
+  --flow-1: #f5f7ff;
+  --flow-2: #e4e9fc;
+  --flow-3: #c8d4fc;
+  --flow-4: #dbe2fc;
+
+  --b15: #e2e7fb;
+  --b20: #fdf6e9;
+  --b30: #fdebfa;
+  --b45: #f1eafd;
+  --b60: #e6f7ec;
+
+  --sticky-yellow: #fff1a8;
+  --sticky-pink: #ffd6ec;
+  --sticky-green: #d2f4dc;
+  --sticky-blue: #d6e2ff;
+
+  --font-display: 'Bowlby One', 'Arial Black', Impact, sans-serif;
+  --font-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-card: 16px;
+  --radius-panel: 24px;
+  --focus: 3px solid var(--navy);
+}

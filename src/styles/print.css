@@ -1,0 +1,61 @@
+@media print {
+  @page {
+    size: 20in 18in;
+    margin: 0.3in;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    background: var(--white);
+  }
+
+  .no-print,
+  .skip-link,
+  .note-cell__text,
+  .sticky__text,
+  .tblock__label,
+  .tblock__handle svg,
+  .bank-item__handle svg {
+    display: none !important;
+  }
+
+  .print-text {
+    display: block;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 0.9rem;
+    padding: 4px 6px;
+  }
+  .tblock .print-text {
+    padding: 0;
+    font-weight: 600;
+  }
+
+  .canvas {
+    max-width: none;
+    margin: 0;
+  }
+  .canvas-body {
+    grid-template-columns: minmax(340px, 0.38fr) 1fr;
+  }
+  .flow-grid {
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+  }
+  .time-grid {
+    grid-template-columns: 1fr 1fr minmax(210px, 0.55fr);
+  }
+
+  .card,
+  .quadrant,
+  .tblock,
+  .sticky {
+    break-inside: avoid;
+  }
+  .sticky {
+    box-shadow: none;
+  }
+}
