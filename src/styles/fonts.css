@@ -19,3 +19,24 @@
   font-style: italic;
   font-display: swap;
 }
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  src: url('../assets/fonts/BeVietnamPro-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  src: url('../assets/fonts/BeVietnamPro-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  src: url('../assets/fonts/BeVietnamPro-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
