@@ -29,4 +29,5 @@ npm run e2e       # Playwright smoke test + axe scan (set CHROMIUM_PATH if neede
 ## Brand
 
 - Colors live in `src/styles/tokens.css` (navy `#252a5c`, blue `#708bd6`, yellows `#fbd36b` / `#ffdc83`, pink `#e875c2`, magenta `#d755b3`, orange `#f27c22`).
-- Fonts are self-hosted in `src/assets/fonts`: Gaude Expanded Black (title), Gaude Expanded Round Black (section headings), Be Vietnam Pro (body). Gaude is a commercial font, so confirm the license covers web embedding before deploying publicly.
+- Be Vietnam Pro (Regular, SemiBold) is self-hosted in `src/assets/fonts` for all text.
+- The "Designing Facilitated Experiences" wordmark is `src/assets/designing-facilitated-experiences.png`, extracted from the brand SVG with a transparent background.

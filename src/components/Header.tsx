@@ -1,3 +1,5 @@
+import wordmark from '../assets/designing-facilitated-experiences.png';
+
 export function Logo() {
   return (
     <svg className="logo" viewBox="106 103 868 868" aria-hidden="true" focusable="false">
@@ -12,8 +14,13 @@ export function Header() {
   return (
     <header className="canvas-header">
       <h1 className="title">
-        <span className="title__big">Designing</span>
-        <span className="title__small">Facilitated Experiences</span>
+        <img
+          className="title__img"
+          src={wordmark}
+          alt="Designing Facilitated Experiences"
+          width={1886}
+          height={368}
+        />
       </h1>
       <div className="canvas-header__right">
         <p className="canvas-name">Facilitation Design Canvas</p>
