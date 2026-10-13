@@ -22,6 +22,26 @@ await page.getByRole('textbox', { name: 'Purpose', exact: true }).fill('Align on
 await page.getByRole('button', { name: 'Add sticky note in Activity ideas' }).click();
 await page.keyboard.type('Gallery walk');
 
+// Sticky notes: move with the dialog, then drag between sections.
+await page.getByRole('button', { name: 'Add sticky note in Activity ideas' }).click();
+await page.keyboard.type('Fishbowl');
+await page.getByRole('button', { name: /^Move Sticky note 2 in Activity ideas/ }).click();
+await page.getByLabel('Section', { exact: true }).selectOption('brief.0');
+await page.getByRole('button', { name: 'Move', exact: true }).click();
+await page.waitForTimeout(200);
+if ((await page.getByRole('textbox', { name: 'Sticky note 1 in Purpose' }).inputValue()) !== 'Fishbowl') fail('move dialog did not move sticky');
+const focused = await page.evaluate(() => document.activeElement?.getAttribute('aria-label'));
+if (!focused?.startsWith('Move Sticky note 1 in Purpose')) fail(`focus after move dialog: ${focused}`);
+await page.getByRole('button', { name: 'Drag Sticky note 1 in Purpose' }).hover();
+await page.mouse.down();
+const outcomes = await page.getByRole('group', { name: 'Outcomes' }).boundingBox();
+await page.mouse.move(outcomes.x + outcomes.width / 2, outcomes.y + outcomes.height / 2, { steps: 12 });
+await page.mouse.move(outcomes.x + outcomes.width / 2 + 4, outcomes.y + outcomes.height / 2, { steps: 3 });
+await page.mouse.up();
+await page.waitForTimeout(300);
+if ((await page.getByRole('textbox', { name: 'Sticky note 1 in Outcomes' }).inputValue()) !== 'Fishbowl') fail('drag did not move sticky to Outcomes');
+if (await page.getByRole('textbox', { name: 'Sticky note 1 in Purpose' }).count()) fail('sticky still in Purpose after drag');
+
 // Mouse drag: 30 min bank block into Draft 1.
 const draft1 = page.getByRole('group', { name: 'Session Draft 1' });
 await page.getByRole('button', { name: /^30 min block\. Drag/ }).hover();

@@ -5,6 +5,7 @@ import { SessionBrief } from './components/SessionBrief';
 import { TimeBlocksSection } from './components/TimeBlocks/TimeBlocksSection';
 import { FlowFunction } from './components/FlowFunction';
 import { Footer } from './components/Footer';
+import { StickyDnd } from './components/StickyDnd';
 import { ActivityIdeation } from './components/ActivityIdeation';
 
 export default function App() {
@@ -17,12 +18,14 @@ export default function App() {
       <div className="canvas">
         <Header />
         <main id="canvas" className="canvas-body" tabIndex={-1}>
-          <SessionBrief />
-          <div className="right-col">
-            <TimeBlocksSection />
-            <FlowFunction />
-            <ActivityIdeation />
-          </div>
+          <StickyDnd>
+            <SessionBrief />
+            <div className="right-col">
+              <TimeBlocksSection />
+              <FlowFunction />
+              <ActivityIdeation />
+            </div>
+          </StickyDnd>
         </main>
       </div>
       <Footer />

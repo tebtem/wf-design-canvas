@@ -53,6 +53,34 @@ describe('cells and stickies', () => {
   });
 });
 
+describe('moving stickies', () => {
+  const twoCells = () => {
+    let s = initialState();
+    for (const id of ['a', 'b', 'c']) s = reducer(s, { type: 'addSticky', cellId: 'x', id });
+    return reducer(s, { type: 'addSticky', cellId: 'y', id: 'd' });
+  };
+  const ids = (s: ReturnType<typeof initialState>, cell: string) => s.cells[cell].stickies.map((st) => st.id);
+
+  it('reorders within a cell', () => {
+    const s = reducer(twoCells(), { type: 'moveSticky', id: 'a', toCell: 'x', toIndex: 2 });
+    expect(ids(s, 'x')).toEqual(['b', 'c', 'a']);
+  });
+
+  it('moves to another cell, including an empty one', () => {
+    let s = reducer(twoCells(), { type: 'moveSticky', id: 'b', toCell: 'y', toIndex: 0 });
+    expect(ids(s, 'x')).toEqual(['a', 'c']);
+    expect(ids(s, 'y')).toEqual(['b', 'd']);
+    s = reducer(s, { type: 'moveSticky', id: 'd', toCell: 'z', toIndex: 5 });
+    expect(ids(s, 'z')).toEqual(['d']);
+  });
+
+  it('keeps text and color when moving', () => {
+    let s = reducer(twoCells(), { type: 'editSticky', cellId: 'x', id: 'a', text: 'Hi', color: 'blue' });
+    s = reducer(s, { type: 'moveSticky', id: 'a', toCell: 'y', toIndex: 1 });
+    expect(s.cells.y.stickies[1]).toEqual({ id: 'a', text: 'Hi', color: 'blue' });
+  });
+});
+
 describe('persistence', () => {
   it('round-trips through localStorage', () => {
     const s = withBlocks();

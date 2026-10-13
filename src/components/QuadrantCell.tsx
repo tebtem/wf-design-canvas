@@ -1,22 +1,16 @@
+import { cellsIn } from '../state/cells';
 import { NoteCell } from './NoteCell';
 
-const QUADRANTS = [
-  { key: 'think', title: 'Think' },
-  { key: 'feel', title: 'Feel' },
-  { key: 'say', title: 'Say' },
-  { key: 'do', title: 'Do' },
-];
-
-export function QuadrantCell({ prefix, title }: { prefix: string; title: string }) {
+export function QuadrantCell({ section }: { section: string }) {
   return (
     <div className="card quadrant">
-      {QUADRANTS.map((q) => (
+      {cellsIn(section).map((c) => (
         <NoteCell
-          key={q.key}
-          cellId={`${prefix}.${q.key}`}
-          title={q.title}
-          accessibleTitle={`${title}: ${q.title}`}
-          className={`quadrant__cell quadrant__cell--${q.key}`}
+          key={c.id}
+          cellId={c.id}
+          title={c.title}
+          accessibleTitle={c.fullTitle}
+          className={`quadrant__cell quadrant__cell--${c.title.toLowerCase()}`}
           placeholder=""
         />
       ))}

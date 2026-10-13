@@ -1,10 +1,11 @@
+import { cellsIn } from '../state/cells';
 import { NoteCell } from './NoteCell';
 import { QuadrantCell } from './QuadrantCell';
 
-const grid = (prefix: string, items: string[]) => (
+const grid = (section: string) => (
   <div className="card-grid">
-    {items.map((title, i) => (
-      <NoteCell key={title} cellId={`${prefix}.${i}`} title={title} className="card" />
+    {cellsIn(section).map((c) => (
+      <NoteCell key={c.id} cellId={c.id} title={c.title} className="card" />
     ))}
   </div>
 );
@@ -16,7 +17,7 @@ export function SessionBrief() {
         <h2 id="brief-h" className="band__title band__title--center">
           Session Brief
         </h2>
-        {grid('brief', ['Purpose', 'Outcomes', 'Time', 'Stats'])}
+        {grid('Session Brief')}
       </section>
 
       <div className="band band--left participant-grid">
@@ -24,13 +25,13 @@ export function SessionBrief() {
           <h2 id="before-h" className="sub-heading">
             Participant Before
           </h2>
-          <QuadrantCell prefix="before" title="Participant Before" />
+          <QuadrantCell section="Participant Before" />
         </section>
         <section aria-labelledby="after-h">
           <h2 id="after-h" className="sub-heading">
             Participant After
           </h2>
-          <QuadrantCell prefix="after" title="Participant After" />
+          <QuadrantCell section="Participant After" />
         </section>
       </div>
 
@@ -38,24 +39,14 @@ export function SessionBrief() {
         <h2 id="pc-h" className="sub-heading">
           Participants at the Center
         </h2>
-        {grid('participants', [
-          'Who is participating?',
-          'What is their level of psych safety?',
-          'What are the dynamics?',
-          'What else do I need to consider?',
-        ])}
+        {grid('Participants at the Center')}
       </section>
 
       <section className="band band--left" aria-labelledby="fc-h">
         <h2 id="fc-h" className="sub-heading">
           Facilitator at the Center
         </h2>
-        {grid('facilitator', [
-          'My goals as a facilitator…',
-          'What I want to learn…',
-          'How I want to feel…',
-          'What I want to try…',
-        ])}
+        {grid('Facilitator at the Center')}
       </section>
     </div>
   );

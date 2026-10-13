@@ -71,3 +71,8 @@ export const StickyIcon = () => (
     <path d="M8 9h8M8 12.5h4" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
   </svg>
 );
+export const MoveIcon = () => (
+  <svg {...base}>
+    <path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3" />
+  </svg>
+);

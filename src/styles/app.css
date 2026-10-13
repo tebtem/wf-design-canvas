@@ -377,10 +377,57 @@ button {
 .sticky__text:focus-visible {
   outline-offset: 0;
 }
+.sticky.is-dragging {
+  opacity: 0.4;
+}
+.sticky--overlay {
+  width: 200px;
+  min-height: 80px;
+  box-shadow: 0 10px 24px rgb(35 42 92 / 0.25);
+  transform: rotate(-2deg);
+  cursor: grabbing;
+}
+.sticky__preview {
+  margin: 0;
+  padding: 2px;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .sticky__actions {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 2px;
+}
+.sticky__spacer {
+  flex: 1;
+}
+.sticky__handle {
+  cursor: grab;
+  touch-action: none;
+}
+.note-cell.is-over {
+  outline: 3px dashed var(--accent-text);
+  outline-offset: -3px;
+}
+
+.move-form {
+  display: grid;
+  gap: 6px;
+}
+.move-form label {
+  font-weight: 600;
+  margin-top: 8px;
+}
+.move-form select {
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  font: inherit;
+  color: var(--navy);
 }
 
 .icon-btn {

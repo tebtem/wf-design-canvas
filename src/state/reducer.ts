@@ -5,6 +5,7 @@ export type Action =
   | { type: 'addSticky'; cellId: string; id: string; color?: StickyColor }
   | { type: 'editSticky'; cellId: string; id: string; text?: string; color?: StickyColor }
   | { type: 'deleteSticky'; cellId: string; id: string }
+  | { type: 'moveSticky'; id: string; toCell: string; toIndex: number }
   | { type: 'addBlock'; draftId: DraftId; id: string; minutes: BlockMinutes; index?: number }
   | { type: 'moveBlock'; id: string; toDraft: DraftId; toIndex: number }
   | { type: 'editBlock'; id: string; label?: string; notes?: string }
@@ -28,6 +29,14 @@ export function findBlock(state: CanvasState, id: string): { draftId: DraftId; i
   for (const draftId of Object.keys(state.drafts) as DraftId[]) {
     const index = state.drafts[draftId].findIndex((b) => b.id === id);
     if (index !== -1) return { draftId, index };
+  }
+  return null;
+}
+
+export function findSticky(state: CanvasState, id: string): { cellId: string; index: number } | null {
+  for (const [cellId, cell] of Object.entries(state.cells)) {
+    const index = cell.stickies.findIndex((s) => s.id === id);
+    if (index !== -1) return { cellId, index };
   }
   return null;
 }
@@ -71,6 +80,21 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
         ...c,
         stickies: c.stickies.filter((s) => s.id !== action.id),
       }));
+
+    case 'moveSticky': {
+      const loc = findSticky(state, action.id);
+      if (!loc) return state;
+      const sticky = state.cells[loc.cellId].stickies[loc.index];
+      const removed = updateCell(state, loc.cellId, (c) => ({
+        ...c,
+        stickies: c.stickies.filter((s) => s.id !== action.id),
+      }));
+      return updateCell(removed, action.toCell, (c) => {
+        const list = [...c.stickies];
+        list.splice(clamp(action.toIndex, 0, list.length), 0, sticky);
+        return { ...c, stickies: list };
+      });
+    }
 
     case 'addBlock': {
       const list = [...state.drafts[action.draftId]];

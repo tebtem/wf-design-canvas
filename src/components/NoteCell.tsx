@@ -1,8 +1,11 @@
 import { useId, useRef, useState } from 'react';
+import { useDroppable } from '@dnd-kit/core';
+import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { newId, useCanvas } from '../state/CanvasContext';
 import type { Cell } from '../state/types';
 import { StickyNote } from './StickyNote';
 import { PlusIcon, StickyIcon } from './Icons';
+import { cellDroppableId, type StickyDragData } from './StickyDnd';
 
 interface Props {
   cellId: string;
@@ -24,6 +27,8 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
   const fullTitle = accessibleTitle ?? title;
   const [justAdded, setJustAdded] = useState<string | null>(null);
   const addRef = useRef<HTMLButtonElement>(null);
+  const dropData: StickyDragData = { type: 'cell', cellId };
+  const { setNodeRef, isOver } = useDroppable({ id: cellDroppableId(cellId), data: dropData });
 
   const addSticky = () => {
     const id = newId();
@@ -32,7 +37,12 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
   };
 
   return (
-    <div className={`note-cell ${className}`} role="group" aria-labelledby={headingId}>
+    <div
+      ref={setNodeRef}
+      className={`note-cell ${className}${isOver ? ' is-over' : ''}`}
+      role="group"
+      aria-labelledby={headingId}
+    >
       <h3 id={headingId} className={hideTitle ? 'sr-only' : 'note-cell__title'}>
         {hideTitle || !accessibleTitle ? (
           fullTitle
@@ -53,24 +63,27 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
       <div className="print-text" aria-hidden="true">
         {cell.text}
       </div>
-      {cell.stickies.length > 0 && (
-        <ul className="sticky-list" aria-label={`Sticky notes in ${fullTitle}`}>
-          {cell.stickies.map((s, i) => (
-            <StickyNote
-              key={s.id}
-              sticky={s}
-              index={i}
-              cellTitle={fullTitle}
-              focusOnMount={s.id === justAdded}
-              onChange={(patch) => dispatch({ type: 'editSticky', cellId, id: s.id, ...patch })}
-              onDelete={() => {
-                dispatch({ type: 'deleteSticky', cellId, id: s.id });
-                addRef.current?.focus();
-              }}
-            />
-          ))}
-        </ul>
-      )}
+      <SortableContext items={cell.stickies.map((s) => s.id)} strategy={rectSortingStrategy}>
+        {cell.stickies.length > 0 && (
+          <ul className="sticky-list" aria-label={`Sticky notes in ${fullTitle}`}>
+            {cell.stickies.map((s, i) => (
+              <StickyNote
+                key={s.id}
+                sticky={s}
+                cellId={cellId}
+                index={i}
+                cellTitle={fullTitle}
+                focusOnMount={s.id === justAdded}
+                onChange={(patch) => dispatch({ type: 'editSticky', cellId, id: s.id, ...patch })}
+                onDelete={() => {
+                  dispatch({ type: 'deleteSticky', cellId, id: s.id });
+                  addRef.current?.focus();
+                }}
+              />
+            ))}
+          </ul>
+        )}
+      </SortableContext>
       <button
         ref={addRef}
         type="button"

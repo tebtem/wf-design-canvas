@@ -1,18 +1,17 @@
+import { cellsIn } from '../state/cells';
 import { NoteCell } from './NoteCell';
 import { Section } from './Section';
-
-const STEPS = 9;
 
 export function FlowFunction() {
   return (
     <Section title="Flow + Function" className="band--flow">
       <div className="panel">
         <div className="flow-grid">
-          {Array.from({ length: STEPS }, (_, i) => (
+          {cellsIn('Flow + Function').map((c, i) => (
             <NoteCell
-              key={i}
-              cellId={`flow.${i}`}
-              title={`Flow step ${i + 1}`}
+              key={c.id}
+              cellId={c.id}
+              title={c.title}
               hideTitle
               className={`flow-col flow-col--${i}`}
               placeholder=""

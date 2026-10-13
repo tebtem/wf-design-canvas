@@ -1,9 +1,13 @@
 import { useEffect, useRef } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { STICKY_COLORS, type Sticky } from '../state/types';
-import { PaletteIcon, XIcon } from './Icons';
+import { GripIcon, MoveIcon, PaletteIcon, XIcon } from './Icons';
+import { useOpenStickyMove, type StickyDragData } from './StickyDnd';
 
 interface Props {
   sticky: Sticky;
+  cellId: string;
   index: number;
   cellTitle: string;
   focusOnMount: boolean;
@@ -11,8 +15,12 @@ interface Props {
   onDelete: () => void;
 }
 
-export function StickyNote({ sticky, index, cellTitle, focusOnMount, onChange, onDelete }: Props) {
+export function StickyNote({ sticky, cellId, index, cellTitle, focusOnMount, onChange, onDelete }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const openMove = useOpenStickyMove();
+  const data: StickyDragData = { type: 'sticky', cellId };
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id: sticky.id, data });
   useEffect(() => {
     if (focusOnMount) ref.current?.focus();
   }, [focusOnMount]);
@@ -21,7 +29,12 @@ export function StickyNote({ sticky, index, cellTitle, focusOnMount, onChange, o
   const name = `Sticky note ${index + 1} in ${cellTitle}`;
 
   return (
-    <li className={`sticky sticky--${sticky.color}`}>
+    <li
+      ref={setNodeRef}
+      data-sticky-id={sticky.id}
+      className={`sticky sticky--${sticky.color}${isDragging ? ' is-dragging' : ''}`}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+    >
       <textarea
         ref={ref}
         className="sticky__text"
@@ -38,6 +51,28 @@ export function StickyNote({ sticky, index, cellTitle, focusOnMount, onChange, o
         {sticky.text}
       </div>
       <div className="sticky__actions no-print">
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          className="icon-btn icon-btn--sm sticky__handle"
+          {...attributes}
+          {...listeners}
+          aria-roledescription="draggable sticky note"
+          aria-label={`Drag ${name}`}
+          title="Drag to move"
+        >
+          <GripIcon />
+        </button>
+        <button
+          type="button"
+          className="icon-btn icon-btn--sm js-sticky-move"
+          aria-label={`Move ${name} to another section or position`}
+          title="Move to…"
+          onClick={() => openMove(sticky.id)}
+        >
+          <MoveIcon />
+        </button>
+        <span className="sticky__spacer" />
         <button
           type="button"
           className="icon-btn icon-btn--sm"
