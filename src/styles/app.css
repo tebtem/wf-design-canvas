@@ -78,12 +78,6 @@ button {
   align-items: center;
   justify-content: space-between;
 }
-.toolbar__start {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-}
 .toolbar__status {
   font-size: 0.9rem;
   color: var(--navy-soft);

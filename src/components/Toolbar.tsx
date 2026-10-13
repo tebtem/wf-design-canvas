@@ -16,16 +16,14 @@ export function Toolbar() {
 
   return (
     <aside className="toolbar no-print" aria-label="Canvas tools">
-      <div className="toolbar__start">
+      <p className={`toolbar__status${saveStatus === 'error' ? ' is-error' : ''}`} role="status">
+        {status}
+      </p>
+      <div className="toolbar__actions">
         <a className="btn btn--pink" href={LEARN_URL} target="_blank" rel="noopener noreferrer">
           Learn<span className="sr-only"> about facilitation design (opens in a new tab)</span>
           <ExternalIcon />
         </a>
-        <p className={`toolbar__status${saveStatus === 'error' ? ' is-error' : ''}`} role="status">
-          {status}
-        </p>
-      </div>
-      <div className="toolbar__actions">
         <button type="button" className="btn btn--primary" onClick={() => window.print()}>
           <PrintIcon />
           Save as PDF
