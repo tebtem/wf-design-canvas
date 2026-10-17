@@ -4,7 +4,7 @@ An interactive version of the "Designing Facilitated Experiences" canvas.
 
 - Type in any section, or add sticky notes (change color, delete). Drag a sticky by its grip to reorder it or move it to another section, or use its Move button to pick a section and position.
 - Drag time blocks (15, 20, 30, 45, 60 min) from the Time Block Bank into Session Draft 1 or 2. Name them, add bullet-point notes (Enter starts a new bullet; Enter on an empty bullet ends the list), reorder, move between drafts, or remove them. Drafts show running times and totals.
-- Everything autosaves in your browser. **Save as PDF** opens the print dialog, sized to fit the canvas.
+- Everything autosaves in your browser. **Save as PDF** opens the print dialog. Print uses landscape pages in your chosen paper size (Letter or A4), keeps each section whole so pages never break mid-section, and leaves out the Time Block Bank.
 
 ## Accessibility
 
