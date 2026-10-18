@@ -1,6 +1,6 @@
 # Facilitation Design Canvas
 
-An interactive version of the "Designing Facilitated Experiences" canvas.
+An interactive version of the "Designing Facilitated Experiences" canvas!
 
 - Type in any section, or add sticky notes (change color, delete). Drag a sticky by its grip to reorder it or move it to another section, or use its Move button to pick a section and position.
 - Drag time blocks (15, 20, 30, 45, 60 min) from the Time Block Bank into Session Draft 1 or 2. Name them, add bullet-point notes (Enter starts a new bullet; Enter on an empty bullet ends the list), reorder, move between drafts, or remove them. Drafts show running times and totals.
