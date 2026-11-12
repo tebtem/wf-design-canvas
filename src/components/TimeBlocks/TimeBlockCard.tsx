@@ -1,8 +1,19 @@
-import { useLayoutEffect, useRef, type KeyboardEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useCanvas } from '../../state/CanvasContext';
-import { DRAFT_NAMES, type DraftId, type TimeBlock } from '../../state/types';
+import {
+  BLOCK_STEP,
+  blockHeight,
+  blockTone,
+  clampMinutes,
+  DRAFT_NAMES,
+  MAX_BLOCK,
+  MIN_BLOCK,
+  PX_PER_MINUTE,
+  type DraftId,
+  type TimeBlock,
+} from '../../state/types';
 import { DownIcon, GripIcon, SwapIcon, UpIcon, XIcon } from '../Icons';
 import { clock, type DragData } from './dnd';
 import { useOpenBlockMove } from './TimeBlocksSection';
@@ -65,6 +76,54 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
     pendingCaret.current = null;
   }, [block.notes]);
 
+  // ---------- Length: typed in the side field, or dragged from the bottom edge ----------
+  const minutesId = `minutes-${block.id}`;
+  const [typed, setTyped] = useState<string | null>(null);
+  const setMinutes = (m: number) => {
+    const next = clampMinutes(m);
+    dispatch({ type: 'setBlockMinutes', id: block.id, minutes: next });
+    return next;
+  };
+  const commitTyped = () => {
+    if (typed === null) return;
+    const n = Number.parseInt(typed, 10);
+    setTyped(null);
+    if (!Number.isFinite(n)) return;
+    const next = setMinutes(n);
+    if (next !== n)
+      announce(`Lengths go in ${BLOCK_STEP}-minute steps from ${MIN_BLOCK} to ${MAX_BLOCK}. Set to ${next} minutes.`);
+  };
+  const onMinutesKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitTyped();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      setTyped(null);
+      setMinutes(block.minutes + (e.key === 'ArrowUp' ? BLOCK_STEP : -BLOCK_STEP));
+    } else if (e.key === 'Escape') {
+      setTyped(null);
+    }
+  };
+  const resize = useRef<{ y: number; minutes: number } | null>(null);
+  const onResizeDown = (e: PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    resize.current = { y: e.clientY, minutes: block.minutes };
+  };
+  const onResizeMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!resize.current) return;
+    const delta = (e.clientY - resize.current.y) / PX_PER_MINUTE;
+    const next = clampMinutes(resize.current.minutes + delta);
+    if (next !== block.minutes) dispatch({ type: 'setBlockMinutes', id: block.id, minutes: next });
+  };
+  const onResizeUp = () => {
+    if (!resize.current) return;
+    if (resize.current.minutes !== block.minutes) announce(`${name} is now ${block.minutes} minutes.`);
+    resize.current = null;
+  };
+
   const move = (toIndex: number) => {
     if (toIndex < 0 || toIndex >= count) return;
     dispatch({ type: 'moveBlock', id: block.id, toDraft: draftId, toIndex });
@@ -90,29 +149,60 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
     <li
       ref={setNodeRef}
       data-block-id={block.id}
-      className={`tblock tblock--m${block.minutes}${isDragging ? ' is-dragging' : ''}`}
-      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={`tblock tblock--m${blockTone(block.minutes)}${isDragging ? ' is-dragging' : ''}`}
+      style={
+        {
+          transform: CSS.Translate.toString(transform),
+          transition,
+          '--h': `${blockHeight(block.minutes)}px`,
+        } as CSSProperties
+      }
     >
-      {readOnly ? (
-        <span className="tblock__handle">
-          <span className="tblock__minutes">{block.minutes}</span>
-          <span className="sr-only"> minutes, {where}</span>
+      <div className="tblock__side">
+        {readOnly ? (
+          <span className="tblock__minutes">
+            {block.minutes}
+            <span className="sr-only"> minutes, {where}</span>
+          </span>
+        ) : (
+          <>
+            <label htmlFor={minutesId} className="sr-only">
+              Length in minutes of {name}, {where}
+            </label>
+            <input
+              id={minutesId}
+              className="tblock__minutes-input"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={3}
+              value={typed ?? String(block.minutes)}
+              title={`Length in minutes (${MIN_BLOCK} to ${MAX_BLOCK}, in ${BLOCK_STEP}-minute steps). Arrow keys change it by ${BLOCK_STEP}.`}
+              onChange={(e) => setTyped(e.target.value.replace(/\D/g, ''))}
+              onBlur={commitTyped}
+              onKeyDown={onMinutesKey}
+            />
+            <span className="tblock__unit" aria-hidden="true">
+              min
+            </span>
+            <button
+              type="button"
+              ref={setActivatorNodeRef}
+              className="tblock__handle"
+              {...attributes}
+              {...listeners}
+              aria-roledescription="draggable time block"
+              aria-label={`Drag ${name}, ${where}, to reorder.`}
+              title="Drag to reorder"
+            >
+              <GripIcon />
+            </button>
+          </>
+        )}
+        <span className="print-text" aria-hidden="true">
+          {block.minutes}
         </span>
-      ) : (
-        <button
-          type="button"
-          ref={setActivatorNodeRef}
-          className="tblock__handle"
-          {...attributes}
-          {...listeners}
-          aria-roledescription="draggable time block"
-          aria-label={`${block.minutes} min, ${name}, ${where}. Drag to reorder.`}
-          title="Drag to reorder"
-        >
-          <span className="tblock__minutes">{block.minutes}</span>
-          <GripIcon />
-        </button>
-      )}
+      </div>
       <div className="tblock__body">
         <label htmlFor={inputId} className="sr-only">
           Activity for {name}, {where}
@@ -200,14 +290,29 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
           </button>
         </div>
       )}
+      {!readOnly && (
+        <div
+          className="tblock__resize no-print"
+          aria-hidden="true"
+          title="Drag to change the length"
+          onPointerDown={onResizeDown}
+          onPointerMove={onResizeMove}
+          onPointerUp={onResizeUp}
+          onPointerCancel={onResizeUp}
+        />
+      )}
     </li>
   );
 }
 
 export function BlockPreview({ minutes, label }: { minutes: number; label?: string }) {
   return (
-    <div className={`tblock tblock--m${minutes} tblock--overlay`} aria-hidden="true">
-      <span className="tblock__handle">
+    <div
+      className={`tblock tblock--m${blockTone(minutes)} tblock--overlay`}
+      style={{ '--h': `${blockHeight(minutes)}px` } as CSSProperties}
+      aria-hidden="true"
+    >
+      <span className="tblock__side">
         <span className="tblock__minutes">{minutes}</span>
       </span>
       <div className="tblock__body">

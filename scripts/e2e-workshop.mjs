@@ -163,6 +163,40 @@ await host.getByRole('heading', { level: 1, name: 'Team offsite' }).waitFor();
 await alice.reload();
 await until(async () => (await alice.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) === 'Alice purpose, edited', 'alice reload');
 
+// Day 2 on a different device: Alice returns with her rejoin code.
+const rejoinCode = (await alice.locator('.ws-bar__meta strong').textContent()).trim();
+if (!/^[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(rejoinCode)) fail(`rejoin code shown to alice: ${rejoinCode}`);
+await host.getByRole('button', { name: 'Back to all canvases' }).click().catch(() => {});
+await until(async () => (await host.locator('.ws-card').first().textContent()).includes(rejoinCode), 'host sees rejoin code');
+const alice2 = await newPage();
+await alice2.goto(APP_URL);
+await alice2.getByRole('button', { name: 'Workshop' }).click();
+await alice2.getByRole('radio', { name: 'Return on a new device' }).check();
+await alice2.getByLabel('Workshop code').fill(code);
+await alice2.getByLabel('Your rejoin code').fill('ZZZZ-ZZZZ');
+await alice2.getByRole('button', { name: 'Return to my canvas' }).click();
+await until(async () => (await alice2.getByRole('alert').textContent())?.includes('does not match'), 'wrong rejoin code error');
+await axe(alice2, 'return dialog');
+await alice2.getByLabel('Your rejoin code').fill(rejoinCode.toLowerCase());
+await alice2.getByRole('button', { name: 'Return to my canvas' }).click();
+await alice2.getByRole('heading', { name: 'Team offsite' }).waitFor();
+await until(async () => (await alice2.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) === 'Alice purpose, edited', 'canvas restored on new device');
+if (!(await alice2.getByText('You are Alice').count())) fail('name not restored');
+await until(async () => (await alice2.getByRole('button', { name: /Facilitator comments \(1\)/ }).count()) === 1, 'comments restored');
+await alice2.getByRole('textbox', { name: 'Client Name', exact: true }).fill('Day 2 client');
+await host.getByRole('button', { name: 'Open canvas of Alice' }).click();
+await until(async () => (await host.getByRole('textbox', { name: 'Client Name', exact: true }).inputValue()) === 'Day 2 client', 'host sees new-device edits on the same card');
+await host.getByRole('button', { name: 'Back to all canvases' }).click();
+if ((await host.locator('.ws-card').count()) !== 2) fail('returning should not create a second card');
+// Day 3 back on the first laptop: it picks up the newer work instead of overwriting it.
+await alice.reload();
+await until(async () => (await alice.getByRole('textbox', { name: 'Client Name', exact: true }).inputValue()) === 'Day 2 client', 'old device loads newer work');
+await alice.waitForTimeout(1200);
+await host.getByRole('button', { name: 'Open canvas of Alice' }).click();
+await until(async () => (await host.getByRole('textbox', { name: 'Client Name', exact: true }).inputValue()) === 'Day 2 client', 'newer work not overwritten');
+await host.getByRole('button', { name: 'Back to all canvases' }).click();
+step('rejoin on a new device works');
+
 // Alice leaves and keeps a copy.
 await alice.getByRole('button', { name: 'Leave workshop' }).click();
 await alice.getByLabel(/Copy this canvas to my personal canvas/).check();

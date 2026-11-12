@@ -630,17 +630,21 @@ button {
   font-size: 0.9rem;
 }
 
-.tblock--m5 { --h: 40px; background: var(--b5); }
-.tblock--m10 { --h: 42px; background: var(--b10); }
-.tblock--m15 { --h: 46px; background: var(--b15); }
-.tblock--m20 { --h: 56px; background: var(--b20); }
-.tblock--m30 { --h: 72px; background: var(--b30); }
-.tblock--m45 { --h: 96px; background: var(--b45); }
-.tblock--m60 { --h: 124px; background: var(--b60); }
+/* Color follows length (see blockTone); height is set inline from the minutes. */
+.tblock--m5 { background: var(--b5); }
+.tblock--m10 { background: var(--b10); }
+.tblock--m15 { background: var(--b15); }
+.tblock--m20 { background: var(--b20); }
+.tblock--m30 { background: var(--b30); }
+.tblock--m45 { background: var(--b45); }
+.tblock--m60 { background: var(--b60); }
+.tblock--m90 { background: var(--b90); }
+.tblock--m120 { background: var(--b120); }
 
 .tblock {
+  position: relative;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
   grid-template-rows: auto 1fr;
   grid-template-areas:
     'handle body actions'
@@ -658,21 +662,74 @@ button {
   box-shadow: 0 10px 24px rgb(35 42 92 / 0.25);
   cursor: grabbing;
 }
-.tblock__handle {
+.tblock__side {
+  grid-area: handle;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 2px;
-  border: 0;
+  padding: 6px 0 12px;
   border-right: 1px solid #9aa3c7;
   background: rgb(255 255 255 / 0.55);
+}
+.tblock__minutes-input {
+  width: 40px;
+  min-height: 28px;
+  padding: 2px;
+  border: 1px solid #9aa3c7;
+  border-radius: 4px;
+  background: var(--white);
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.tblock__minutes-input:focus-visible {
+  outline-offset: 1px;
+}
+.tblock__unit {
+  font-size: 0.7rem;
+  color: var(--navy-soft);
+}
+.tblock__handle {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  min-height: 24px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
   cursor: grab;
   touch-action: none;
   padding: 0;
 }
-.tblock__handle:focus-visible {
-  outline-offset: -3px;
+.tblock__handle:hover {
+  background: rgb(35 42 92 / 0.1);
+}
+/* Bottom edge: drag to change the length (the minutes field is the keyboard alternative). */
+.tblock__resize {
+  position: absolute;
+  left: 48px;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.tblock__resize::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 36px;
+  height: 3px;
+  margin-left: -18px;
+  border-radius: 2px;
+  background: #7a80a3;
+  opacity: 0.6;
+}
+.tblock__resize:hover::after {
+  opacity: 1;
 }
 .tblock__minutes {
   font-size: 0.8rem;
@@ -709,15 +766,12 @@ button {
   font-weight: 600;
   color: var(--navy);
 }
-.tblock__handle {
-  grid-area: handle;
-}
 .tblock__body {
   grid-area: body;
 }
 .tblock__notes {
   grid-area: notes;
-  padding: 0 8px 6px;
+  padding: 0 8px 12px;
 }
 .tblock__notes-text {
   display: block;

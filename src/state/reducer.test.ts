@@ -168,3 +168,22 @@ describe('solo guide', () => {
     expect(s.cells['flow.0'].title).toBe('Open');
   });
 });
+
+describe('block lengths', () => {
+  it('snaps to 5-minute steps between 5 and 180', () => {
+    let s = reducer(initialState(), { type: 'addBlock', draftId: 'd1', id: 'a', minutes: 15 });
+    s = reducer(s, { type: 'setBlockMinutes', id: 'a', minutes: 23 });
+    expect(s.drafts.d1[0].minutes).toBe(25);
+    s = reducer(s, { type: 'setBlockMinutes', id: 'a', minutes: 1 });
+    expect(s.drafts.d1[0].minutes).toBe(5);
+    s = reducer(s, { type: 'setBlockMinutes', id: 'a', minutes: 999 });
+    expect(s.drafts.d1[0].minutes).toBe(180);
+  });
+
+  it('colors blocks by length band', async () => {
+    const { blockTone } = await import('./types');
+    expect([5, 10, 15, 20, 25, 30, 40, 45, 60, 75, 90, 120, 180].map(blockTone)).toEqual([
+      5, 10, 15, 20, 20, 30, 45, 45, 60, 60, 90, 90, 120,
+    ]);
+  });
+});

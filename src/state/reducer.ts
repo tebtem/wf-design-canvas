@@ -1,4 +1,4 @@
-import { DRAFT_IDS, MAX_DRAFTS } from './types';
+import { clampMinutes, DRAFT_IDS, MAX_DRAFTS } from './types';
 import { LAST_STEP } from './cells';
 import type { BlockMinutes, CanvasDetails, CanvasState, Cell, DraftId, StickyColor, TimeBlock } from './types';
 
@@ -12,6 +12,7 @@ export type Action =
   | { type: 'moveBlock'; id: string; toDraft: DraftId; toIndex: number }
   | { type: 'editBlock'; id: string; label?: string; notes?: string }
   | { type: 'removeBlock'; id: string }
+  | { type: 'setBlockMinutes'; id: string; minutes: number }
   | { type: 'setDetail'; key: keyof CanvasDetails; value: string }
   | { type: 'setCellTitle'; cellId: string; title: string }
   | { type: 'nextStep' }
@@ -116,7 +117,7 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
     case 'addBlock': {
       const list = [...state.drafts[action.draftId]];
       const index = clamp(action.index ?? list.length, 0, list.length);
-      list.splice(index, 0, { id: action.id, minutes: action.minutes, label: '', notes: '' });
+      list.splice(index, 0, { id: action.id, minutes: clampMinutes(action.minutes), label: '', notes: '' });
       return { ...state, drafts: { ...state.drafts, [action.draftId]: list } };
     }
 
@@ -139,6 +140,14 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
           ? { ...b, label: action.label ?? b.label, notes: action.notes ?? b.notes }
           : b,
       );
+      return { ...state, drafts: { ...state.drafts, [loc.draftId]: list } };
+    }
+
+    case 'setBlockMinutes': {
+      const loc = findBlock(state, action.id);
+      if (!loc) return state;
+      const minutes = clampMinutes(action.minutes);
+      const list = state.drafts[loc.draftId].map((b) => (b.id === action.id ? { ...b, minutes } : b));
       return { ...state, drafts: { ...state.drafts, [loc.draftId]: list } };
     }
 

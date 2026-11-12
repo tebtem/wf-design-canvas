@@ -8,6 +8,21 @@ export function generateCode(random: () => number = Math.random): string {
   return code;
 }
 
+export const REJOIN_LENGTH = 8;
+
+/** A participant's personal code for getting back to their canvas on another device. */
+export const generateRejoinCode = (random: () => number = Math.random) =>
+  Array.from({ length: REJOIN_LENGTH }, () => CODE_ALPHABET[Math.floor(random() * CODE_ALPHABET.length)]).join('');
+
+/** Accepts "kq7m-x3pa" and similar; returns "KQ7MX3PA" or null. */
+export function normalizeRejoinCode(input: string): string | null {
+  const code = input.toUpperCase().replace(/[\s-]/g, '');
+  return code.length === REJOIN_LENGTH && [...code].every((c) => CODE_ALPHABET.includes(c)) ? code : null;
+}
+
+/** "KQ7MX3PA" -> "KQ7M-X3PA". */
+export const formatRejoinCode = (code: string) => `${code.slice(0, 4)}-${code.slice(4)}`;
+
 /** Accepts what people type ("abc-234", "ABC 234") and returns the canonical code, or null. */
 export function normalizeCode(input: string): string | null {
   const code = input.toUpperCase().replace(/[\s-]/g, '');

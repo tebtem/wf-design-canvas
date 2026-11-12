@@ -5,6 +5,7 @@ import { Footer } from '../components/Footer';
 import { CanvasBody } from '../components/CanvasBody';
 import { BackIcon } from '../components/Icons';
 import {
+  fetchOwnCanvas,
   pushCanvas,
   signIn,
   watchCanvas,
@@ -13,13 +14,16 @@ import {
   watchConnected,
   watchMembers,
   watchMeta,
+  watchRejoinCode,
+  ensureRejoinCode,
   type Comment,
   type Member,
   type RemoteCanvas,
   type SessionMeta,
 } from './api';
-import { formatCode, spellCode } from './code';
-import { workshopCanvasKey, type ActiveWorkshop } from './session';
+import { formatCode, formatRejoinCode, spellCode } from './code';
+import { hasUnsent, setUnsent, workshopCanvasKey, type ActiveWorkshop } from './session';
+import { parseState, saveState } from '../state/persist';
 import { CanvasView, CommentList, Gallery, useAnnouncer } from './ui';
 import { clampStep, LAST_STEP, REVEAL_STEPS, STEP_ANCHORS } from '../state/cells';
 
@@ -29,16 +33,24 @@ type Sync = 'ok' | 'offline' | 'error';
 /** Sends this participant's canvas to the workshop shortly after each change. */
 function CanvasSync({ code, uid, active, onResult }: { code: string; uid: string; active: boolean; onResult: (ok: boolean) => void }) {
   const { state } = useCanvas();
+  const [opened] = useState(state);
   useEffect(() => {
+    // Opening the canvas is not a change; only send what the person edits (or unsent work).
+    const unsent = hasUnsent(code);
+    if (state === opened && !unsent) return;
+    if (state !== opened) setUnsent(code, true);
     if (!active) return;
     const t = window.setTimeout(() => {
       pushCanvas(code, uid, state).then(
-        () => onResult(true),
+        () => {
+          setUnsent(code, false);
+          onResult(true);
+        },
         () => onResult(false),
       );
     }, 500);
     return () => window.clearTimeout(t);
-  }, [state, code, uid, active, onResult]);
+  }, [state, opened, code, uid, active, onResult]);
   return null;
 }
 
@@ -50,10 +62,13 @@ interface Props {
 export default function ParticipantApp({ workshop, onLeave }: Props) {
   const { code, uid, name = '' } = workshop;
   const [ready, setReady] = useState(false);
+  // The canvas mounts once this device has the newest copy (or knows it is offline).
+  const [loaded, setLoaded] = useState(false);
   const [meta, setMeta] = useState<SessionMeta | null | undefined>(undefined);
   const [connected, setConnected] = useState(true);
   const [pushOk, setPushOk] = useState(true);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [rejoinCode, setRejoinCode] = useState<string | null>(null);
   const [members, setMembers] = useState<Record<string, Member>>({});
   const [canvases, setCanvases] = useState<Record<string, RemoteCanvas>>({});
   const [viewed, setViewed] = useState<{ uid: string; canvas: RemoteCanvas | null } | null>(null);
@@ -83,17 +98,35 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
   useEffect(() => {
     let live = true;
     signIn().then(
-      () => live && setReady(true),
-      () => live && setMeta(null),
+      async () => {
+        if (!hasUnsent(code)) {
+          const remote = parseState(await fetchOwnCanvas(code, uid).catch(() => null));
+          if (remote) saveState(remote, workshopCanvasKey(code));
+        }
+        if (!live) return;
+        setLoaded(true);
+        setReady(true);
+      },
+      () => {
+        if (!live) return;
+        setLoaded(true);
+        setMeta(null);
+      },
     );
     return () => {
       live = false;
     };
-  }, []);
+  }, [code, uid]);
 
   useEffect(() => {
     if (!ready) return;
-    const offs = [watchMeta(code, setMeta), watchConnected(setConnected), watchComments(code, uid, setComments)];
+    void ensureRejoinCode(code, uid);
+    const offs = [
+      watchMeta(code, setMeta),
+      watchConnected(setConnected),
+      watchComments(code, uid, setComments),
+      watchRejoinCode(code, uid, setRejoinCode),
+    ];
     return () => offs.forEach((off) => off());
   }, [ready, code, uid]);
 
@@ -195,6 +228,13 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
               Code <span aria-hidden="true">{formatCode(code)}</span>
               <span className="sr-only">{spellCode(code)}</span> · You are {name}
             </p>
+            {rejoinCode && (
+              <p className="ws-bar__meta">
+                Your rejoin code: <strong aria-hidden="true">{formatRejoinCode(rejoinCode)}</strong>
+                <span className="sr-only">{spellCode(rejoinCode)}</span>{' '}
+                <span className="ws-bar__tip">(use it to get back to your canvas on another device)</span>
+              </p>
+            )}
             <p className={`ws-bar__sync ws-bar__sync--${ended ? 'error' : sync}`} role="status">
               {syncText}
             </p>
@@ -234,8 +274,10 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
         )}
         {revealed !== null && (
           <p className="ws-notice">
-            Newly revealed: <strong>{REVEAL_STEPS[revealed]}</strong>
-            {revealed >= LAST_STEP && '. You can now see the full canvas.'}
+            <span>
+              Newly revealed: <strong>{REVEAL_STEPS[revealed]}</strong>
+              {revealed >= LAST_STEP && '. You can now see the full canvas.'}
+            </span>
             <button type="button" className="btn btn--small" onClick={goToRevealed}>
               Go to it
             </button>
@@ -316,11 +358,17 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
       )}
 
       <div hidden={view.kind !== 'mine'}>
-        <CanvasProvider storageKey={workshopCanvasKey(code)}>
-          <Toolbar />
-          <CanvasSync code={code} uid={uid} active={ready && !ended} onResult={setPushOk} />
-          {view.kind === 'mine' && <CanvasBody step={step} />}
-        </CanvasProvider>
+        {loaded ? (
+          <CanvasProvider storageKey={workshopCanvasKey(code)}>
+            <Toolbar />
+            <CanvasSync code={code} uid={uid} active={ready && !ended} onResult={setPushOk} />
+            {view.kind === 'mine' && <CanvasBody step={step} />}
+          </CanvasProvider>
+        ) : (
+          <p className="ws-loading" role="status">
+            Loading your canvas…
+          </p>
+        )}
       </div>
       <Footer />
       {region}
@@ -330,7 +378,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
         <p id="ws-leave-desc">
           {ended
             ? 'Your workshop canvas stays in this browser until you clear it.'
-            : `Your workshop canvas stays saved in this browser. You can rejoin with code ${formatCode(code)} while the workshop is running.`}
+            : `Your workshop canvas stays saved online and in this browser. To come back on any device, choose Workshop, then Return on a new device, and enter workshop code ${formatCode(code)}${rejoinCode ? ` and your rejoin code ${formatRejoinCode(rejoinCode)}` : ''}.`}
         </p>
         <form method="dialog" className="ws-form">
           <label className="ws-check">

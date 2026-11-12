@@ -82,6 +82,31 @@ await check('alice reads her comments', assertSucceeds(alice.ref(`sessions/${S}/
 await check("bob cannot read alice's comments even with sharing on", assertFails(bob.ref(`sessions/${S}/comments/alice`).get()));
 await check('host reads all comments', assertSucceeds(fac.ref(`sessions/${S}/comments`).get()));
 
+// Rejoin codes: alice gets one; a new device ("alice2") uses it to act as alice.
+const KEY = 'KQ7MX3PA';
+const alice2 = db('alice2');
+await check('alice saves her rejoin code', assertSucceeds(alice.ref(`sessions/${S}`).update({ [`rejoinKeys/alice`]: KEY, [`rejoin/${KEY}`]: 'alice' })));
+await check('rejoin codes cannot be overwritten', assertFails(eve.ref(`sessions/${S}/rejoin/${KEY}`).set('eve')));
+await check('cannot point a rejoin code at someone else', assertFails(bob.ref(`sessions/${S}`).update({ [`rejoinKeys/bob`]: 'ZZZZZZZZ', [`rejoin/ZZZZZZZZ`]: 'alice' })));
+await check('non-members cannot create rejoin codes', assertFails(eve.ref(`sessions/${S}`).update({ [`rejoinKeys/eve`]: 'YYYYYYYY', [`rejoin/YYYYYYYY`]: 'eve' })));
+await check('rejoin codes cannot be listed', assertFails(eve.ref(`sessions/${S}/rejoin`).get()));
+await check('a known rejoin code can be looked up', assertSucceeds(alice2.ref(`sessions/${S}/rejoin/${KEY}`).get()));
+await check('host reads everyone\'s rejoin codes', assertSucceeds(fac.ref(`sessions/${S}/rejoinKeys`).get()));
+await check('participants cannot list rejoin codes', assertFails(bob.ref(`sessions/${S}/rejoinKeys`).get()));
+await check("bob cannot read alice's rejoin code", assertFails(bob.ref(`sessions/${S}/rejoinKeys/alice`).get()));
+await check('wrong code cannot create an alias', assertFails(eve.ref(`sessions/${S}/aliases/eve`).set({ pid: 'alice', key: 'ZZZZZZZZ' })));
+await check('right code for the wrong person fails', assertFails(eve.ref(`sessions/${S}/aliases/eve`).set({ pid: 'bob', key: KEY })));
+await check("before aliasing, a new device cannot read alice's canvas", assertFails(alice2.ref(`sessions/${S}/canvases/alice`).get()));
+await check('new device aliases with the right code', assertSucceeds(alice2.ref(`sessions/${S}/aliases/alice2`).set({ pid: 'alice', key: KEY })));
+await check("new device reads alice's canvas", assertSucceeds(alice2.ref(`sessions/${S}/canvases/alice`).get()));
+await check("new device writes alice's canvas", assertSucceeds(alice2.ref(`sessions/${S}/canvases/alice`).set(canvas('from new device'))));
+await check("new device reads alice's comments", assertSucceeds(alice2.ref(`sessions/${S}/comments/alice`).get()));
+await check("new device reads alice's member record", assertSucceeds(alice2.ref(`sessions/${S}/members/alice`).get()));
+await check("new device reads alice's rejoin code", assertSucceeds(alice2.ref(`sessions/${S}/rejoinKeys/alice`).get()));
+await check("new device cannot write bob's canvas", assertFails(alice2.ref(`sessions/${S}/canvases/bob`).set(canvas('x'))));
+await check('aliased device counts as a member when sharing is on', assertSucceeds(alice2.ref(`sessions/${S}/canvases`).get()));
+await check('host cannot alias into a participant', assertFails(fac.ref(`sessions/${S}/aliases/fac`).set({ pid: 'alice', key: KEY })));
+
 await check('participants cannot end the session', assertFails(alice.ref(`sessions/${S}`).remove()));
 await check('participants cannot remove the expiry entry', assertFails(alice.ref(`expiries/${S}`).remove()));
 await check('expiry index cannot be listed freely', assertFails(alice.ref('expiries').get()));

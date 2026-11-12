@@ -1,9 +1,10 @@
 import { emptyDetails, initialState } from './reducer';
 import { clampStep } from './cells';
-import { STICKY_COLORS, type CanvasDetails, type CanvasState, type Cell, type TimeBlock } from './types';
+import { clampMinutes, STICKY_COLORS, type CanvasDetails, type CanvasState, type Cell, type TimeBlock } from './types';
 
 /** Blocks saved before notes existed get an empty notes field. */
-const migrateBlocks = (blocks: TimeBlock[] = []) => blocks.map((b) => ({ ...b, notes: b.notes ?? '' }));
+const migrateBlocks = (blocks: TimeBlock[] = []) =>
+  blocks.map((b) => ({ ...b, minutes: clampMinutes(b.minutes), notes: b.notes ?? '' }));
 
 /**
  * Keep stickies saved with a color that no longer exists (e.g. the old "green") readable, and turn

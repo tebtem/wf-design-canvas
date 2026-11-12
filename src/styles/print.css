@@ -20,7 +20,9 @@
   .sticky__text,
   .tblock__label,
   .tblock__notes-text,
-  .tblock__handle svg,
+  .tblock__handle,
+  .tblock__minutes-input,
+  .tblock__unit,
   .bank-item__handle svg {
     display: none !important;
   }

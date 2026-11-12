@@ -406,6 +406,19 @@
 .ws-stats dt {
   color: var(--navy-soft);
 }
+.ws-card__rejoin {
+  font-size: 0.9rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--divider);
+}
+.ws-card__rejoin strong {
+  letter-spacing: 0.08em;
+}
+.ws-bar__tip {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
 .ws-stats dd {
   margin: 0;
   font-weight: 700;

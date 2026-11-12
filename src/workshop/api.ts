@@ -14,7 +14,7 @@ import {
   update,
 } from 'firebase/database';
 import type { CanvasState } from '../state/types';
-import { generateCode } from './code';
+import { generateCode, generateRejoinCode } from './code';
 import { RETENTION_DAYS } from './config';
 import { fb, signIn } from './firebase';
 
@@ -57,7 +57,7 @@ export class WorkshopError extends Error {
   constructor(
     message: string,
     /** The form field the message is about. */
-    readonly field: 'code' | 'name' = 'code',
+    readonly field: 'code' | 'name' | 'rejoin' = 'code',
   ) {
     super(message);
   }
@@ -103,9 +103,69 @@ export async function joinSession(code: string, name: string): Promise<JoinResul
   // The host re-entering their own code gets the host view back.
   if (meta.facilitator === uid) return { uid, meta, role: 'facilitator' };
   if (!name) throw new WorkshopError('Enter your name so your facilitator knows whose canvas is whose.', 'name');
-  await set(r(p(code, 'members', uid)), { name, joinedAt: serverTimestamp() });
+  const existing = await get(r(p(code, 'rejoinKeys', uid))).catch(() => null);
+  if (existing?.exists()) {
+    await set(r(p(code, 'members', uid)), { name, joinedAt: serverTimestamp() });
+  } else {
+    await joinWithNewRejoinCode(code, uid, { name, joinedAt: serverTimestamp() });
+  }
   return { uid, meta, role: 'participant' };
 }
+
+/** Joins and saves a fresh rejoin code in one write. Retries if the random code is taken. */
+async function joinWithNewRejoinCode(code: string, uid: string, member?: object) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const key = generateRejoinCode();
+    const updates: Record<string, unknown> = {
+      [p(code, 'rejoinKeys', uid)]: key,
+      [p(code, 'rejoin', key)]: uid,
+    };
+    if (member) updates[p(code, 'members', uid)] = member;
+    try {
+      await update(r(), updates);
+      return key;
+    } catch (e) {
+      if (!isDenied(e)) throw e;
+    }
+  }
+  throw new WorkshopError('Could not join the workshop. Please try again.');
+}
+
+/** Participants who joined before rejoin codes existed get one the next time they open the workshop. */
+export async function ensureRejoinCode(code: string, pid: string): Promise<void> {
+  const uid = await signIn();
+  if (uid !== pid) return;
+  const snap = await get(r(p(code, 'rejoinKeys', pid))).catch(() => null);
+  if (snap && !snap.exists()) await joinWithNewRejoinCode(code, pid).catch(() => {});
+}
+
+/**
+ * Returning on a new device: the rejoin code links this device to the participant's original id,
+ * which is what the app then uses as their id.
+ */
+export async function rejoinSession(code: string, key: string): Promise<{ pid: string; name: string; meta: SessionMeta }> {
+  const uid = await signIn();
+  const metaSnap = await get(r(p(code, 'meta'))).catch(() => null);
+  const meta = metaSnap?.val() as SessionMeta | null;
+  if (!meta) throw new WorkshopError('No active workshop uses that code. Check the code with your facilitator.');
+  const pidSnap = await get(r(p(code, 'rejoin', key))).catch(() => null);
+  const pid = pidSnap?.val() as string | null;
+  if (!pid) throw new WorkshopError('That rejoin code does not match this workshop. Your facilitator can look it up for you.', 'rejoin');
+  if (pid !== uid) await set(r(p(code, 'aliases', uid)), { pid, key });
+  const member = (await get(r(p(code, 'members', pid)))).val() as Member | null;
+  return { pid, name: member?.name ?? 'Participant', meta };
+}
+
+export function watchRejoinCode(code: string, pid: string, cb: (key: string | null) => void): Unsub {
+  return onValue(
+    r(p(code, 'rejoinKeys', pid)),
+    (s) => cb((s.val() as string | null) ?? null),
+    () => cb(null),
+  );
+}
+
+export const watchRejoinCodes = (code: string, cb: (keys: Record<string, string>) => void) =>
+  watchMap<string>(p(code, 'rejoinKeys'), cb);
 
 export async function fetchOwnCanvas(code: string, uid: string): Promise<string | null> {
   const snap = await get(r(p(code, 'canvases', uid))).catch(() => null);

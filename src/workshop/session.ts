@@ -40,6 +40,28 @@ export function takeJoinParam(): string | null {
   return code;
 }
 
+/**
+ * Marks a workshop canvas as having changes this device has not sent yet. On opening, a device
+ * without unsent changes takes the online copy, so an old laptop never overwrites newer work done
+ * on another device.
+ */
+const dirtyKey = (code: string) => `${workshopCanvasKey(code)}:unsent`;
+export function setUnsent(code: string, unsent: boolean) {
+  try {
+    if (unsent) window.localStorage.setItem(dirtyKey(code), '1');
+    else window.localStorage.removeItem(dirtyKey(code));
+  } catch {
+    // Storage blocked: nothing to remember.
+  }
+}
+export function hasUnsent(code: string): boolean {
+  try {
+    return window.localStorage.getItem(dirtyKey(code)) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export const joinUrl = (code: string) => {
   const url = new URL(window.location.href);
   url.search = '';

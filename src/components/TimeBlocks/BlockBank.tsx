@@ -1,7 +1,8 @@
+import type { CSSProperties } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { newId, useCanvas } from '../../state/CanvasContext';
 import { visibleDrafts } from '../../state/reducer';
-import { BLOCK_MINUTES, DRAFT_NAMES, type BlockMinutes } from '../../state/types';
+import { BANK_MINUTES, blockHeight, blockTone, DRAFT_NAMES, type BlockMinutes } from '../../state/types';
 import { GripIcon, PlusIcon } from '../Icons';
 import { bankDraggableId, type DragData } from './dnd';
 
@@ -15,7 +16,11 @@ function BankItem({ minutes, announce }: { minutes: BlockMinutes; announce: (m: 
   });
 
   return (
-    <li ref={setNodeRef} className={`bank-item tblock--m${minutes}${isDragging ? ' is-source' : ''}`}>
+    <li
+      ref={setNodeRef}
+      className={`bank-item tblock--m${blockTone(minutes)}${isDragging ? ' is-source' : ''}`}
+      style={{ '--h': `${blockHeight(minutes)}px` } as CSSProperties}
+    >
       <button
         type="button"
         ref={setActivatorNodeRef}
@@ -57,9 +62,12 @@ export function BlockBank({ announce }: { announce: (m: string) => void }) {
       <h3 id="bank-heading" className="draft__title">
         Time Block Bank
       </h3>
-      <p className="bank__hint no-print">Drag a block into a draft, or use the Add buttons. The bank never runs out.</p>
+      <p className="bank__hint no-print">
+        Drag a block into a draft, or use the Add buttons. Change a block&apos;s length by typing a new number or
+        dragging its bottom edge.
+      </p>
       <ul className="bank__list">
-        {BLOCK_MINUTES.map((m) => (
+        {BANK_MINUTES.map((m) => (
           <BankItem key={m} minutes={m} announce={announce} />
         ))}
       </ul>

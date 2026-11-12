@@ -5,6 +5,7 @@ import { parseState } from '../state/persist';
 import { CanvasBody } from '../components/CanvasBody';
 import { SpotlightIcon, XIcon } from '../components/Icons';
 import type { Comment, RemoteCanvas } from './api';
+import { formatRejoinCode, spellCode } from './code';
 import { summarize, timeAgo, TOTAL_CELLS } from './summary';
 
 /** Re-renders every so often so "3 minutes ago" stays true. */
@@ -38,6 +39,8 @@ export interface GalleryEntry {
   canvas?: RemoteCanvas;
   comments?: number;
   isYou?: boolean;
+  /** Shown to the host so they can help someone return on a new device. */
+  rejoinCode?: string;
 }
 
 interface GalleryProps {
@@ -71,6 +74,12 @@ export function Gallery({ entries, onOpen, spotlightUid, empty }: GalleryProps) 
             <p className="ws-card__time">
               {e.canvas?.updatedAt ? `Updated ${timeAgo(e.canvas.updatedAt, now)}` : 'Has not started yet'}
             </p>
+            {e.rejoinCode && (
+              <p className="ws-card__rejoin">
+                Rejoin code <strong aria-hidden="true">{formatRejoinCode(e.rejoinCode)}</strong>
+                <span className="sr-only">{spellCode(e.rejoinCode)}</span>
+              </p>
+            )}
             {sum && (
               <dl className="ws-stats">
                 <div>

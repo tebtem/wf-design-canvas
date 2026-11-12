@@ -50,3 +50,14 @@ describe('timeAgo', () => {
     expect(timeAgo(now - 2 * 3_600_000, now)).toBe('2 hours ago');
   });
 });
+
+describe('rejoin codes', () => {
+  it('generates and normalizes 8-character codes', async () => {
+    const { generateRejoinCode, normalizeRejoinCode, formatRejoinCode } = await import('./code');
+    const k = generateRejoinCode();
+    expect(k).toMatch(/^[A-HJKMNP-Z2-9]{8}$/);
+    expect(normalizeRejoinCode(` ${formatRejoinCode(k).toLowerCase()} `)).toBe(k);
+    expect(normalizeRejoinCode('ABC')).toBeNull();
+    expect(formatRejoinCode('KQ7MX3PA')).toBe('KQ7M-X3PA');
+  });
+});

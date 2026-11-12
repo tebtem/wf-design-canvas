@@ -97,10 +97,33 @@ const total1 = await draft1.locator('.draft__total').textContent();
 console.log('Draft 1:', total1);
 if (total1 !== 'Total 45 min') fail('expected Draft 1 to total 45 min');
 
-// One draft until another is added; 5 and 10 minute blocks exist.
+// Starter bank of 15, 30 and 60. Lengths change by typing (5-minute steps) or dragging the bottom edge.
 if (await page.getByRole('group', { name: 'Session Draft 2' }).count()) fail('draft 2 should start hidden');
-await page.getByRole('button', { name: 'Add 5 min block to Session Draft 1' }).click();
-await page.getByRole('button', { name: 'Add 10 min block to Session Draft 1' }).click();
+if ((await page.locator('.bank-item').count()) !== 3) fail('bank should have 3 starter blocks');
+const len15 = page.getByLabel(/^Length in minutes of 15 minute block/);
+await len15.fill('20');
+await len15.press('Enter');
+const total = async () => draft1.locator('.draft__total').textContent();
+if ((await total()) !== 'Total 50 min') fail(`typed length: ${await total()}`);
+if (!(await page.locator('.tblock--m20').count())) fail('color should follow the new length');
+const len20 = page.getByLabel(/^Length in minutes of 20 minute block/);
+await len20.press('ArrowUp');
+if ((await total()) !== 'Total 55 min') fail(`arrow key length: ${await total()}`);
+const len25 = page.getByLabel(/^Length in minutes of 25 minute block/);
+await len25.fill('7');
+await len25.press('Tab');
+if ((await total()) !== 'Total 35 min') fail(`snap to 5-minute steps: ${await total()}`);
+const bar = page.locator('.tblock--m30 .tblock__resize');
+const bb = await bar.boundingBox();
+await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+await page.mouse.down();
+await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2 + 12, { steps: 4 });
+await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2 + 23, { steps: 4 });
+await page.mouse.up();
+await page.waitForTimeout(200);
+if ((await total()) !== 'Total 50 min') fail(`drag to resize: ${await total()}`);
+if (!(await page.getByLabel(/^Length in minutes of 45 minute block/).count())) fail('resized block should be 45 minutes');
+
 await page.getByRole('button', { name: 'Add another draft' }).click();
 await page.waitForTimeout(150);
 const focusedDraft = await page.evaluate(() => document.activeElement?.id);
@@ -109,13 +132,13 @@ if (focusedDraft !== 'draft-d2-heading') fail(`focus after adding draft: ${focus
 // A third draft; moving between three drafts uses a dialog. Then remove it again.
 await page.getByRole('button', { name: 'Add another draft' }).click();
 if (await page.getByRole('button', { name: 'Add another draft' }).count()) fail('more than three drafts allowed');
-await page.getByRole('button', { name: 'Add 20 min block to Session Draft 3' }).click();
+await page.getByRole('button', { name: 'Add 15 min block to Session Draft 3' }).click();
 await page.getByRole('button', { name: /^Move 5 minute block to another draft/ }).click();
 await page.getByLabel('Move to the end of').selectOption('d3');
 await page.getByRole('dialog', { name: 'Move time block' }).getByRole('button', { name: 'Move', exact: true }).click();
 await page.waitForTimeout(200);
 const d3Total = await page.getByRole('group', { name: 'Session Draft 3' }).locator('.draft__total').textContent();
-if (d3Total !== 'Total 25 min') fail(`draft 3 total after move: ${d3Total}`);
+if (d3Total !== 'Total 20 min') fail(`draft 3 total after move: ${d3Total}`);
 const afterMove = await page.evaluate(() => document.activeElement?.getAttribute('aria-label'));
 if (!afterMove?.startsWith('Move 5 minute block')) fail(`focus after block move dialog: ${afterMove}`);
 await axeCheck(page, "three drafts");
@@ -145,7 +168,7 @@ const savedNotes = await page.getByRole('textbox', { name: /^Notes for 60 minute
 if (savedNotes !== '• Pairs discuss\n• Share out') fail(`block notes wrong: ${JSON.stringify(savedNotes)}`);
 const blocks = await page.locator('.tblock').count();
 console.log('Blocks after reload:', blocks);
-if (blocks < 4) fail('expected blocks to persist');
+if (blocks < 2) fail('expected blocks to persist');
 
 if ((await page.getByRole('link', { name: /^Learn about facilitation design/ }).getAttribute('href')) !== 'https://www.womenfacilitating.com/facilitation-design') fail('Learn link href wrong');
 for (const name of [/^Women Facilitating website/, /^Women Facilitating \(opens/]) {

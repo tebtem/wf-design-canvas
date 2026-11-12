@@ -15,6 +15,7 @@ import {
   watchConnected,
   watchMembers,
   watchMeta,
+  watchRejoinCodes,
   type Comment,
   type Member,
   type RemoteCanvas,
@@ -38,6 +39,7 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
   const [members, setMembers] = useState<Record<string, Member>>({});
   const [canvases, setCanvases] = useState<Record<string, RemoteCanvas>>({});
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
+  const [rejoinCodes, setRejoinCodes] = useState<Record<string, string>>({});
   const [connected, setConnected] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [copied, setCopied] = useState('');
@@ -67,6 +69,7 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
       watchCanvases(code, setCanvases),
       watchAllComments(code, setComments),
       watchConnected(setConnected),
+      watchRejoinCodes(code, setRejoinCodes),
     ];
     return () => offs.forEach((off) => off());
   }, [ready, code]);
@@ -137,7 +140,13 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
 
   const entries = Object.entries(members)
     .sort(([, a], [, b]) => a.joinedAt - b.joinedAt)
-    .map(([uid, m]) => ({ uid, name: m.name, canvas: canvases[uid], comments: comments[uid]?.length ?? 0 }));
+    .map(([uid, m]) => ({
+      uid,
+      name: m.name,
+      canvas: canvases[uid],
+      comments: comments[uid]?.length ?? 0,
+      rejoinCode: rejoinCodes[uid],
+    }));
   const spotlight = meta?.spotlight ?? null;
   const step = clampStep(meta?.step);
   const changeStep = (next: number) =>
