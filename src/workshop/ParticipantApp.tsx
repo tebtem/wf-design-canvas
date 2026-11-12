@@ -360,7 +360,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
       <div hidden={view.kind !== 'mine'}>
         {loaded ? (
           <CanvasProvider storageKey={workshopCanvasKey(code)}>
-            <Toolbar />
+            <Toolbar step={step} />
             <CanvasSync code={code} uid={uid} active={ready && !ended} onResult={setPushOk} />
             {view.kind === 'mine' && <CanvasBody step={step} />}
           </CanvasProvider>

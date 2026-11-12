@@ -1,13 +1,22 @@
 import { LAST_STEP } from '../state/cells';
 import { useEffect, useRef, useState, type ChangeEvent, type FocusEvent } from 'react';
 import { downloadBackup, readBackup } from '../state/backup';
+import { effectiveLayout, setLayoutPref, useLayoutPref, type Layout } from '../state/layout';
 import { useCanvas } from '../state/CanvasContext';
 import { ChevronIcon, DownloadIcon, ExternalIcon, PeopleIcon, PrintIcon, UploadIcon, XIcon } from './Icons';
 
 const LEARN_URL = 'https://www.womenfacilitating.com/facilitation-design';
 
-export function Toolbar({ onWorkshop, guided = false }: { onWorkshop?: () => void; guided?: boolean }) {
+interface ToolbarProps {
+  onWorkshop?: () => void;
+  guided?: boolean;
+  /** The step being shown, for the layout toggle (workshops pass the facilitator's step). */
+  step?: number;
+}
+
+export function Toolbar({ onWorkshop, guided = false, step }: ToolbarProps) {
   const { state, dispatch, saveStatus } = useCanvas();
+  const layout = effectiveLayout(useLayoutPref(), step ?? (guided ? state.step : LAST_STEP));
   const dialogRef = useRef<HTMLDialogElement>(null);
   // "More" disclosure: backup, restore and clear live here to keep the toolbar short.
   const moreBtn = useRef<HTMLButtonElement>(null);
@@ -65,6 +74,21 @@ export function Toolbar({ onWorkshop, guided = false }: { onWorkshop?: () => voi
         {status}
       </p>
       <div className="toolbar__actions">
+        <fieldset className="layout-toggle">
+          <legend className="sr-only">Canvas layout</legend>
+          {(['stacked', 'canvas'] as Layout[]).map((l) => (
+            <label key={l} className={`layout-toggle__option${layout === l ? ' is-on' : ''}`}>
+              <input
+                type="radio"
+                name="canvas-layout"
+                value={l}
+                checked={layout === l}
+                onChange={() => setLayoutPref(l)}
+              />
+              {l === 'stacked' ? 'Stacked' : 'Canvas'}
+            </label>
+          ))}
+        </fieldset>
         {guided && state.step < LAST_STEP && (
           <button type="button" className="btn" onClick={() => dispatch({ type: 'showAll' })}>
             Show full canvas

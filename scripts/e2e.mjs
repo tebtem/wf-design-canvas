@@ -34,7 +34,17 @@ await page.getByRole('button', { name: 'Next: Facilitator at the Center' }).clic
 await page.waitForTimeout(200);
 if ((await page.evaluate(() => document.activeElement?.textContent)) !== 'Facilitator at the Center') fail('focus after Next');
 if (!(await visibleTitles()).includes('Session Brief')) fail('Next should add, not replace');
+const layoutClass = () => page.locator('.canvas-body').getAttribute('class');
+if (!(await layoutClass()).includes('canvas-body--stacked')) fail('guide should start stacked');
 await page.getByRole('button', { name: 'Next: Time Blocks' }).click();
+await page.waitForTimeout(100);
+if (!(await layoutClass()).includes('canvas-body--canvas')) fail('should open into the canvas layout at Time Blocks');
+await page.getByRole('radio', { name: 'Stacked' }).check();
+if (!(await layoutClass()).includes('canvas-body--stacked')) fail('layout toggle should switch to stacked');
+await page.reload();
+if (!(await layoutClass()).includes('canvas-body--stacked')) fail('layout choice should be remembered');
+await page.getByRole('radio', { name: 'Canvas' }).check();
+await axeCheck(page, 'canvas layout');
 await page.getByRole('button', { name: 'Show full canvas' }).click();
 if (await page.getByRole('button', { name: /^Next:/ }).count()) fail('Next still shown after Show full canvas');
 if (await page.getByRole('button', { name: 'Show full canvas' }).count()) fail('Show full canvas still shown');
