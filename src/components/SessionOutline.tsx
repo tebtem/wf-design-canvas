@@ -1,11 +1,18 @@
 import { useCanvas } from '../state/CanvasContext';
 import { formatMinutes, totalMinutes, visibleDrafts } from '../state/reducer';
-import { DRAFT_NAMES, type DraftId, type OutlineRow } from '../state/types';
+import { useState } from 'react';
+import {
+  BLOCK_STEP,
+  clampMinutes,
+  DRAFT_NAMES,
+  hhmm,
+  MAX_BLOCK,
+  MIN_BLOCK,
+  type DraftId,
+  type OutlineRow,
+} from '../state/types';
 import { Section } from './Section';
-
-/** 75 -> "01:15", the format facilitators use on run-of-show sheets. */
-export const hhmm = (min: number) =>
-  `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+import { TimeField } from './TimeField';
 
 const EMPTY: OutlineRow = { activities: '', moves: '' };
 
@@ -16,6 +23,21 @@ export function SessionOutline() {
   const draft: DraftId = drafts.includes(state.outline.draft) ? state.outline.draft : 'd1';
   const blocks = state.drafts[draft];
   const title = state.details.title.trim();
+  const sessionStart = state.outline.start;
+  const [message, setMessage] = useState('');
+  const announce = (msg: string) => {
+    setMessage('');
+    window.setTimeout(() => setMessage(msg), 50);
+  };
+
+  /** Lengths snap to 5-minute steps; say so when the typed value changed. */
+  const setLength = (blockId: string, minutes: number) => {
+    const next = clampMinutes(minutes);
+    dispatch({ type: 'setBlockMinutes', id: blockId, minutes: next });
+    if (next !== minutes) {
+      announce(`Lengths go in ${BLOCK_STEP}-minute steps from ${MIN_BLOCK} to ${MAX_BLOCK}. Set to ${next} minutes.`);
+    }
+  };
 
   const field = (blockId: string, key: keyof OutlineRow, label: string, value: string) => (
     <>
@@ -70,7 +92,8 @@ export function SessionOutline() {
           <div className="outline__scroll" role="region" aria-labelledby="outline-caption" tabIndex={0}>
             <table className="outline__table">
               <caption id="outline-caption" className="sr-only">
-                Session Outline{title ? ` for ${title}` : ''}, from {DRAFT_NAMES[draft]}
+                Session Outline{title ? ` for ${title}` : ''}, from {DRAFT_NAMES[draft]}. Type the first start time, or
+                any end time or length; the rows below adjust.
               </caption>
               <thead>
                 <tr>
@@ -83,17 +106,56 @@ export function SessionOutline() {
               </thead>
               <tbody>
                 {blocks.map((b, i) => {
-                  const start = totalMinutes(blocks.slice(0, i));
-                  const range = `${hhmm(start)} - ${hhmm(start + b.minutes)}`;
-                  const spoken = `${hhmm(start)} to ${hhmm(start + b.minutes)}${b.label ? `, ${b.label}` : ''}`;
+                  const start = sessionStart + totalMinutes(blocks.slice(0, i));
+                  const end = start + b.minutes;
+                  const spoken = `${hhmm(start)} to ${hhmm(end)}${b.label ? `, ${b.label}` : ''}`;
                   const row = state.outline.rows[b.id] ?? EMPTY;
                   return (
                     <tr key={b.id}>
-                      <th scope="row" className="outline__time">
-                        {range}
+                      <td className="outline__time">
+                        <span className="outline__range">
+                          {i === 0 ? (
+                            <TimeField
+                              kind="clock"
+                              value={start}
+                              label="Session start time"
+                              readOnly={readOnly}
+                              onCommit={(t) => {
+                                dispatch({ type: 'setOutlineStart', start: t });
+                                announce(`Session starts at ${hhmm(t)}. All times updated.`);
+                              }}
+                              onInvalid={announce}
+                            />
+                          ) : (
+                            <span className="outline__start">{hhmm(start)}</span>
+                          )}
+                          <span aria-hidden="true">-</span>
+                          <TimeField
+                            kind="clock"
+                            value={end}
+                            label={`End time, row ${i + 1}${b.label ? `, ${b.label}` : ''}`}
+                            readOnly={readOnly}
+                            onCommit={(t) => {
+                              // Allow ending after midnight: 23:30 to 00:15 is 45 minutes.
+                              const length = (((t - start) % 1440) + 1440) % 1440;
+                              setLength(b.id, length || MIN_BLOCK);
+                            }}
+                            onInvalid={announce}
+                          />
+                        </span>
                         {b.label && <span className="outline__block">{b.label}</span>}
-                      </th>
-                      <td className="outline__len">{b.minutes} min</td>
+                      </td>
+                      <td className="outline__len">
+                        <TimeField
+                          kind="minutes"
+                          value={b.minutes}
+                          label={`Length in minutes, row ${i + 1}${b.label ? `, ${b.label}` : ''}`}
+                          readOnly={readOnly}
+                          onCommit={(m) => setLength(b.id, m)}
+                          onInvalid={announce}
+                        />{' '}
+                        min
+                      </td>
                       <td>{field(b.id, 'activities', `Activities, ${spoken}`, row.activities)}</td>
                       <td>{field(b.id, 'moves', `Moves and materials, ${spoken}`, row.moves)}</td>
                     </tr>
@@ -103,6 +165,15 @@ export function SessionOutline() {
             </table>
           </div>
         )}
+        {blocks.length > 0 && !readOnly && (
+          <p className="outline__hint no-print">
+            Type the first start time, or any end time or length. Each row starts when the one above ends, and changes
+            update your time blocks too.
+          </p>
+        )}
+        <p className="sr-only" role="status" aria-live="polite">
+          {message}
+        </p>
       </div>
     </Section>
   );

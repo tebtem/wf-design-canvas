@@ -92,6 +92,11 @@
   .step-hidden {
     display: contents !important;
   }
+  .time-field {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
   .outline__input,
   .note-cell__heading-input,
   .details__input,

@@ -106,6 +106,48 @@ button {
 .btn:hover {
   background: var(--divider);
 }
+.more {
+  position: relative;
+}
+.more .btn[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+.more__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 220px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--white);
+  border: 2px solid var(--navy);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgb(35 42 92 / 0.2);
+}
+.more__panel[hidden] {
+  display: none;
+}
+.more__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-weight: 600;
+  text-align: left;
+}
+.more__item:hover {
+  background: var(--divider);
+}
+.more__item--danger {
+  color: var(--danger);
+}
 .btn--primary {
   background: var(--navy);
   color: var(--white);
@@ -980,10 +1022,42 @@ button {
   width: 42%;
 }
 .outline__time {
-  width: 9.5em;
+  width: 11em;
   font-weight: 400;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+.outline__range {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.time-field {
+  width: 4.2em;
+  min-height: 32px;
+  padding: 2px 4px;
+  border: 1px solid #9aa3c7;
+  border-radius: 4px;
+  background: var(--white);
+  text-align: center;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.outline__len .time-field {
+  width: 3em;
+}
+.time-field:focus-visible {
+  outline-offset: 1px;
+}
+.outline__start {
+  display: inline-block;
+  width: 4.2em;
+  text-align: center;
+}
+.outline__hint {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--navy-soft);
 }
 .outline__block {
   display: block;
@@ -994,7 +1068,7 @@ button {
   white-space: normal;
 }
 .outline__len {
-  width: 5.5em;
+  width: 6.5em;
   white-space: nowrap;
 }
 .outline__input {

@@ -18,6 +18,7 @@ export type Action =
   | { type: 'nextStep' }
   | { type: 'showAll' }
   | { type: 'setOutlineDraft'; draft: DraftId }
+  | { type: 'setOutlineStart'; start: number }
   | { type: 'setOutlineRow'; blockId: string; field: keyof OutlineRow; value: string }
   | { type: 'load'; state: CanvasState }
   | { type: 'addDraft' }
@@ -32,7 +33,7 @@ export const initialState = (): CanvasState => ({
   cells: {},
   drafts: { d1: [], d2: [], d3: [] },
   draftCount: 1,
-  outline: { draft: 'd1', rows: {} },
+  outline: { draft: 'd1', start: 0, rows: {} },
   // A brand-new canvas starts guided; Clear canvas starts the guide over.
   step: 0,
 });
@@ -176,6 +177,9 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
 
     case 'setOutlineDraft':
       return { ...state, outline: { ...state.outline, draft: action.draft } };
+
+    case 'setOutlineStart':
+      return { ...state, outline: { ...state.outline, start: ((Math.round(action.start) % 1440) + 1440) % 1440 } };
 
     case 'setOutlineRow': {
       const row = state.outline.rows[action.blockId] ?? { activities: '', moves: '' };

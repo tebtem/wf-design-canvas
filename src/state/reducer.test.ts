@@ -216,3 +216,18 @@ describe('backups', () => {
     expect(backupFileName(s, new Date('2026-11-12T10:00:00Z'))).toBe('q3-offsite-backup-2026-11-12.json');
   });
 });
+
+describe('clock times', () => {
+  it('parses typed times and formats them', async () => {
+    const { parseClock, hhmm } = await import('./types');
+    expect(['9', '9:30', '09.30', '930', '1415', '0:05'].map(parseClock)).toEqual([540, 570, 570, 570, 855, 5]);
+    expect(['', 'abc', '25:00', '9:75', '12345'].map(parseClock)).toEqual([null, null, null, null, null]);
+    expect(hhmm(75)).toBe('01:15');
+    expect(hhmm(1440 + 30)).toBe('00:30');
+  });
+
+  it('stores the session start time', () => {
+    const s = reducer(initialState(), { type: 'setOutlineStart', start: 540 });
+    expect(s.outline.start).toBe(540);
+  });
+});

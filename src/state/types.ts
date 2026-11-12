@@ -68,6 +68,8 @@ export interface OutlineRow {
 /** Session Outline: rows come from one draft's time blocks; text is kept per block id. */
 export interface Outline {
   draft: DraftId;
+  /** Session start time, in minutes after midnight (0 means times read 00:00, 00:15...). */
+  start: number;
   rows: Record<string, OutlineRow>;
 }
 
@@ -92,3 +94,35 @@ export const DRAFT_NAMES: Record<DraftId, string> = {
 };
 
 export const STICKY_COLORS: StickyColor[] = ['yellow', 'pink', 'orange', 'blue'];
+
+/** 75 -> "01:15". Times past midnight wrap around. */
+export const hhmm = (min: number) => {
+  const m = ((Math.round(min) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+};
+
+/**
+ * Reads a typed clock time: "9", "9:30", "09.30", "930", "1415". Returns minutes after midnight,
+ * or null if it is not a time.
+ */
+export function parseClock(text: string): number | null {
+  const t = text.trim().replace(/\s+/g, '');
+  let h: number;
+  let m: number;
+  const sep = t.match(/^(\d{1,2})[:.h](\d{1,2})$/);
+  if (sep) {
+    h = Number(sep[1]);
+    m = Number(sep[2]);
+  } else if (/^\d{1,4}$/.test(t)) {
+    if (t.length <= 2) {
+      h = Number(t);
+      m = 0;
+    } else {
+      h = Number(t.slice(0, t.length - 2));
+      m = Number(t.slice(-2));
+    }
+  } else {
+    return null;
+  }
+  return h <= 23 && m <= 59 ? h * 60 + m : null;
+}

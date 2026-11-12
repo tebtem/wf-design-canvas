@@ -151,14 +151,33 @@ if (await page.getByRole('group', { name: 'Session Draft 3' }).count()) fail('dr
 // Session Outline: rows follow the chosen draft's blocks and show the working title.
 const outline = page.locator('#section-outline');
 if (!(await outline.getByText('Q3 planning').count())) fail('outline should show the working title');
-const rowTimes = await outline.locator('tbody th').allTextContents();
-if (rowTimes.join('|') !== '00:00 - 00:45') fail(`outline rows from draft 1: ${rowTimes.join(', ')}`);
-await page.getByLabel(/^Activities, 00:00 to 00:45/).fill('Kickoff and goals');
-await page.getByLabel(/^Moves and materials, 00:00 to 00:45/).fill('Slides, timer');
+await page.getByRole('button', { name: 'Add 15 min block to Session Draft 1' }).click();
+if ((await outline.locator('tbody tr').count()) !== 2) fail('outline should have a row per block');
+// Typeable times: first start sets the session start; end times and lengths resize blocks.
+const startField = page.getByLabel('Session start time');
+await startField.fill('9');
+await startField.press('Enter');
+if ((await startField.inputValue()) !== '09:00') fail(`session start: ${await startField.inputValue()}`);
+if ((await outline.locator('.outline__start').textContent()) !== '09:45') fail('row 2 should start when row 1 ends');
+const end2 = page.getByLabel(/^End time, row 2/);
+await end2.fill('10:10');
+await end2.press('Enter');
+if ((await page.getByLabel(/^Length in minutes, row 2/).inputValue()) !== '25') fail('typing an end time should set the length');
+const len1 = page.getByLabel(/^Length in minutes, row 1/);
+await len1.fill('42');
+await len1.press('Tab');
+if ((await len1.inputValue()) !== '40') fail(`length should snap to 5 minutes: ${await len1.inputValue()}`);
+if ((await outline.locator('.outline__start').textContent()) !== '09:40') fail('rows below should shift');
+await startField.fill('abc');
+await startField.press('Enter');
+if ((await startField.inputValue()) !== '09:00') fail('invalid time should be ignored');
+if (!(await page.locator('.tblock__time').first().textContent()).includes('09:00')) fail('time blocks should use the session start');
+await page.getByLabel(/^Activities, 09:00 to 09:40/).fill('Kickoff and goals');
+await page.getByLabel(/^Moves and materials, 09:00 to 09:40/).fill('Slides, timer');
 await page.getByLabel('Based on').selectOption('d2');
 if (!(await outline.getByText('Add time blocks to Session Draft 2').count())) fail('empty outline message');
 await page.getByLabel('Based on').selectOption('d1');
-if ((await page.getByLabel(/^Activities, 00:00 to 00:45/).inputValue()) !== 'Kickoff and goals') fail('outline text lost when switching drafts');
+if ((await page.getByLabel(/^Activities, 09:00 to 09:40/).inputValue()) !== 'Kickoff and goals') fail('outline text lost when switching drafts');
 await axeCheck(page, 'session outline');
 await outline.screenshot({ path: out + 'outline.png' });
 
@@ -208,11 +227,21 @@ for (const v of axeMobile.violations) console.log('AXE mobile', v.id, v.impact, 
 if (axeMobile.violations.length) fail(`${axeMobile.violations.length} axe violations at 375px`);
 
 // Backup: download, clear, restore.
+// More menu: opens, closes with Escape (focus back on More), and holds backup, restore and clear.
+const more = page.getByRole('button', { name: 'More' });
+await more.click();
+if ((await more.getAttribute('aria-expanded')) !== 'true') fail('More should expand');
+await axeCheck(page, 'more menu open');
+await page.keyboard.press('Escape');
+if ((await more.getAttribute('aria-expanded')) !== 'false') fail('Escape should close More');
+if ((await page.evaluate(() => document.activeElement?.textContent?.trim())) !== 'More') fail('focus should return to More');
+await more.click();
 const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download backup' }).click()]);
 if (!download.suggestedFilename().startsWith('q3-planning-backup-')) fail(`backup file name: ${download.suggestedFilename()}`);
 const backupPath = out + 'backup.json';
 await download.saveAs(backupPath);
 await page.setViewportSize({ width: 1440, height: 1000 });
+await page.getByRole('button', { name: 'More' }).click();
 await page.getByRole('button', { name: 'Clear canvas' }).click();
 await page.getByRole('button', { name: 'Clear everything' }).click();
 if ((await page.getByLabel('Client Name').inputValue()) !== '') fail('clear did not clear');
@@ -227,6 +256,7 @@ if (!(await page.getByText('That file is not a canvas backup').count())) fail('b
 
 // Clear canvas starts the guide over, and print still shows every section.
 await page.setViewportSize({ width: 1440, height: 1000 });
+await page.getByRole('button', { name: 'More' }).click();
 await page.getByRole('button', { name: 'Clear canvas' }).click();
 await page.getByRole('button', { name: 'Clear everything' }).click();
 await page.getByRole('button', { name: 'Next: Facilitator at the Center' }).waitFor();

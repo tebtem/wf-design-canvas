@@ -8,6 +8,7 @@ import {
   blockTone,
   clampMinutes,
   DRAFT_NAMES,
+  hhmm,
   MAX_BLOCK,
   MIN_BLOCK,
   PX_PER_MINUTE,
@@ -15,7 +16,7 @@ import {
   type TimeBlock,
 } from '../../state/types';
 import { DownIcon, GripIcon, SwapIcon, UpIcon, XIcon } from '../Icons';
-import { clock, type DragData } from './dnd';
+import { type DragData } from './dnd';
 import { useOpenBlockMove } from './TimeBlocksSection';
 import { visibleDrafts } from '../../state/reducer';
 
@@ -220,10 +221,10 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
         </span>
         <span className="tblock__time">
           <span className="sr-only">Runs from </span>
-          {clock(start)}
+          {hhmm(state.outline.start + start)}
           <span aria-hidden="true"> – </span>
           <span className="sr-only"> to </span>
-          {clock(start + block.minutes)}
+          {hhmm(state.outline.start + start + block.minutes)}
         </span>
       </div>
       <div className="tblock__notes">

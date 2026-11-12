@@ -114,3 +114,8 @@ export const UploadIcon = () => (
     <path d="M12 16V5M7 10l5-5 5 5M5 20h14" />
   </svg>
 );
+export const ChevronIcon = () => (
+  <svg {...base}>
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+);

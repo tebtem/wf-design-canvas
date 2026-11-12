@@ -1,15 +1,38 @@
 import { LAST_STEP } from '../state/cells';
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FocusEvent } from 'react';
 import { downloadBackup, readBackup } from '../state/backup';
 import { useCanvas } from '../state/CanvasContext';
-import { DownloadIcon, ExternalIcon, PeopleIcon, PrintIcon, UploadIcon } from './Icons';
+import { ChevronIcon, DownloadIcon, ExternalIcon, PeopleIcon, PrintIcon, UploadIcon, XIcon } from './Icons';
 
 const LEARN_URL = 'https://www.womenfacilitating.com/facilitation-design';
 
 export function Toolbar({ onWorkshop, guided = false }: { onWorkshop?: () => void; guided?: boolean }) {
   const { state, dispatch, saveStatus } = useCanvas();
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const clearBtn = useRef<HTMLButtonElement>(null);
+  // "More" disclosure: backup, restore and clear live here to keep the toolbar short.
+  const moreBtn = useRef<HTMLButtonElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const onMoreBlur = (e: FocusEvent<HTMLDivElement>) => {
+    if (!moreRef.current?.contains(e.relatedTarget as Node | null)) setMoreOpen(false);
+  };
+  useEffect(() => {
+    if (!moreOpen) return;
+    const close = (e: MouseEvent) => {
+      if (!moreRef.current?.contains(e.target as Node)) setMoreOpen(false);
+    };
+    const esc = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setMoreOpen(false);
+      moreBtn.current?.focus();
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [moreOpen]);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [notice, setNotice] = useState<{ text: string; error?: boolean } | null>(null);
@@ -61,21 +84,57 @@ export function Toolbar({ onWorkshop, guided = false }: { onWorkshop?: () => voi
           <PrintIcon />
           Save as PDF
         </button>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => {
-            downloadBackup(state);
-            setNotice({ text: 'Backup downloaded. Keep the file to restore this canvas on any device.' });
-          }}
-        >
-          <DownloadIcon />
-          Download backup
-        </button>
-        <button type="button" className="btn" onClick={() => fileRef.current?.click()}>
-          <UploadIcon />
-          Restore backup
-        </button>
+        <div className="more" ref={moreRef} onBlur={onMoreBlur}>
+          <button
+            ref={moreBtn}
+            type="button"
+            className="btn"
+            aria-expanded={moreOpen}
+            aria-controls="more-panel"
+            onClick={() => setMoreOpen((v) => !v)}
+          >
+            More
+            <ChevronIcon />
+          </button>
+          <div id="more-panel" className="more__panel" hidden={!moreOpen}>
+            <button
+              type="button"
+              className="more__item"
+              onClick={() => {
+                setMoreOpen(false);
+                downloadBackup(state);
+                setNotice({ text: 'Backup downloaded. Keep the file to restore this canvas on any device.' });
+                moreBtn.current?.focus();
+              }}
+            >
+              <DownloadIcon />
+              Download backup
+            </button>
+            <button
+              type="button"
+              className="more__item"
+              onClick={() => {
+                setMoreOpen(false);
+                moreBtn.current?.focus();
+                fileRef.current?.click();
+              }}
+            >
+              <UploadIcon />
+              Restore backup
+            </button>
+            <button
+              type="button"
+              className="more__item more__item--danger"
+              onClick={() => {
+                setMoreOpen(false);
+                dialogRef.current?.showModal();
+              }}
+            >
+              <XIcon />
+              Clear canvas
+            </button>
+          </div>
+        </div>
         <input
           ref={fileRef}
           type="file"
@@ -85,16 +144,13 @@ export function Toolbar({ onWorkshop, guided = false }: { onWorkshop?: () => voi
           aria-hidden="true"
           onChange={restore}
         />
-        <button ref={clearBtn} type="button" className="btn" onClick={() => dialogRef.current?.showModal()}>
-          Clear canvas
-        </button>
       </div>
       <dialog
         ref={dialogRef}
         className="dialog"
         aria-labelledby="clear-title"
         aria-describedby="clear-desc"
-        onClose={() => clearBtn.current?.focus()}
+        onClose={() => moreBtn.current?.focus()}
       >
         <h2 id="clear-title">Clear the whole canvas?</h2>
         <p id="clear-desc">This removes all text, sticky notes and time blocks saved in this browser, and starts the step-by-step guide again. It cannot be undone.</p>

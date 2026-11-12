@@ -26,7 +26,8 @@ function migrateOutline(o: Partial<Outline> | undefined, draftCount: number): Ou
   const rows = Object.fromEntries(
     Object.entries(o?.rows ?? {}).map(([id, r]) => [id, { activities: str(r?.activities), moves: str(r?.moves) }]),
   );
-  return { draft, rows };
+  const start = typeof o?.start === 'number' && o.start >= 0 && o.start < 1440 ? Math.round(o.start) : 0;
+  return { draft, start, rows };
 }
 
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
