@@ -62,6 +62,63 @@ export function hasUnsent(code: string): boolean {
   }
 }
 
+// ---------- Facilitator sign-in (no Firebase code here, so the solo canvas stays light) ----------
+const HOST_KEY = 'wf-design-canvas:host';
+const PENDING_KEY = 'wf-design-canvas:host-pending';
+
+const store = (key: string, value: string | null) => {
+  try {
+    if (value) window.localStorage.setItem(key, value);
+    else window.localStorage.removeItem(key);
+  } catch {
+    // Storage blocked.
+  }
+};
+const load = (key: string) => {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+/** Remembers that a facilitator signed in here, so the Host option shows without loading Firebase. */
+export const markHostSignedIn = (email: string) => store(HOST_KEY, email);
+export const clearHostSignedIn = () => store(HOST_KEY, null);
+export const hostSignedInEmail = () => load(HOST_KEY);
+export const setPendingHostEmail = (email: string | null) => store(PENDING_KEY, email);
+export const pendingHostEmail = () => load(PENDING_KEY);
+
+/** Where the emailed sign-in link returns to. */
+export const hostLinkUrl = () => {
+  const url = new URL(window.location.href);
+  url.search = '?host';
+  url.hash = '';
+  return url.toString();
+};
+
+/** Reads and removes ?host (the facilitator link). Returns true if it was there. */
+export function takeHostParam(): boolean {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has('host')) return false;
+  url.searchParams.delete('host');
+  window.history.replaceState(null, '', url);
+  return true;
+}
+
+/** True when the address is an emailed sign-in link (checked again by Firebase before use). */
+export const looksLikeHostLink = (href: string) => {
+  const p = new URL(href).searchParams;
+  return p.get('mode') === 'signIn' && p.has('oobCode');
+};
+
+/** Removes the sign-in link parameters once used. */
+export function clearLinkParams() {
+  const url = new URL(window.location.href);
+  url.search = '';
+  window.history.replaceState(null, '', url);
+}
+
 export const joinUrl = (code: string) => {
   const url = new URL(window.location.href);
   url.search = '';

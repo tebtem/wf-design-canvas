@@ -9,7 +9,7 @@
         ".write": "auth != null && !newData.exists() && (data.child('meta/facilitator').val() === auth.uid || data.child('meta/expiresAt').val() < now)",
         "meta": {
           ".read": "auth != null && data.child('expiresAt').val() > now",
-          ".write": "auth != null && newData.exists() && ((!data.exists() && newData.child('facilitator').val() === auth.uid) || (data.child('facilitator').val() === auth.uid && data.child('expiresAt').val() > now))",
+          ".write": "auth != null && newData.exists() && ((!data.exists() && newData.child('facilitator').val() === auth.uid && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com'))) || (data.child('facilitator').val() === auth.uid && data.child('expiresAt').val() > now))",
           ".validate": "newData.hasChildren(['title', 'facilitator', 'createdAt', 'expiresAt', 'canView'])",
           "title": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"
@@ -134,6 +134,15 @@
         },
         "$other": {
           ".validate": false
+        }
+      }
+    },
+    "hosts": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$code": {
+          ".write": "auth != null && auth.uid === $uid && (!newData.exists() || newData.parent().parent().parent().child('sessions/' + $code + '/meta/facilitator').val() === auth.uid)",
+          ".validate": "newData.isNumber()"
         }
       }
     },

@@ -9,7 +9,7 @@ import {
   setCanView,
   setSpotlight,
   setStep,
-  signIn,
+  currentHost,
   watchAllComments,
   watchCanvases,
   watchConnected,
@@ -50,16 +50,22 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
   const knownMembers = useRef<Set<string> | null>(null);
   const lastOpened = useRef<string | null>(null);
 
+  // The host view needs this device to be signed in as the facilitator who owns the workshop.
+  const [signedOut, setSignedOut] = useState(false);
   useEffect(() => {
     let live = true;
-    signIn().then(
-      () => live && setReady(true),
+    currentHost().then(
+      (host) => {
+        if (!live) return;
+        if (host?.uid === workshop.uid) setReady(true);
+        else setSignedOut(true);
+      },
       () => live && setMeta(null),
     );
     return () => {
       live = false;
     };
-  }, []);
+  }, [workshop.uid]);
 
   useEffect(() => {
     if (!ready) return;
@@ -125,6 +131,21 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
       setError('Could not end the workshop. Check your connection and try again.');
     }
   };
+
+  if (signedOut) {
+    return (
+      <main className="ws-page ws-ended">
+        <h1 className="ws-h1">Sign in to open the host view</h1>
+        <p>
+          This device is no longer signed in as the facilitator for this workshop. Choose Workshop, then Host a
+          workshop, and sign in with your facilitator email to reopen it.
+        </p>
+        <button type="button" className="btn btn--primary" onClick={onExit}>
+          Back to my canvas
+        </button>
+      </main>
+    );
+  }
 
   if (meta === null) {
     return (
@@ -334,8 +355,8 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
       <dialog ref={exitRef} className="dialog" aria-labelledby="ws-exit-title" aria-describedby="ws-exit-desc">
         <h2 id="ws-exit-title">Exit the host view?</h2>
         <p id="ws-exit-desc">
-          The workshop keeps running. To come back on this device, choose Workshop, then Join, and enter code{' '}
-          {formatCode(code)}.
+          The workshop keeps running. To come back on any device, sign in with your facilitator email (Workshop, then
+          Host a workshop) and open it from Your workshops. Its code is {formatCode(code)}.
         </p>
         <form method="dialog" className="dialog__actions">
           <button type="submit" className="btn" value="cancel">

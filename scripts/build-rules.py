@@ -3,7 +3,12 @@
 Run: python3 scripts/build-rules.py
 """
 import json
+import re
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+# Who may host workshops. Shared with the app (src/workshop/config.ts) so both agree.
+ALLOW = json.loads((ROOT / "src/workshop/host-allowlist.json").read_text())
 
 S = "root.child('sessions/' + $code + '"
 LIVE = f"{S}/meta/expiresAt').val() > now"
@@ -16,6 +21,17 @@ MEMBER = f"({S}/members/' + auth.uid).exists() || {S}/aliases/' + auth.uid).exis
 SIGNED_IN = "auth != null"
 CODE8 = "/^[A-HJKMNP-Z2-9]{8}$/"
 NEW_ROOT = "newData.parent().parent()"
+
+def _escape(text):
+    return re.sub(r"([.])", r"[\1]", text)
+
+_domains = "|".join(_escape(d.lower()) for d in ALLOW["domains"])
+_emails = " || ".join(f"auth.token.email === '{e.lower()}'" for e in ALLOW["emails"])
+# Hosts sign in with an email link (which verifies the address) and must be on the allowlist.
+HOST_ALLOWED = (
+    "(auth.token.email_verified === true && "
+    f"(auth.token.email.matches(/^[^@]+@({_domains})$/) || {_emails}))"
+)
 
 def all_of(*parts):
     return " && ".join(parts)
@@ -30,7 +46,7 @@ rules = {
 
         "meta": {
           ".read": "auth != null && data.child('expiresAt').val() > now",
-          ".write": "auth != null && newData.exists() && ((!data.exists() && newData.child('facilitator').val() === auth.uid) || (data.child('facilitator').val() === auth.uid && data.child('expiresAt').val() > now))",
+          ".write": f"auth != null && newData.exists() && ((!data.exists() && newData.child('facilitator').val() === auth.uid && {HOST_ALLOWED}) || (data.child('facilitator').val() === auth.uid && data.child('expiresAt').val() > now))",
           ".validate": "newData.hasChildren(['title', 'facilitator', 'createdAt', 'expiresAt', 'canView'])",
           "title": {".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"},
           "facilitator": {".validate": "!data.exists() || newData.val() === data.val()"},
@@ -127,6 +143,17 @@ rules = {
       },
     },
 
+    # Each host's own list of workshops, so they can reopen them from any device.
+    "hosts": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$code": {
+          ".write": "auth != null && auth.uid === $uid && (!newData.exists() || newData.parent().parent().parent().child('sessions/' + $code + '/meta/facilitator').val() === auth.uid)",
+          ".validate": "newData.isNumber()",
+        },
+      },
+    },
+
     "expiries": {
       ".read": False,
       ".indexOn": ".value",
@@ -138,6 +165,6 @@ rules = {
   }
 }
 
-out = Path(__file__).resolve().parent.parent / "database.rules.json"
+out = ROOT / "database.rules.json"
 out.write_text(json.dumps(rules, indent=2) + "\n")
 print(f"Wrote {out.name}")

@@ -521,3 +521,50 @@
     display: none !important;
   }
 }
+
+/* Facilitator panel in the Workshop dialog */
+.ws-host {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ws-host__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+.ws-host__h {
+  font-size: 1.05rem;
+  margin-bottom: 6px;
+}
+.ws-host__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ws-host__list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: 'title open' 'meta open';
+  gap: 0 12px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--divider);
+}
+.ws-host__title {
+  grid-area: title;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.ws-host__list .ws-hint {
+  grid-area: meta;
+}
+.ws-host__list .btn {
+  grid-area: open;
+}
