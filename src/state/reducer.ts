@@ -1,4 +1,5 @@
 import { DRAFT_IDS, MAX_DRAFTS } from './types';
+import { LAST_STEP } from './cells';
 import type { BlockMinutes, CanvasDetails, CanvasState, Cell, DraftId, StickyColor, TimeBlock } from './types';
 
 export type Action =
@@ -12,6 +13,9 @@ export type Action =
   | { type: 'editBlock'; id: string; label?: string; notes?: string }
   | { type: 'removeBlock'; id: string }
   | { type: 'setDetail'; key: keyof CanvasDetails; value: string }
+  | { type: 'setCellTitle'; cellId: string; title: string }
+  | { type: 'nextStep' }
+  | { type: 'showAll' }
   | { type: 'addDraft' }
   | { type: 'removeDraft' }
   | { type: 'reset' };
@@ -24,6 +28,8 @@ export const initialState = (): CanvasState => ({
   cells: {},
   drafts: { d1: [], d2: [], d3: [] },
   draftCount: 1,
+  // A brand-new canvas starts guided; Clear canvas starts the guide over.
+  step: 0,
 });
 
 /** Drafts currently on screen. */
@@ -145,6 +151,15 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
 
     case 'setDetail':
       return { ...state, details: { ...state.details, [action.key]: action.value } };
+
+    case 'setCellTitle':
+      return updateCell(state, action.cellId, (c) => ({ ...c, title: action.title }));
+
+    case 'nextStep':
+      return { ...state, step: Math.min(LAST_STEP, state.step + 1) };
+
+    case 'showAll':
+      return { ...state, step: LAST_STEP };
 
     case 'addDraft':
       return { ...state, draftCount: Math.min(MAX_DRAFTS, state.draftCount + 1) };

@@ -53,7 +53,7 @@ export const CELL_GROUPS: CellGroup[] = [
     ]),
   },
   {
-    section: 'Flow + Function',
+    section: 'Flow, Function, and Form',
     step: 3,
     cells: Array.from({ length: 9 }, (_, i) => ({
       id: `flow.${i}`,
@@ -61,7 +61,7 @@ export const CELL_GROUPS: CellGroup[] = [
       fullTitle: `Flow step ${i + 1}`,
     })),
   },
-  { section: 'Activity Ideation', step: 4, cells: [{ id: 'ideas', title: 'Activity ideas', fullTitle: 'Activity ideas' }] },
+  { section: 'Activity Ideation', step: 3, cells: [{ id: 'ideas', title: 'Activity ideas', fullTitle: 'Activity ideas' }] },
 ];
 
 /** Guided reveal steps, in order. Step 2 is Time Blocks, which has no note cells. */
@@ -69,8 +69,7 @@ export const REVEAL_STEPS = [
   'Session Brief',
   'Facilitator at the Center',
   'Time Blocks',
-  'Flow + Function',
-  'Activity Ideation',
+  'Flow, Function, and Form + Activity Ideation',
 ] as const;
 export const LAST_STEP = REVEAL_STEPS.length - 1;
 /** What each step adds, for the host's controls. */
@@ -78,11 +77,10 @@ export const STEP_DETAIL = [
   'Session Brief, Participants at the Center, Participant Before and After',
   'Facilitator at the Center',
   'Time Blocks',
-  'Flow + Function',
-  'Activity Ideation',
+  'Flow, Function, and Form, and Activity Ideation',
 ];
 /** Section anchor for each step (matches the Section ids in the canvas). */
-export const STEP_ANCHORS = ['section-brief', 'section-facilitator', 'section-time', 'section-flow', 'section-ideas'];
+export const STEP_ANCHORS = ['section-brief', 'section-facilitator', 'section-time', 'section-flow'];
 
 /** A step value from the database, clamped. Missing means everything is shown. */
 export const clampStep = (step: number | undefined | null) =>

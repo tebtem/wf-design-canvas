@@ -86,6 +86,11 @@
   .card {
     min-height: 90px;
   }
+  /* Print the full canvas even while a guide is hiding later sections. */
+  .step-hidden {
+    display: contents !important;
+  }
+  .note-cell__heading-input,
   .details__input,
   .add-sticky {
     display: none !important;

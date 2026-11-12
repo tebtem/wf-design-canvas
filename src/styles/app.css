@@ -319,6 +319,55 @@ button {
   font-size: 1rem;
   font-weight: 600;
 }
+.note-cell__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.note-cell__heading-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+.note-cell__heading-input {
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  font-weight: 700;
+}
+.note-cell__heading-input:focus-visible {
+  border-color: var(--navy);
+  outline-offset: 1px;
+}
+.canvas--readonly .note-cell__heading-input {
+  border-color: transparent;
+  background: transparent;
+}
+
+/* Solo guide */
+.step-hidden {
+  display: none;
+}
+.guide-next {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 16px 36px;
+  background: var(--frame);
+  text-align: center;
+}
+.guide-next__progress {
+  color: var(--navy-deep);
+  font-weight: 700;
+}
+.guide-next__btn {
+  min-height: 52px;
+  padding: 0 28px;
+  font-size: 1.1rem;
+}
 .note-cell__empty {
   margin-top: 8px;
   color: var(--navy-soft);
@@ -777,7 +826,7 @@ button {
   background: var(--divider);
 }
 
-/* ---------- Flow + Function ---------- */
+/* ---------- Flow, Function, and Form ---------- */
 .flow-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

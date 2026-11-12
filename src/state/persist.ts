@@ -1,4 +1,5 @@
 import { emptyDetails, initialState } from './reducer';
+import { clampStep } from './cells';
 import { STICKY_COLORS, type CanvasDetails, type CanvasState, type Cell, type TimeBlock } from './types';
 
 /** Blocks saved before notes existed get an empty notes field. */
@@ -14,7 +15,7 @@ function migrateCells(cells: Record<string, Cell>): Record<string, Cell> {
       const stickies = (c.stickies ?? []).map((st) => (STICKY_COLORS.includes(st.color) ? st : { ...st, color: 'orange' as const }));
       const text = (c.text ?? '').trim();
       if (text) stickies.unshift({ id: `text-${id}`, text, color: 'yellow' });
-      return [id, { text: '', stickies }];
+      return [id, c.title ? { text: '', stickies, title: str(c.title) } : { text: '', stickies }];
     }),
   );
 }
@@ -43,6 +44,8 @@ export function parseState(raw: string | null | undefined): CanvasState | null {
       cells: migrateCells(parsed.cells ?? {}),
       drafts: { d1: migrateBlocks(parsed.drafts.d1), d2, d3 },
       draftCount,
+      // Canvases saved before the guide existed open fully revealed.
+      step: clampStep(parsed.step),
     };
   } catch {
     return null;

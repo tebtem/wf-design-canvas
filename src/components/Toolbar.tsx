@@ -1,11 +1,12 @@
+import { LAST_STEP } from '../state/cells';
 import { useRef } from 'react';
 import { useCanvas } from '../state/CanvasContext';
 import { ExternalIcon, PeopleIcon, PrintIcon } from './Icons';
 
 const LEARN_URL = 'https://www.womenfacilitating.com/facilitation-design';
 
-export function Toolbar({ onWorkshop }: { onWorkshop?: () => void }) {
-  const { dispatch, saveStatus } = useCanvas();
+export function Toolbar({ onWorkshop, guided = false }: { onWorkshop?: () => void; guided?: boolean }) {
+  const { state, dispatch, saveStatus } = useCanvas();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const clearBtn = useRef<HTMLButtonElement>(null);
 
@@ -20,6 +21,11 @@ export function Toolbar({ onWorkshop }: { onWorkshop?: () => void }) {
         {status}
       </p>
       <div className="toolbar__actions">
+        {guided && state.step < LAST_STEP && (
+          <button type="button" className="btn" onClick={() => dispatch({ type: 'showAll' })}>
+            Show full canvas
+          </button>
+        )}
         {onWorkshop && (
           <button type="button" className="btn" onClick={onWorkshop} aria-haspopup="dialog">
             <PeopleIcon />
@@ -46,7 +52,7 @@ export function Toolbar({ onWorkshop }: { onWorkshop?: () => void }) {
         onClose={() => clearBtn.current?.focus()}
       >
         <h2 id="clear-title">Clear the whole canvas?</h2>
-        <p id="clear-desc">This removes all text, sticky notes and time blocks saved in this browser. It cannot be undone.</p>
+        <p id="clear-desc">This removes all text, sticky notes and time blocks saved in this browser, and starts the step-by-step guide again. It cannot be undone.</p>
         <form method="dialog" className="dialog__actions">
           <button type="submit" className="btn" value="cancel">
             Cancel

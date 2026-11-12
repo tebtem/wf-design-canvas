@@ -6,6 +6,7 @@ import { Footer } from './components/Footer';
 import { CanvasBody } from './components/CanvasBody';
 import { WorkshopDialog } from './components/WorkshopDialog';
 import { workshopsEnabled } from './workshop/config';
+import { LAST_STEP } from './state/cells';
 import { loadWorkshop, saveWorkshop, takeJoinParam, workshopCanvasKey, type ActiveWorkshop } from './workshop/session';
 
 // Firebase only downloads for people who join or host a workshop.
@@ -36,7 +37,7 @@ export default function App() {
   const leave = (copyToPersonal = false) => {
     if (workshop && copyToPersonal) {
       const s = readState(workshopCanvasKey(workshop.code));
-      if (s) saveState(s);
+      if (s) saveState({ ...s, step: LAST_STEP });
     }
     saveWorkshop(null);
     setWorkshop(null);
@@ -64,8 +65,8 @@ export default function App() {
       <a className="skip-link" href="#canvas">
         Skip to canvas
       </a>
-      <Toolbar onWorkshop={workshopsEnabled ? () => setDialogOpen(true) : undefined} />
-      <CanvasBody />
+      <Toolbar guided onWorkshop={workshopsEnabled ? () => setDialogOpen(true) : undefined} />
+      <CanvasBody guided />
       <Footer />
       {workshopsEnabled && (
         <WorkshopDialog

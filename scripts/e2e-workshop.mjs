@@ -82,18 +82,18 @@ await bob.getByRole('textbox', { name: 'Client Name', exact: true }).fill('Bob o
 step('bob joined');
 
 // Guided reveal: participants start with the Session Brief group only.
-const headings = (page) => page.locator('#canvas .band__title').allTextContents();
+const headings = (page) => page.locator('#canvas .band__title:visible').allTextContents();
 const startSections = ['Session Brief', 'Participants at the Center', 'Participant Before', 'Participant After'];
 if ((await headings(alice)).join('|') !== startSections.join('|')) fail(`alice start sections: ${await headings(alice)}`);
 await axe(host, 'host dashboard with reveal controls');
 await host.getByRole('button', { name: 'Reveal next: Facilitator at the Center' }).click();
 await until(async () => (await headings(alice)).includes('Facilitator at the Center'), 'alice sees facilitator section');
-await until(async () => (await alice.getByText('New section revealed').count()) === 1, 'alice reveal notice');
+await until(async () => (await alice.getByText('Newly revealed').count()) === 1, 'alice reveal notice');
 await alice.getByRole('button', { name: 'Go to it' }).click();
 await until(async () => alice.evaluate(() => document.activeElement?.textContent === 'Facilitator at the Center'), 'focus moves to new section');
 await host.getByRole('button', { name: 'Reveal next: Time Blocks' }).click();
 await until(async () => (await headings(bob)).includes('Time Blocks'), 'bob sees time blocks');
-if ((await headings(bob)).includes('Flow + Function')) fail('flow revealed too early');
+if ((await headings(bob)).includes('Flow, Function, and Form')) fail('flow revealed too early');
 await host.getByRole('button', { name: 'Hide Time Blocks' }).click();
 await until(async () => !(await headings(bob)).includes('Time Blocks'), 'hide works');
 await host.getByRole('button', { name: 'Reveal all' }).click();

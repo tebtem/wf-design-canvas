@@ -24,12 +24,28 @@ const axeCheck = async (p, label) => {
 await page.goto(APP_URL);
 
 // Details, stickies-only cells, and the new section order.
+// A new canvas starts guided: first group only, then Next adds sections below.
+const visibleTitles = () => page.locator('#canvas .band__title:visible').allTextContents();
+const first = ['Session Brief', 'Participants at the Center', 'Participant Before', 'Participant After'];
+if ((await visibleTitles()).join('|') !== first.join('|')) fail(`guided start: ${await visibleTitles()}`);
+await page.getByText('Step 1 of 4').waitFor();
+await axeCheck(page, 'guided start');
+await page.getByRole('button', { name: 'Next: Facilitator at the Center' }).click();
+await page.waitForTimeout(200);
+if ((await page.evaluate(() => document.activeElement?.textContent)) !== 'Facilitator at the Center') fail('focus after Next');
+if (!(await visibleTitles()).includes('Session Brief')) fail('Next should add, not replace');
+await page.getByRole('button', { name: 'Next: Time Blocks' }).click();
+await page.getByRole('button', { name: 'Show full canvas' }).click();
+if (await page.getByRole('button', { name: /^Next:/ }).count()) fail('Next still shown after Show full canvas');
+if (await page.getByRole('button', { name: 'Show full canvas' }).count()) fail('Show full canvas still shown');
+
 await page.getByLabel('Working Title').fill('Q3 planning');
 await page.getByLabel('Client Name').fill('Acme');
 await page.getByLabel('Number of Participants').fill('24');
 if (await page.locator('.note-cell__text').count()) fail('free-text boxes should be gone');
-const order = await page.locator('.band__title').allTextContents();
-const expected = ['Session Brief', 'Participants at the Center', 'Participant Before', 'Participant After', 'Facilitator at the Center', 'Time Blocks', 'Flow + Function', 'Activity Ideation'];
+const order = await visibleTitles();
+const expected = ['Session Brief', 'Participants at the Center', 'Participant Before', 'Participant After', 'Facilitator at the Center', 'Time Blocks', 'Flow, Function, and Form', 'Activity Ideation'];
+await page.getByLabel('Column 1 title').fill('Opening');
 if (order.join('|') !== expected.join('|')) fail(`section order: ${order.join(', ')}`);
 for (const name of ['Timing + Logistics', 'Space + Materials']) {
   if (!(await page.getByRole('group', { name, exact: true }).count())) fail(`missing cell ${name}`);
@@ -86,6 +102,7 @@ if (await page.getByRole('group', { name: 'Session Draft 2' }).count()) fail('dr
 await page.getByRole('button', { name: 'Add 5 min block to Session Draft 1' }).click();
 await page.getByRole('button', { name: 'Add 10 min block to Session Draft 1' }).click();
 await page.getByRole('button', { name: 'Add another draft' }).click();
+await page.waitForTimeout(150);
 const focusedDraft = await page.evaluate(() => document.activeElement?.id);
 if (focusedDraft !== 'draft-d2-heading') fail(`focus after adding draft: ${focusedDraft}`);
 
@@ -121,6 +138,8 @@ await page.waitForTimeout(600);
 await page.reload();
 if ((await page.getByRole('textbox', { name: 'Sticky note 1 in Purpose' }).inputValue()) !== 'Align on Q3 goals') fail('sticky in Purpose did not persist');
 if ((await page.getByLabel('Client Name').inputValue()) !== 'Acme') fail('details did not persist');
+if ((await page.getByLabel('Column 1 title').inputValue()) !== 'Opening') fail('column title did not persist');
+if (await page.getByRole('button', { name: /^Next:/ }).count()) fail('guide step did not persist');
 if ((await page.getByRole('textbox', { name: /Sticky note 1 in Activity ideas/ }).inputValue()) !== 'Gallery walk') fail('sticky did not persist');
 const savedNotes = await page.getByRole('textbox', { name: /^Notes for 60 minute block/ }).inputValue();
 if (savedNotes !== '• Pairs discuss\n• Share out') fail(`block notes wrong: ${JSON.stringify(savedNotes)}`);
@@ -150,6 +169,16 @@ await page.screenshot({ path: out + 'mobile.png', fullPage: true });
 const axeMobile = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
 for (const v of axeMobile.violations) console.log('AXE mobile', v.id, v.impact, v.nodes.length, v.nodes[0]?.target);
 if (axeMobile.violations.length) fail(`${axeMobile.violations.length} axe violations at 375px`);
+
+// Clear canvas starts the guide over, and print still shows every section.
+await page.setViewportSize({ width: 1440, height: 1000 });
+await page.getByRole('button', { name: 'Clear canvas' }).click();
+await page.getByRole('button', { name: 'Clear everything' }).click();
+await page.getByRole('button', { name: 'Next: Facilitator at the Center' }).waitFor();
+await page.emulateMedia({ media: 'print' });
+const printed = await page.locator('#canvas .band__title:visible').allTextContents();
+if (printed.length !== 8) fail(`print should show the full canvas, got ${printed.length} sections`);
+await page.emulateMedia({ media: 'screen' });
 
 await browser.close();
 console.log(process.exitCode ? 'Done with failures' : 'All checks passed');

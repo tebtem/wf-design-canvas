@@ -4,7 +4,8 @@ An interactive version of the "Designing Facilitated Experiences" canvas!
 
 - Fill in the Working Title, Client Name and Number of Participants at the top.
 - Every section collects sticky notes (change color, delete). Drag a sticky by its grip to reorder it or move it to another section, or use its Move button to pick a section and position. Text typed into sections in older versions becomes a sticky note automatically.
-- Sections are stacked in one column: Session Brief, Participants at the Center, Participant Before, Participant After, Facilitator at the Center, Time Blocks, Flow + Function, Activity Ideation.
+- Sections are stacked in one column: Session Brief, Participants at the Center, Participant Before, Participant After, Facilitator at the Center, Time Blocks, Flow, Function, and Form (each column has a title field), Activity Ideation.
+- A new canvas guides you step by step: it starts with Session Brief, Participants at the Center and Participant Before and After, and Next adds Facilitator at the Center, then Time Blocks, then Flow, Function, and Form with Activity Ideation. Show full canvas skips ahead. Canvases saved before the guide existed open in full, Clear canvas starts the guide over, and printing always shows the full canvas.
 - Drag time blocks (5, 10, 15, 20, 30, 45, 60 min) from the Time Block Bank into Session Draft 1. Use Add another draft for up to three drafts; only the last draft can be removed. With three drafts, a block's move button asks which draft to move it to. Name them, add bullet-point notes (Enter starts a new bullet; Enter on an empty bullet ends the list), reorder, move between drafts, or remove them. Drafts show running times and totals.
 - Everything autosaves in your browser. **Save as PDF** opens the print dialog. Print uses landscape pages in your chosen paper size (Letter or A4), keeps each section whole so pages never break mid-section, and leaves out the Time Block Bank.
 
@@ -14,7 +15,7 @@ Facilitators can host a live workshop and see every participant's canvas as they
 
 - **Host:** Workshop > Host a workshop. You get a 6-character code and a join link. The host view shows a live card for each participant. Open one to see their canvas (view only), send private comments tied to a section, or spotlight it so everyone can open it. A toggle lets participants see each other's canvases.
 - **Join:** Workshop > Join a workshop, enter the code and your name. Your workshop canvas is saved separately from your personal one, and you can copy it to your personal canvas when you leave.
-- **Guided reveal:** by default participants start with the Session Brief group (Session Brief, Participants at the Center, Participant Before and After). The host reveals Facilitator at the Center, then Time Blocks, Flow + Function and Activity Ideation one at a time, or everything at once, and can hide the last step again. Participants get a notice with a Go to it button. Uncheck the guided option when hosting to show the full canvas from the start.
+- **Guided reveal:** by default participants start with the Session Brief group (Session Brief, Participants at the Center, Participant Before and After). The host reveals Facilitator at the Center, then Time Blocks, then Flow, Function, and Form together with Activity Ideation, or everything at once, and can hide the last step again. Participants get a notice with a Go to it button. Uncheck the guided option when hosting to show the full canvas from the start.
 - Ending a workshop deletes it online. Workshops expire after 30 days: they become unreadable straight away and are deleted by a daily cleanup job.
 - The Workshop button only appears when the build has Firebase settings.
 

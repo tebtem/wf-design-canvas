@@ -234,7 +234,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
         )}
         {revealed !== null && (
           <p className="ws-notice">
-            New section revealed: <strong>{REVEAL_STEPS[revealed]}</strong>
+            Newly revealed: <strong>{REVEAL_STEPS[revealed]}</strong>
             {revealed >= LAST_STEP && '. You can now see the full canvas.'}
             <button type="button" className="btn btn--small" onClick={goToRevealed}>
               Go to it

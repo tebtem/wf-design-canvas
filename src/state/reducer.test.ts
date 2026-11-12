@@ -143,6 +143,28 @@ describe('canvas details and drafts', () => {
     expect(s.cells['brief.0'].stickies.map((x) => x.text)).toEqual(['Old purpose', 'note']);
     expect(s.cells['brief.0'].text).toBe('');
     expect(s.draftCount).toBe(2);
+    expect(s.step).toBe(3);
     expect(s.details).toEqual({ title: '', client: '', participants: '' });
+  });
+});
+
+describe('solo guide', () => {
+  it('starts new canvases at step 0, advances, shows all, and starts over on reset', () => {
+    let s = initialState();
+    expect(s.step).toBe(0);
+    s = reducer(s, { type: 'nextStep' });
+    expect(s.step).toBe(1);
+    s = reducer(s, { type: 'showAll' });
+    expect(s.step).toBe(3);
+    s = reducer(s, { type: 'nextStep' });
+    expect(s.step).toBe(3);
+    expect(reducer(s, { type: 'reset' }).step).toBe(0);
+  });
+
+  it('keeps column titles', () => {
+    let s = reducer(initialState(), { type: 'setCellTitle', cellId: 'flow.0', title: 'Open' });
+    saveState(s);
+    s = loadState();
+    expect(s.cells['flow.0'].title).toBe('Open');
   });
 });

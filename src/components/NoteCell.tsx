@@ -14,11 +14,13 @@ interface Props {
   accessibleTitle?: string;
   hideTitle?: boolean;
   className?: string;
+  /** Adds a title field above the stickies, labeled with this text (Flow, Function, and Form columns). */
+  columnTitle?: string;
 }
 
 const EMPTY: Cell = { text: '', stickies: [] };
 
-export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '' }: Props) {
+export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', columnTitle }: Props) {
   const { state, dispatch, readOnly } = useCanvas();
   const cell = state.cells[cellId] ?? EMPTY;
   const uid = useId();
@@ -52,6 +54,25 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           </>
         )}
       </h3>
+      {columnTitle && (
+        <div className="note-cell__heading">
+          <label htmlFor={`${uid}-title`} className="note-cell__heading-label">
+            {columnTitle}
+          </label>
+          <input
+            id={`${uid}-title`}
+            className="note-cell__heading-input"
+            value={cell.title ?? ''}
+            readOnly={readOnly}
+            maxLength={80}
+            autoComplete="off"
+            onChange={(e) => dispatch({ type: 'setCellTitle', cellId, title: e.target.value })}
+          />
+          <span className="print-text" aria-hidden="true">
+            {cell.title}
+          </span>
+        </div>
+      )}
       <SortableContext items={cell.stickies.map((s) => s.id)} strategy={rectSortingStrategy}>
         {cell.stickies.length > 0 && (
           <ul className="sticky-list" aria-label={`Sticky notes in ${fullTitle}`}>

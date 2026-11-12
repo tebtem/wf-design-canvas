@@ -10,6 +10,8 @@ export interface Cell {
   /** Legacy free text. Cells now hold only sticky notes; old text is turned into a sticky on load. */
   text: string;
   stickies: Sticky[];
+  /** Column title, used by the Flow, Function, and Form columns. */
+  title?: string;
 }
 
 export type DraftId = 'd1' | 'd2' | 'd3';
@@ -42,6 +44,8 @@ export interface CanvasState {
   details: CanvasDetails;
   cells: Record<string, Cell>;
   drafts: Record<DraftId, TimeBlock[]>;
+  /** Solo guided mode: sections are revealed up to this step (see REVEAL_STEPS). */
+  step: number;
   /** How many drafts are on screen (1 to 3). Drafts are added with Add another draft. */
   draftCount: number;
 }
