@@ -14,13 +14,13 @@ interface Props {
   accessibleTitle?: string;
   hideTitle?: boolean;
   className?: string;
-  /** Adds a title field above the stickies, labeled with this text (Flow, Function, and Form columns). */
-  columnTitle?: string;
+  /** Adds a "Name this function" field above the stickies; this is its accessible label. */
+  nameLabel?: string;
 }
 
 const EMPTY: Cell = { text: '', stickies: [] };
 
-export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', columnTitle }: Props) {
+export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', nameLabel }: Props) {
   const { state, dispatch, readOnly } = useCanvas();
   const cell = state.cells[cellId] ?? EMPTY;
   const uid = useId();
@@ -54,15 +54,16 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           </>
         )}
       </h3>
-      {columnTitle && (
+      {nameLabel && (
         <div className="note-cell__heading">
-          <label htmlFor={`${uid}-title`} className="note-cell__heading-label">
-            {columnTitle}
+          <label htmlFor={`${uid}-title`} className="sr-only">
+            {nameLabel}
           </label>
           <input
             id={`${uid}-title`}
             className="note-cell__heading-input"
             value={cell.title ?? ''}
+            placeholder={readOnly ? '' : 'Name this function'}
             readOnly={readOnly}
             maxLength={80}
             autoComplete="off"

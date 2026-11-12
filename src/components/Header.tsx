@@ -37,16 +37,20 @@ export function Header({ asHeading = true }: { asHeading?: boolean }) {
       <div className="details" role="group" aria-label="Session details">
         {DETAIL_FIELDS.map(({ key, label }) => (
           <div key={key} className="details__field">
-            <label htmlFor={`detail-${key}`}>{label}</label>
+            {/* Typed straight into, like a block name. The label stays for screen readers and appears above once filled. */}
             <input
               id={`detail-${key}`}
               className="details__input"
               value={state.details[key]}
+              placeholder={readOnly ? ' ' : label}
               readOnly={readOnly}
               maxLength={120}
               autoComplete="off"
               onChange={(e) => dispatch({ type: 'setDetail', key, value: e.target.value })}
             />
+            <label htmlFor={`detail-${key}`} className="details__label">
+              {label}
+            </label>
             <span className="print-text" aria-hidden="true">
               {state.details[key]}
             </span>

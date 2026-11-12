@@ -10,13 +10,11 @@ const LEARN_URL = 'https://www.womenfacilitating.com/facilitation-design';
 interface ToolbarProps {
   onWorkshop?: () => void;
   guided?: boolean;
-  /** The step being shown, for the layout toggle (workshops pass the facilitator's step). */
-  step?: number;
 }
 
-export function Toolbar({ onWorkshop, guided = false, step }: ToolbarProps) {
+export function Toolbar({ onWorkshop, guided = false }: ToolbarProps) {
   const { state, dispatch, saveStatus } = useCanvas();
-  const layout = effectiveLayout(useLayoutPref(), step ?? (guided ? state.step : LAST_STEP));
+  const layout = effectiveLayout(useLayoutPref());
   const dialogRef = useRef<HTMLDialogElement>(null);
   // "More" disclosure: backup, restore and clear live here to keep the toolbar short.
   const moreBtn = useRef<HTMLButtonElement>(null);
@@ -104,10 +102,6 @@ export function Toolbar({ onWorkshop, guided = false, step }: ToolbarProps) {
           Learn<span className="sr-only"> about facilitation design (opens in a new tab)</span>
           <ExternalIcon />
         </a>
-        <button type="button" className="btn btn--primary" onClick={() => window.print()}>
-          <PrintIcon />
-          Save as PDF
-        </button>
         <div className="more" ref={moreRef} onBlur={onMoreBlur}>
           <button
             ref={moreBtn}
@@ -121,6 +115,18 @@ export function Toolbar({ onWorkshop, guided = false, step }: ToolbarProps) {
             <ChevronIcon />
           </button>
           <div id="more-panel" className="more__panel" hidden={!moreOpen}>
+            <button
+              type="button"
+              className="more__item"
+              onClick={() => {
+                setMoreOpen(false);
+                moreBtn.current?.focus();
+                window.print();
+              }}
+            >
+              <PrintIcon />
+              Save as PDF
+            </button>
             <button
               type="button"
               className="more__item"
