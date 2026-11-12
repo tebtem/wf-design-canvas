@@ -6,9 +6,48 @@ An interactive version of the "Designing Facilitated Experiences" canvas!
 - Drag time blocks (15, 20, 30, 45, 60 min) from the Time Block Bank into Session Draft 1 or 2. Name them, add bullet-point notes (Enter starts a new bullet; Enter on an empty bullet ends the list), reorder, move between drafts, or remove them. Drafts show running times and totals.
 - Everything autosaves in your browser. **Save as PDF** opens the print dialog. Print uses landscape pages in your chosen paper size (Letter or A4), keeps each section whole so pages never break mid-section, and leaves out the Time Block Bank.
 
+## Workshop mode
+
+Facilitators can host a live workshop and see every participant's canvas as they work.
+
+- **Host:** Workshop > Host a workshop. You get a 6-character code and a join link. The host view shows a live card for each participant. Open one to see their canvas (view only), send private comments tied to a section, or spotlight it so everyone can open it. A toggle lets participants see each other's canvases.
+- **Join:** Workshop > Join a workshop, enter the code and your name. Your workshop canvas is saved separately from your personal one, and you can copy it to your personal canvas when you leave.
+- Ending a workshop deletes it online. Workshops expire after 30 days: they become unreadable straight away and are deleted by a daily cleanup job.
+- The Workshop button only appears when the build has Firebase settings.
+
+### Set up Firebase (one time)
+
+1. Create a project at console.firebase.google.com (the free Spark plan is enough).
+2. Build > Authentication > Get started > enable **Anonymous** sign-in.
+3. Build > Realtime Database > Create database (locked mode).
+4. Publish the rules in `database.rules.json`: paste them in the Rules tab, or run `firebase deploy --only database`.
+5. Project settings > Your apps > add a Web app and copy its config.
+6. In GitHub, Settings > Secrets and variables > Actions > **Variables**, add `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_DATABASE_URL`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`. These are safe to publish: access is controlled by the rules.
+7. For the 30-day cleanup: Project settings > Service accounts > Generate new private key, and save the whole JSON as the **secret** `FIREBASE_SERVICE_ACCOUNT`. `.github/workflows/cleanup.yml` runs daily.
+8. Optional: add your Pages domain under Authentication > Settings > Authorized domains, and turn on App Check to limit abuse.
+
+For local development put the same `VITE_FIREBASE_*` values in `.env.local`.
+
+### Test workshop mode locally
+
+Needs Java (for the database emulator) and `npm i -g firebase-tools`.
+
+```bash
+npm run test:rules          # 49 security rule checks against the emulator
+npm run emulators           # terminal 1
+npm run dev:emulator        # terminal 2: app wired to the emulators
+```
+
+End to end with three browsers (host and two participants):
+
+```bash
+npx vite build --mode emulator --outDir dist-emu && npx vite preview --outDir dist-emu --port 4174
+npm run e2e:workshop
+```
+
 ## Accessibility
 
-Built to WCAG 2.2 AA: full keyboard use (Space to pick up a block, arrow keys to move, Space to drop, Escape to cancel), button alternatives for every drag action, screen reader announcements, labeled fields, AA contrast, 24px minimum targets, reflow down to 320px, and reduced motion support.
+Built to WCAG 2.2 AA (workshop views included): full keyboard use (Space to pick up a block, arrow keys to move, Space to drop, Escape to cancel), button alternatives for every drag action, screen reader announcements, labeled fields, AA contrast, 24px minimum targets, reflow down to 320px, and reduced motion support.
 
 ## Develop
 

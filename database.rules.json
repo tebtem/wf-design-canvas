@@ -1,0 +1,79 @@
+{
+  "rules": {
+    "sessions": {
+      ".indexOn": ["meta/expiresAt"],
+      "$code": {
+        ".validate": "$code.matches(/^[A-HJKMNP-Z2-9]{6}$/)",
+        ".write": "auth != null && !newData.exists() && (data.child('meta/facilitator').val() === auth.uid || data.child('meta/expiresAt').val() < now)",
+
+        "meta": {
+          ".read": "auth != null && data.child('expiresAt').val() > now",
+          ".write": "auth != null && newData.exists() && ((!data.exists() && newData.child('facilitator').val() === auth.uid) || (data.child('facilitator').val() === auth.uid && data.child('expiresAt').val() > now))",
+          ".validate": "newData.hasChildren(['title', 'facilitator', 'createdAt', 'expiresAt', 'canView'])",
+          "title": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80" },
+          "facilitator": { ".validate": "!data.exists() || newData.val() === data.val()" },
+          "createdAt": { ".validate": "data.exists() ? newData.val() === data.val() : newData.val() === now" },
+          "expiresAt": { ".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : (newData.val() > now && newData.val() <= now + 2592000000))" },
+          "canView": { ".validate": "newData.isBoolean()" },
+          "spotlight": {
+            ".validate": "newData.hasChildren(['uid', 'name'])",
+            "uid": { ".validate": "newData.isString() && newData.val().length <= 128" },
+            "name": { ".validate": "newData.isString() && newData.val().length <= 60" },
+            "$other": { ".validate": false }
+          },
+          "$other": { ".validate": false }
+        },
+
+        "members": {
+          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (data.child(auth.uid).exists() && root.child('sessions/' + $code + '/meta/canView').val() === true))",
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && auth.uid === $uid && newData.exists() && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && root.child('sessions/' + $code + '/meta/facilitator').val() !== auth.uid",
+            ".validate": "newData.hasChildren(['name', 'joinedAt'])",
+            "name": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60" },
+            "joinedAt": { ".validate": "newData.isNumber() && newData.val() <= now" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "canvases": {
+          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (root.child('sessions/' + $code + '/members/' + auth.uid).exists() && root.child('sessions/' + $code + '/meta/canView').val() === true))",
+          "$uid": {
+            ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (auth.uid === $uid || (root.child('sessions/' + $code + '/members/' + auth.uid).exists() && root.child('sessions/' + $code + '/meta/spotlight/uid').val() === $uid))",
+            ".write": "auth != null && auth.uid === $uid && newData.exists() && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && root.child('sessions/' + $code + '/members/' + auth.uid).exists()",
+            ".validate": "newData.hasChildren(['state', 'updatedAt'])",
+            "state": { ".validate": "newData.isString() && newData.val().length <= 300000" },
+            "updatedAt": { ".validate": "newData.val() === now" },
+            "$other": { ".validate": false }
+          }
+        },
+
+        "comments": {
+          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid",
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid && root.child('sessions/' + $code + '/meta/expiresAt').val() > now",
+            "$cid": {
+              ".write": "auth != null && root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid && root.child('sessions/' + $code + '/meta/expiresAt').val() > now",
+              ".validate": "newData.hasChildren(['text', 'createdAt'])",
+              "text": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 1000" },
+              "cellId": { ".validate": "newData.isString() && newData.val().length <= 40" },
+              "createdAt": { ".validate": "data.exists() ? newData.val() === data.val() : newData.val() === now" },
+              "$other": { ".validate": false }
+            }
+          }
+        },
+
+        "$other": { ".validate": false }
+      }
+    },
+
+    "expiries": {
+      ".read": false,
+      ".indexOn": ".value",
+      "$code": {
+        ".write": "auth != null && (newData.exists() ? (!data.exists() && newData.parent().parent().child('sessions/' + $code + '/meta/facilitator').val() === auth.uid && newData.val() === newData.parent().parent().child('sessions/' + $code + '/meta/expiresAt').val()) : (data.val() < now || root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid))",
+        ".validate": "newData.isNumber()"
+      }
+    }
+  }
+}

@@ -81,3 +81,26 @@ export const ExternalIcon = () => (
     <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
   </svg>
 );
+export const PeopleIcon = () => (
+  <svg {...base}>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.2.7 3.5 2.8 3.5 5.7" />
+  </svg>
+);
+export const CopyIcon = () => (
+  <svg {...base}>
+    <rect x="8" y="8" width="12" height="12" rx="2" />
+    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+  </svg>
+);
+export const BackIcon = () => (
+  <svg {...base}>
+    <path d="M19 12H5M11 6l-6 6 6 6" />
+  </svg>
+);
+export const SpotlightIcon = () => (
+  <svg {...base}>
+    <circle cx="12" cy="12" r="3.5" />
+    <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" />
+  </svg>
+);

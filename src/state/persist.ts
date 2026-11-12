@@ -16,28 +16,39 @@ function migrateCells(cells: Record<string, Cell>): Record<string, Cell> {
 
 export const STORAGE_KEY = 'wf-design-canvas:v1';
 
-export function loadState(): CanvasState {
+/** Parse saved canvas JSON. Returns null when it is missing or not a canvas. */
+export function parseState(raw: string | null | undefined): CanvasState | null {
+  if (!raw) return null;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return initialState();
     const parsed = JSON.parse(raw) as Partial<CanvasState>;
-    if (parsed?.version !== 1 || typeof parsed.cells !== 'object' || !parsed.drafts) {
-      return initialState();
-    }
+    if (parsed?.version !== 1 || typeof parsed.cells !== 'object' || !parsed.drafts) return null;
     return {
       version: 1,
       cells: migrateCells(parsed.cells ?? {}),
       drafts: { d1: migrateBlocks(parsed.drafts.d1), d2: migrateBlocks(parsed.drafts.d2) },
     };
   } catch {
-    return initialState();
+    return null;
   }
 }
 
-/** Returns true when the save succeeded. */
-export function saveState(state: CanvasState): boolean {
+/** The saved canvas for this key, or null if there is none. */
+export function readState(key = STORAGE_KEY): CanvasState | null {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    return parseState(window.localStorage.getItem(key));
+  } catch {
+    return null;
+  }
+}
+
+export function loadState(key = STORAGE_KEY): CanvasState {
+  return readState(key) ?? initialState();
+}
+
+/** Returns true when the save succeeded. */
+export function saveState(state: CanvasState, key = STORAGE_KEY): boolean {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(state));
     return true;
   } catch {
     return false;

@@ -11,10 +11,11 @@ export function Logo() {
   );
 }
 
-export function Header() {
+export function Header({ asHeading = true }: { asHeading?: boolean }) {
+  const Title = asHeading ? 'h1' : 'div';
   return (
     <header className="canvas-header">
-      <h1 className="title">
+      <Title className="title">
         <img
           className="title__img"
           src={wordmark}
@@ -22,7 +23,7 @@ export function Header() {
           width={1886}
           height={368}
         />
-      </h1>
+      </Title>
       <div className="canvas-header__right">
         <p className="canvas-name">Facilitation Design Canvas</p>
         <a className="logo-link" href={SITE_URL} target="_blank" rel="noopener noreferrer">

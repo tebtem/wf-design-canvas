@@ -20,7 +20,7 @@ interface Props {
 const EMPTY: Cell = { text: '', stickies: [] };
 
 export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', placeholder = 'Type here' }: Props) {
-  const { state, dispatch } = useCanvas();
+  const { state, dispatch, readOnly } = useCanvas();
   const cell = state.cells[cellId] ?? EMPTY;
   const uid = useId();
   const headingId = `${uid}-h`;
@@ -57,7 +57,8 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
         className="note-cell__text"
         aria-labelledby={headingId}
         value={cell.text}
-        placeholder={placeholder}
+        readOnly={readOnly}
+        placeholder={readOnly ? '' : placeholder}
         onChange={(e) => dispatch({ type: 'setText', cellId, text: e.target.value })}
       />
       <div className="print-text" aria-hidden="true">
@@ -84,17 +85,19 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           </ul>
         )}
       </SortableContext>
-      <button
-        ref={addRef}
-        type="button"
-        className="add-sticky no-print"
-        title="Add sticky note"
-        onClick={addSticky}
-      >
-        <PlusIcon />
-        <StickyIcon />
-        <span className="sr-only">Add sticky note in {fullTitle}</span>
-      </button>
+      {!readOnly && (
+        <button
+          ref={addRef}
+          type="button"
+          className="add-sticky no-print"
+          title="Add sticky note"
+          onClick={addSticky}
+        >
+          <PlusIcon />
+          <StickyIcon />
+          <span className="sr-only">Add sticky note in {fullTitle}</span>
+        </button>
+      )}
     </div>
   );
 }

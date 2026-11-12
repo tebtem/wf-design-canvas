@@ -92,7 +92,7 @@ const describe = (data: DragData | undefined) =>
     : 'block';
 
 export function TimeBlocksSection() {
-  const { state, dispatch } = useCanvas();
+  const { state, dispatch, readOnly } = useCanvas();
   const [active, setActive] = useState<DragData | null>(null);
   const [message, setMessage] = useState('');
 
@@ -170,11 +170,11 @@ export function TimeBlocksSection() {
           },
         }}
       >
-        <div className="panel time-grid">
+        <div className={`panel time-grid${readOnly ? ' time-grid--readonly' : ''}`}>
           {DRAFT_IDS.map((d) => (
             <DraftColumn key={d} draftId={d} blocks={state.drafts[d]} announce={announce} />
           ))}
-          <BlockBank announce={announce} />
+          {!readOnly && <BlockBank announce={announce} />}
         </div>
         <DragOverlay dropAnimation={null}>
           {active && active.type !== 'draft' ? (

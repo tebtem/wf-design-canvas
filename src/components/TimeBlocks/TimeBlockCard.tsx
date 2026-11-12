@@ -37,10 +37,10 @@ interface Props {
 }
 
 export function TimeBlockCard({ block, draftId, index, count, start, announce }: Props) {
-  const { dispatch } = useCanvas();
+  const { dispatch, readOnly } = useCanvas();
   const data: DragData = { type: 'block', draftId, minutes: block.minutes, label: block.label };
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
-    useSortable({ id: block.id, data });
+    useSortable({ id: block.id, data, disabled: readOnly });
 
   const other: DraftId = draftId === 'd1' ? 'd2' : 'd1';
   const name = `${block.minutes} minute block${block.label ? ` "${block.label}"` : ''}`;
@@ -89,19 +89,26 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
       className={`tblock tblock--m${block.minutes}${isDragging ? ' is-dragging' : ''}`}
       style={{ transform: CSS.Translate.toString(transform), transition }}
     >
-      <button
-        type="button"
-        ref={setActivatorNodeRef}
-        className="tblock__handle"
-        {...attributes}
-        {...listeners}
-        aria-roledescription="draggable time block"
-        aria-label={`${block.minutes} min, ${name}, ${where}. Drag to reorder.`}
-        title="Drag to reorder"
-      >
-        <span className="tblock__minutes">{block.minutes}</span>
-        <GripIcon />
-      </button>
+      {readOnly ? (
+        <span className="tblock__handle">
+          <span className="tblock__minutes">{block.minutes}</span>
+          <span className="sr-only"> minutes, {where}</span>
+        </span>
+      ) : (
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          className="tblock__handle"
+          {...attributes}
+          {...listeners}
+          aria-roledescription="draggable time block"
+          aria-label={`${block.minutes} min, ${name}, ${where}. Drag to reorder.`}
+          title="Drag to reorder"
+        >
+          <span className="tblock__minutes">{block.minutes}</span>
+          <GripIcon />
+        </button>
+      )}
       <div className="tblock__body">
         <label htmlFor={inputId} className="sr-only">
           Activity for {name}, {where}
@@ -110,7 +117,8 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
           id={inputId}
           className="tblock__label"
           value={block.label}
-          placeholder="Name this block"
+          readOnly={readOnly}
+          placeholder={readOnly ? 'Untitled' : 'Name this block'}
           onChange={(e) => dispatch({ type: 'editBlock', id: block.id, label: e.target.value })}
         />
         <span className="print-text" aria-hidden="true">
@@ -133,10 +141,11 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
           id={notesId}
           className="tblock__notes-text"
           value={block.notes}
-          placeholder="• Add details"
+          placeholder={readOnly ? '' : '• Add details'}
+          readOnly={readOnly}
           rows={1}
           onFocus={(e) => {
-            if (!e.currentTarget.value) setNotes(BULLET, BULLET.length);
+            if (!readOnly && !e.currentTarget.value) setNotes(BULLET, BULLET.length);
           }}
           onBlur={(e) => {
             if (e.currentTarget.value.trim() === BULLET.trim()) setNotes('');
@@ -148,46 +157,48 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
           {block.notes}
         </div>
       </div>
-      <div className="tblock__actions no-print">
-        <button
-          type="button"
-          className="icon-btn"
-          aria-label={`Move ${name} up`}
-          aria-disabled={index === 0}
-          title="Move up"
-          onClick={() => move(index - 1)}
-        >
-          <UpIcon />
-        </button>
-        <button
-          type="button"
-          className="icon-btn"
-          aria-label={`Move ${name} down`}
-          aria-disabled={index === count - 1}
-          title="Move down"
-          onClick={() => move(index + 1)}
-        >
-          <DownIcon />
-        </button>
-        <button
-          type="button"
-          className="icon-btn js-move-other"
-          aria-label={`Move ${name} to ${DRAFT_NAMES[other]}`}
-          title={`Move to ${DRAFT_NAMES[other]}`}
-          onClick={moveToOther}
-        >
-          <SwapIcon />
-        </button>
-        <button
-          type="button"
-          className="icon-btn"
-          aria-label={`Remove ${name}`}
-          title="Remove"
-          onClick={remove}
-        >
-          <XIcon />
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="tblock__actions no-print">
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={`Move ${name} up`}
+            aria-disabled={index === 0}
+            title="Move up"
+            onClick={() => move(index - 1)}
+          >
+            <UpIcon />
+          </button>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={`Move ${name} down`}
+            aria-disabled={index === count - 1}
+            title="Move down"
+            onClick={() => move(index + 1)}
+          >
+            <DownIcon />
+          </button>
+          <button
+            type="button"
+            className="icon-btn js-move-other"
+            aria-label={`Move ${name} to ${DRAFT_NAMES[other]}`}
+            title={`Move to ${DRAFT_NAMES[other]}`}
+            onClick={moveToOther}
+          >
+            <SwapIcon />
+          </button>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={`Remove ${name}`}
+            title="Remove"
+            onClick={remove}
+          >
+            <XIcon />
+          </button>
+        </div>
+      )}
     </li>
   );
 }

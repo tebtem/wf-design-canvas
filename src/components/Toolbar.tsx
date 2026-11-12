@@ -1,10 +1,10 @@
 import { useRef } from 'react';
 import { useCanvas } from '../state/CanvasContext';
-import { ExternalIcon, PrintIcon } from './Icons';
+import { ExternalIcon, PeopleIcon, PrintIcon } from './Icons';
 
 const LEARN_URL = 'https://www.womenfacilitating.com/facilitation-design';
 
-export function Toolbar() {
+export function Toolbar({ onWorkshop }: { onWorkshop?: () => void }) {
   const { dispatch, saveStatus } = useCanvas();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const clearBtn = useRef<HTMLButtonElement>(null);
@@ -20,6 +20,12 @@ export function Toolbar() {
         {status}
       </p>
       <div className="toolbar__actions">
+        {onWorkshop && (
+          <button type="button" className="btn" onClick={onWorkshop} aria-haspopup="dialog">
+            <PeopleIcon />
+            Workshop
+          </button>
+        )}
         <a className="btn btn--pink" href={LEARN_URL} target="_blank" rel="noopener noreferrer">
           Learn<span className="sr-only"> about facilitation design (opens in a new tab)</span>
           <ExternalIcon />
