@@ -28,7 +28,7 @@ await page.goto(APP_URL);
 const visibleTitles = () => page.locator('#canvas .band__title:visible').allTextContents();
 const first = ['Session Brief', 'Participants at the Center', 'Participant Before', 'Participant After'];
 if ((await visibleTitles()).join('|') !== first.join('|')) fail(`guided start: ${await visibleTitles()}`);
-await page.getByText('Step 1 of 4').waitFor();
+await page.getByText('Step 1 of 5').waitFor();
 await axeCheck(page, 'guided start');
 await page.getByRole('button', { name: 'Next: Facilitator at the Center' }).click();
 await page.waitForTimeout(200);
@@ -44,7 +44,7 @@ await page.getByLabel('Client Name').fill('Acme');
 await page.getByLabel('Number of Participants').fill('24');
 if (await page.locator('.note-cell__text').count()) fail('free-text boxes should be gone');
 const order = await visibleTitles();
-const expected = ['Session Brief', 'Participants at the Center', 'Participant Before', 'Participant After', 'Facilitator at the Center', 'Time Blocks', 'Flow, Function, and Form', 'Activity Ideation'];
+const expected = ['Session Brief', 'Participants at the Center', 'Participant Before', 'Participant After', 'Facilitator at the Center', 'Time Blocks', 'Flow, Function, and Form', 'Activity Ideation', 'Session Outline'];
 await page.getByLabel('Column 1 title').fill('Opening');
 if (order.join('|') !== expected.join('|')) fail(`section order: ${order.join(', ')}`);
 for (const name of ['Timing + Logistics', 'Space + Materials']) {
@@ -148,6 +148,20 @@ await page.getByRole('button', { name: 'Remove Session Draft 3' }).click();
 await page.waitForTimeout(200);
 if (await page.getByRole('group', { name: 'Session Draft 3' }).count()) fail('draft 3 not removed');
 
+// Session Outline: rows follow the chosen draft's blocks and show the working title.
+const outline = page.locator('#section-outline');
+if (!(await outline.getByText('Q3 planning').count())) fail('outline should show the working title');
+const rowTimes = await outline.locator('tbody th').allTextContents();
+if (rowTimes.join('|') !== '00:00 - 00:45') fail(`outline rows from draft 1: ${rowTimes.join(', ')}`);
+await page.getByLabel(/^Activities, 00:00 to 00:45/).fill('Kickoff and goals');
+await page.getByLabel(/^Moves and materials, 00:00 to 00:45/).fill('Slides, timer');
+await page.getByLabel('Based on').selectOption('d2');
+if (!(await outline.getByText('Add time blocks to Session Draft 2').count())) fail('empty outline message');
+await page.getByLabel('Based on').selectOption('d1');
+if ((await page.getByLabel(/^Activities, 00:00 to 00:45/).inputValue()) !== 'Kickoff and goals') fail('outline text lost when switching drafts');
+await axeCheck(page, 'session outline');
+await outline.screenshot({ path: out + 'outline.png' });
+
 // Button alternative.
 await page.getByRole('button', { name: 'Add 60 min block to Session Draft 2' }).click();
 await page.getByRole('textbox', { name: /^Activity for 60 minute block/ }).fill('Deep work');
@@ -193,6 +207,24 @@ const axeMobile = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 
 for (const v of axeMobile.violations) console.log('AXE mobile', v.id, v.impact, v.nodes.length, v.nodes[0]?.target);
 if (axeMobile.violations.length) fail(`${axeMobile.violations.length} axe violations at 375px`);
 
+// Backup: download, clear, restore.
+const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download backup' }).click()]);
+if (!download.suggestedFilename().startsWith('q3-planning-backup-')) fail(`backup file name: ${download.suggestedFilename()}`);
+const backupPath = out + 'backup.json';
+await download.saveAs(backupPath);
+await page.setViewportSize({ width: 1440, height: 1000 });
+await page.getByRole('button', { name: 'Clear canvas' }).click();
+await page.getByRole('button', { name: 'Clear everything' }).click();
+if ((await page.getByLabel('Client Name').inputValue()) !== '') fail('clear did not clear');
+page.once('dialog', (d) => d.accept());
+await page.locator('.toolbar input[type=file]').setInputFiles(backupPath);
+await page.waitForTimeout(300);
+if ((await page.getByLabel('Client Name').inputValue()) !== 'Acme') fail('restore did not bring the canvas back');
+if (!(await page.getByText(/Backup.*restored/).count())) fail('restore message missing');
+await page.locator('.toolbar input[type=file]').setInputFiles({ name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('{"a":1}') });
+await page.waitForTimeout(200);
+if (!(await page.getByText('That file is not a canvas backup').count())) fail('bad file message missing');
+
 // Clear canvas starts the guide over, and print still shows every section.
 await page.setViewportSize({ width: 1440, height: 1000 });
 await page.getByRole('button', { name: 'Clear canvas' }).click();
@@ -200,7 +232,7 @@ await page.getByRole('button', { name: 'Clear everything' }).click();
 await page.getByRole('button', { name: 'Next: Facilitator at the Center' }).waitFor();
 await page.emulateMedia({ media: 'print' });
 const printed = await page.locator('#canvas .band__title:visible').allTextContents();
-if (printed.length !== 8) fail(`print should show the full canvas, got ${printed.length} sections`);
+if (printed.length !== 9) fail(`print should show the full canvas, got ${printed.length} sections`);
 await page.emulateMedia({ media: 'screen' });
 
 await browser.close();

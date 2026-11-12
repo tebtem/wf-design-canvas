@@ -143,7 +143,7 @@ describe('canvas details and drafts', () => {
     expect(s.cells['brief.0'].stickies.map((x) => x.text)).toEqual(['Old purpose', 'note']);
     expect(s.cells['brief.0'].text).toBe('');
     expect(s.draftCount).toBe(2);
-    expect(s.step).toBe(3);
+    expect(s.step).toBe(4);
     expect(s.details).toEqual({ title: '', client: '', participants: '' });
   });
 });
@@ -155,9 +155,9 @@ describe('solo guide', () => {
     s = reducer(s, { type: 'nextStep' });
     expect(s.step).toBe(1);
     s = reducer(s, { type: 'showAll' });
-    expect(s.step).toBe(3);
+    expect(s.step).toBe(4);
     s = reducer(s, { type: 'nextStep' });
-    expect(s.step).toBe(3);
+    expect(s.step).toBe(4);
     expect(reducer(s, { type: 'reset' }).step).toBe(0);
   });
 
@@ -185,5 +185,34 @@ describe('block lengths', () => {
     expect([5, 10, 15, 20, 25, 30, 40, 45, 60, 75, 90, 120, 180].map(blockTone)).toEqual([
       5, 10, 15, 20, 20, 30, 45, 45, 60, 60, 90, 90, 120,
     ]);
+  });
+});
+
+describe('session outline', () => {
+  it('keeps row text per block and falls back to draft 1 when its draft is removed', () => {
+    let s = reducer(initialState(), { type: 'addDraft' });
+    s = reducer(s, { type: 'addBlock', draftId: 'd2', id: 'b1', minutes: 15 });
+    s = reducer(s, { type: 'setOutlineDraft', draft: 'd2' });
+    s = reducer(s, { type: 'setOutlineRow', blockId: 'b1', field: 'moves', value: 'Markers' });
+    expect(s.outline.rows.b1).toEqual({ activities: '', moves: 'Markers' });
+    saveState(s);
+    expect(loadState().outline.draft).toBe('d2');
+    s = reducer(s, { type: 'removeDraft' });
+    expect(s.outline.draft).toBe('d1');
+  });
+});
+
+describe('backups', () => {
+  it('round-trips a canvas and rejects other files', async () => {
+    const { backupJson, readBackup, backupFileName } = await import('./backup');
+    let s = reducer(initialState(), { type: 'setDetail', key: 'title', value: 'Q3 Offsite!' });
+    s = reducer(s, { type: 'addSticky', cellId: 'ideas', id: 'x' });
+    const back = readBackup(backupJson(s));
+    expect(back?.state.details.title).toBe('Q3 Offsite!');
+    expect(back?.state.cells.ideas.stickies).toHaveLength(1);
+    expect(back?.savedAt).toBeTruthy();
+    expect(readBackup('{"hello":1}')).toBeNull();
+    expect(readBackup('not json')).toBeNull();
+    expect(backupFileName(s, new Date('2026-11-12T10:00:00Z'))).toBe('q3-offsite-backup-2026-11-12.json');
   });
 });

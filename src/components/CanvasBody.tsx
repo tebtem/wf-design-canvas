@@ -7,6 +7,7 @@ import { TimeBlocksSection } from './TimeBlocks/TimeBlocksSection';
 import { FlowFunction } from './FlowFunction';
 import { StickyDnd } from './StickyDnd';
 import { ActivityIdeation } from './ActivityIdeation';
+import { SessionOutline } from './SessionOutline';
 
 interface Props {
   label?: string;
@@ -60,6 +61,9 @@ export function CanvasBody({ label, step: forcedStep, guided = false }: Props) {
           <Step shown={step >= 3}>
             <FlowFunction />
             <ActivityIdeation />
+          </Step>
+          <Step shown={step >= 4}>
+            <SessionOutline />
           </Step>
         </StickyDnd>
         {guided && !readOnly && forcedStep === undefined && step < LAST_STEP && (

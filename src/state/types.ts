@@ -60,6 +60,17 @@ export const DETAIL_FIELDS: { key: keyof CanvasDetails; label: string }[] = [
   { key: 'participants', label: 'Number of Participants' },
 ];
 
+export interface OutlineRow {
+  activities: string;
+  moves: string;
+}
+
+/** Session Outline: rows come from one draft's time blocks; text is kept per block id. */
+export interface Outline {
+  draft: DraftId;
+  rows: Record<string, OutlineRow>;
+}
+
 export interface CanvasState {
   version: 1;
   details: CanvasDetails;
@@ -67,6 +78,7 @@ export interface CanvasState {
   drafts: Record<DraftId, TimeBlock[]>;
   /** Solo guided mode: sections are revealed up to this step (see REVEAL_STEPS). */
   step: number;
+  outline: Outline;
   /** How many drafts are on screen (1 to 3). Drafts are added with Add another draft. */
   draftCount: number;
 }

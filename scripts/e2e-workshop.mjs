@@ -97,7 +97,7 @@ if ((await headings(bob)).includes('Flow, Function, and Form')) fail('flow revea
 await host.getByRole('button', { name: 'Hide Time Blocks' }).click();
 await until(async () => !(await headings(bob)).includes('Time Blocks'), 'hide works');
 await host.getByRole('button', { name: 'Reveal all' }).click();
-await until(async () => (await headings(alice)).length === 8, 'alice sees full canvas');
+await until(async () => (await headings(alice)).length === 9, 'alice sees full canvas');
 if (await host.getByRole('button', { name: /^Reveal next/ }).count()) fail('reveal next shown after all revealed');
 await alice.screenshot({ path: out + 'ws-revealed.png' });
 step('guided reveal works');

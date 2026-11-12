@@ -1,6 +1,6 @@
 import { emptyDetails, initialState } from './reducer';
 import { clampStep } from './cells';
-import { clampMinutes, STICKY_COLORS, type CanvasDetails, type CanvasState, type Cell, type TimeBlock } from './types';
+import { clampMinutes, DRAFT_IDS, STICKY_COLORS, type CanvasDetails, type Outline, type CanvasState, type Cell, type TimeBlock } from './types';
 
 /** Blocks saved before notes existed get an empty notes field. */
 const migrateBlocks = (blocks: TimeBlock[] = []) =>
@@ -19,6 +19,14 @@ function migrateCells(cells: Record<string, Cell>): Record<string, Cell> {
       return [id, c.title ? { text: '', stickies, title: str(c.title) } : { text: '', stickies }];
     }),
   );
+}
+
+function migrateOutline(o: Partial<Outline> | undefined, draftCount: number): Outline {
+  const draft = o?.draft && DRAFT_IDS.slice(0, draftCount).includes(o.draft) ? o.draft : 'd1';
+  const rows = Object.fromEntries(
+    Object.entries(o?.rows ?? {}).map(([id, r]) => [id, { activities: str(r?.activities), moves: str(r?.moves) }]),
+  );
+  return { draft, rows };
 }
 
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
@@ -45,6 +53,7 @@ export function parseState(raw: string | null | undefined): CanvasState | null {
       cells: migrateCells(parsed.cells ?? {}),
       drafts: { d1: migrateBlocks(parsed.drafts.d1), d2, d3 },
       draftCount,
+      outline: migrateOutline(parsed.outline, draftCount),
       // Canvases saved before the guide existed open fully revealed.
       step: clampStep(parsed.step),
     };

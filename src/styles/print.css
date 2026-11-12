@@ -92,6 +92,7 @@
   .step-hidden {
     display: contents !important;
   }
+  .outline__input,
   .note-cell__heading-input,
   .details__input,
   .add-sticky {
@@ -145,6 +146,15 @@
     min-height: 120px;
   }
 
+  .outline__scroll {
+    overflow: visible;
+  }
+  .outline__table {
+    min-width: 0;
+  }
+  .outline__table tr {
+    break-inside: avoid;
+  }
   .card,
   .quadrant,
   .note-cell,

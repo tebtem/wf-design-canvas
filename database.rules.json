@@ -27,7 +27,7 @@
             ".validate": "newData.isBoolean()"
           },
           "step": {
-            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3 && newData.val() % 1 === 0"
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4 && newData.val() % 1 === 0"
           },
           "spotlight": {
             ".validate": "newData.hasChildren(['uid', 'name'])",

@@ -1,7 +1,8 @@
 import { LAST_STEP } from '../state/cells';
-import { useRef } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
+import { downloadBackup, readBackup } from '../state/backup';
 import { useCanvas } from '../state/CanvasContext';
-import { ExternalIcon, PeopleIcon, PrintIcon } from './Icons';
+import { DownloadIcon, ExternalIcon, PeopleIcon, PrintIcon, UploadIcon } from './Icons';
 
 const LEARN_URL = 'https://www.womenfacilitating.com/facilitation-design';
 
@@ -10,14 +11,34 @@ export function Toolbar({ onWorkshop, guided = false }: { onWorkshop?: () => voi
   const dialogRef = useRef<HTMLDialogElement>(null);
   const clearBtn = useRef<HTMLButtonElement>(null);
 
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [notice, setNotice] = useState<{ text: string; error?: boolean } | null>(null);
+
+  const restore = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const backup = readBackup(await file.text());
+    if (!backup) {
+      setNotice({ text: 'That file is not a canvas backup. Choose a file saved with Download backup.', error: true });
+      return;
+    }
+    const when = backup.savedAt ? ` from ${new Date(backup.savedAt).toLocaleString()}` : '';
+    if (!window.confirm(`Replace everything on this canvas with the backup${when}? This cannot be undone.`)) return;
+    dispatch({ type: 'load', state: backup.state });
+    setNotice({ text: `Backup${when} restored.` });
+  };
+
   const status =
-    saveStatus === 'error'
-      ? 'Could not save. Your browser is blocking storage, so use Save as PDF to keep your work.'
-      : 'Changes save automatically in this browser.';
+    notice?.text ??
+    (saveStatus === 'error'
+      ? 'Could not save. Your browser is blocking storage, so use Download backup or Save as PDF to keep your work.'
+      : 'Changes save automatically in this browser.');
+  const isError = notice ? notice.error : saveStatus === 'error';
 
   return (
     <aside className="toolbar no-print" aria-label="Canvas tools">
-      <p className={`toolbar__status${saveStatus === 'error' ? ' is-error' : ''}`} role="status">
+      <p className={`toolbar__status${isError ? ' is-error' : ''}`} role="status">
         {status}
       </p>
       <div className="toolbar__actions">
@@ -40,6 +61,30 @@ export function Toolbar({ onWorkshop, guided = false }: { onWorkshop?: () => voi
           <PrintIcon />
           Save as PDF
         </button>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            downloadBackup(state);
+            setNotice({ text: 'Backup downloaded. Keep the file to restore this canvas on any device.' });
+          }}
+        >
+          <DownloadIcon />
+          Download backup
+        </button>
+        <button type="button" className="btn" onClick={() => fileRef.current?.click()}>
+          <UploadIcon />
+          Restore backup
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".json,application/json"
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+          onChange={restore}
+        />
         <button ref={clearBtn} type="button" className="btn" onClick={() => dialogRef.current?.showModal()}>
           Clear canvas
         </button>

@@ -70,6 +70,7 @@ export const REVEAL_STEPS = [
   'Facilitator at the Center',
   'Time Blocks',
   'Flow, Function, and Form + Activity Ideation',
+  'Session Outline',
 ] as const;
 export const LAST_STEP = REVEAL_STEPS.length - 1;
 /** What each step adds, for the host's controls. */
@@ -78,9 +79,10 @@ export const STEP_DETAIL = [
   'Facilitator at the Center',
   'Time Blocks',
   'Flow, Function, and Form, and Activity Ideation',
+  'Session Outline',
 ];
 /** Section anchor for each step (matches the Section ids in the canvas). */
-export const STEP_ANCHORS = ['section-brief', 'section-facilitator', 'section-time', 'section-flow'];
+export const STEP_ANCHORS = ['section-brief', 'section-facilitator', 'section-time', 'section-flow', 'section-outline'];
 
 /** A step value from the database, clamped. Missing means everything is shown. */
 export const clampStep = (step: number | undefined | null) =>

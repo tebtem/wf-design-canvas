@@ -68,7 +68,7 @@ await check("spotlight: alice still cannot read bob's", assertFails(alice.ref(`s
 await check('spotlight: non-members still cannot read', assertFails(eve.ref(`sessions/${S}/canvases/alice`).get()));
 await check('host cannot change the expiry', assertFails(fac.ref(`sessions/${S}/meta/expiresAt`).set(Date.now() + 2 * DAY)));
 await check('host reveals the next step', assertSucceeds(fac.ref(`sessions/${S}/meta/step`).set(1)));
-await check('reveal step must be 0 to 3', assertFails(fac.ref(`sessions/${S}/meta/step`).set(4)));
+await check('reveal step must be 0 to 4', assertFails(fac.ref(`sessions/${S}/meta/step`).set(5)));
 await check('reveal step must be a whole number', assertFails(fac.ref(`sessions/${S}/meta/step`).set(1.5)));
 await check('participants cannot reveal steps', assertFails(alice.ref(`sessions/${S}/meta/step`).set(3)));
 await check('host turns sharing on', assertSucceeds(fac.ref(`sessions/${S}/meta/canView`).set(true)));

@@ -1,6 +1,6 @@
 import { clampMinutes, DRAFT_IDS, MAX_DRAFTS } from './types';
 import { LAST_STEP } from './cells';
-import type { BlockMinutes, CanvasDetails, CanvasState, Cell, DraftId, StickyColor, TimeBlock } from './types';
+import type { BlockMinutes, CanvasDetails, CanvasState, Cell, DraftId, OutlineRow, StickyColor, TimeBlock } from './types';
 
 export type Action =
   | { type: 'setText'; cellId: string; text: string }
@@ -17,6 +17,9 @@ export type Action =
   | { type: 'setCellTitle'; cellId: string; title: string }
   | { type: 'nextStep' }
   | { type: 'showAll' }
+  | { type: 'setOutlineDraft'; draft: DraftId }
+  | { type: 'setOutlineRow'; blockId: string; field: keyof OutlineRow; value: string }
+  | { type: 'load'; state: CanvasState }
   | { type: 'addDraft' }
   | { type: 'removeDraft' }
   | { type: 'reset' };
@@ -29,6 +32,7 @@ export const initialState = (): CanvasState => ({
   cells: {},
   drafts: { d1: [], d2: [], d3: [] },
   draftCount: 1,
+  outline: { draft: 'd1', rows: {} },
   // A brand-new canvas starts guided; Clear canvas starts the guide over.
   step: 0,
 });
@@ -170,6 +174,20 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
     case 'showAll':
       return { ...state, step: LAST_STEP };
 
+    case 'setOutlineDraft':
+      return { ...state, outline: { ...state.outline, draft: action.draft } };
+
+    case 'setOutlineRow': {
+      const row = state.outline.rows[action.blockId] ?? { activities: '', moves: '' };
+      return {
+        ...state,
+        outline: { ...state.outline, rows: { ...state.outline.rows, [action.blockId]: { ...row, [action.field]: action.value } } },
+      };
+    }
+
+    case 'load':
+      return action.state;
+
     case 'addDraft':
       return { ...state, draftCount: Math.min(MAX_DRAFTS, state.draftCount + 1) };
 
@@ -178,7 +196,8 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
       // Only the last draft can be removed, so the remaining drafts keep their numbers.
       if (state.draftCount <= 1) return state;
       const last = DRAFT_IDS[state.draftCount - 1];
-      return { ...state, draftCount: state.draftCount - 1, drafts: { ...state.drafts, [last]: [] } };
+      const outline = state.outline.draft === last ? { ...state.outline, draft: 'd1' as DraftId } : state.outline;
+      return { ...state, draftCount: state.draftCount - 1, drafts: { ...state.drafts, [last]: [] }, outline };
     }
 
     case 'reset':

@@ -910,6 +910,113 @@ button {
   min-height: 110px;
 }
 
+/* ---------- Session Outline ---------- */
+.outline__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  margin-bottom: 12px;
+}
+.outline__title {
+  flex: 1 1 auto;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.outline__untitled {
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--navy-soft);
+}
+.outline__draft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.outline__draft select {
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  font: inherit;
+  color: var(--navy);
+}
+.outline__total {
+  font-weight: 600;
+}
+.outline__empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--navy-soft);
+}
+/* Data tables may scroll sideways on narrow screens (WCAG 1.4.10 exception). */
+.outline__scroll {
+  overflow-x: auto;
+}
+.outline__scroll:focus-visible {
+  outline: var(--focus);
+}
+.outline__table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  background: var(--white);
+}
+.outline__table th,
+.outline__table td {
+  border: 1.5px solid var(--navy);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.outline__table thead th {
+  background: #aab9e4; /* navy text 7:1 */
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.outline__table thead th:nth-child(2) {
+  width: 42%;
+}
+.outline__time {
+  width: 9.5em;
+  font-weight: 400;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.outline__block {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--navy-soft);
+  white-space: normal;
+}
+.outline__len {
+  width: 5.5em;
+  white-space: nowrap;
+}
+.outline__input {
+  display: block;
+  width: 100%;
+  min-height: 2.8em;
+  padding: 4px 6px;
+  border: 1px dashed transparent;
+  border-radius: 4px;
+  background: transparent;
+  line-height: 1.4;
+  resize: vertical;
+  field-sizing: content;
+}
+.outline__input:hover {
+  border-color: #9aa3c7;
+}
+.outline__input:focus-visible {
+  outline-offset: 0;
+  background: var(--white);
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 860px) {
   .time-grid--3,
