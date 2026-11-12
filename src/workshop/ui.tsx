@@ -83,14 +83,12 @@ export function Gallery({ entries, onOpen, spotlightUid, empty }: GalleryProps) 
                   <dt>Sticky notes</dt>
                   <dd>{sum.stickies}</dd>
                 </div>
-                <div>
-                  <dt>Draft 1</dt>
-                  <dd>{sum.d1}</dd>
-                </div>
-                <div>
-                  <dt>Draft 2</dt>
-                  <dd>{sum.d2}</dd>
-                </div>
+                {sum.drafts.map((t, i) => (
+                  <div key={i}>
+                    <dt>Draft {i + 1}</dt>
+                    <dd>{t}</dd>
+                  </div>
+                ))}
                 {e.comments !== undefined && (
                   <div>
                     <dt>Your comments</dt>

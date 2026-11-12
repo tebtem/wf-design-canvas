@@ -111,16 +111,23 @@ describe('persistence', () => {
 });
 
 describe('canvas details and drafts', () => {
-  it('sets details and adds and removes draft 2', () => {
+  it('sets details and adds up to three drafts, removing the last one', () => {
     let s = reducer(initialState(), { type: 'setDetail', key: 'client', value: 'Acme' });
     expect(s.details.client).toBe('Acme');
-    expect(s.showDraft2).toBe(false);
+    expect(s.draftCount).toBe(1);
     s = reducer(s, { type: 'addDraft' });
-    s = reducer(s, { type: 'addBlock', draftId: 'd2', id: 'z', minutes: 5 });
+    s = reducer(s, { type: 'addDraft' });
+    s = reducer(s, { type: 'addDraft' });
+    expect(s.draftCount).toBe(3);
+    s = reducer(s, { type: 'addBlock', draftId: 'd2', id: 'y', minutes: 10 });
+    s = reducer(s, { type: 'addBlock', draftId: 'd3', id: 'z', minutes: 5 });
+    s = reducer(s, { type: 'removeDraft' });
+    expect(s.draftCount).toBe(2);
+    expect(s.drafts.d3).toHaveLength(0);
     expect(s.drafts.d2).toHaveLength(1);
     s = reducer(s, { type: 'removeDraft' });
-    expect(s.showDraft2).toBe(false);
-    expect(s.drafts.d2).toHaveLength(0);
+    s = reducer(s, { type: 'removeDraft' });
+    expect(s.draftCount).toBe(1);
   });
 
   it('turns old cell text into a sticky and keeps draft 2 when it has blocks', () => {
@@ -135,7 +142,7 @@ describe('canvas details and drafts', () => {
     const s = loadState();
     expect(s.cells['brief.0'].stickies.map((x) => x.text)).toEqual(['Old purpose', 'note']);
     expect(s.cells['brief.0'].text).toBe('');
-    expect(s.showDraft2).toBe(true);
+    expect(s.draftCount).toBe(2);
     expect(s.details).toEqual({ title: '', client: '', participants: '' });
   });
 });

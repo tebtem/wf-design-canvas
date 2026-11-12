@@ -524,7 +524,8 @@ button {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  min-height: 32px;
   gap: 4px 12px;
   margin-bottom: 10px;
 }
@@ -534,6 +535,7 @@ button {
   color: var(--accent-text);
 }
 .draft__total {
+  margin-left: auto;
   font-size: 0.9rem;
   font-weight: 600;
 }
@@ -550,6 +552,22 @@ button {
 }
 .time-grid--readonly.time-grid--1 {
   grid-template-columns: 1fr;
+}
+/* Three drafts: drafts side by side, the bank in a row underneath. */
+.time-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.time-grid--3 .bank {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+.time-grid--3 .bank__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  align-items: start;
+}
+.time-grid--readonly.time-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .draft__add {
   align-self: flex-start;
@@ -791,6 +809,10 @@ button {
 
 /* ---------- Responsive ---------- */
 @media (max-width: 860px) {
+  .time-grid--3,
+  .time-grid--readonly.time-grid--3 {
+    grid-template-columns: 1fr;
+  }
   .time-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -815,7 +837,8 @@ button {
     border-radius: var(--radius-card);
   }
   .time-grid,
-  .time-grid--1 {
+  .time-grid--1,
+  .time-grid--3 {
     grid-template-columns: 1fr;
   }
   .quadrant {

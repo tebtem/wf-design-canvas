@@ -38,7 +38,7 @@ describe('summarize', () => {
     s = reducer(s, { type: 'addSticky', cellId: 'ideas', id: 'b' });
     s = reducer(s, { type: 'addBlock', draftId: 'd1', id: 'x', minutes: 45 });
     s = reducer(s, { type: 'addBlock', draftId: 'd1', id: 'y', minutes: 30 });
-    expect(summarize(s)).toEqual({ filled: 2, stickies: 2, d1: '1 hr 15 min', d2: 'Empty' });
+    expect(summarize(s)).toEqual({ filled: 2, stickies: 2, drafts: ['1 hr 15 min'] });
   });
 });
 

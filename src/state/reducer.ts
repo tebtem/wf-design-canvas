@@ -1,3 +1,4 @@
+import { DRAFT_IDS, MAX_DRAFTS } from './types';
 import type { BlockMinutes, CanvasDetails, CanvasState, Cell, DraftId, StickyColor, TimeBlock } from './types';
 
 export type Action =
@@ -21,12 +22,12 @@ export const initialState = (): CanvasState => ({
   version: 1,
   details: emptyDetails(),
   cells: {},
-  drafts: { d1: [], d2: [] },
-  showDraft2: false,
+  drafts: { d1: [], d2: [], d3: [] },
+  draftCount: 1,
 });
 
 /** Drafts currently on screen. */
-export const visibleDrafts = (state: CanvasState): DraftId[] => (state.showDraft2 ? ['d1', 'd2'] : ['d1']);
+export const visibleDrafts = (state: CanvasState): DraftId[] => DRAFT_IDS.slice(0, state.draftCount);
 
 const emptyCell: Cell = { text: '', stickies: [] };
 
@@ -146,10 +147,15 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
       return { ...state, details: { ...state.details, [action.key]: action.value } };
 
     case 'addDraft':
-      return { ...state, showDraft2: true };
+      return { ...state, draftCount: Math.min(MAX_DRAFTS, state.draftCount + 1) };
 
     case 'removeDraft':
-      return { ...state, showDraft2: false, drafts: { ...state.drafts, d2: [] } };
+    {
+      // Only the last draft can be removed, so the remaining drafts keep their numbers.
+      if (state.draftCount <= 1) return state;
+      const last = DRAFT_IDS[state.draftCount - 1];
+      return { ...state, draftCount: state.draftCount - 1, drafts: { ...state.drafts, [last]: [] } };
+    }
 
     case 'reset':
       return initialState();

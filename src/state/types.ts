@@ -12,7 +12,7 @@ export interface Cell {
   stickies: Sticky[];
 }
 
-export type DraftId = 'd1' | 'd2';
+export type DraftId = 'd1' | 'd2' | 'd3';
 
 export const BLOCK_MINUTES = [5, 10, 15, 20, 30, 45, 60] as const;
 export type BlockMinutes = (typeof BLOCK_MINUTES)[number];
@@ -42,14 +42,16 @@ export interface CanvasState {
   details: CanvasDetails;
   cells: Record<string, Cell>;
   drafts: Record<DraftId, TimeBlock[]>;
-  /** Session Draft 2 only shows after someone adds it. */
-  showDraft2: boolean;
+  /** How many drafts are on screen (1 to 3). Drafts are added with Add another draft. */
+  draftCount: number;
 }
 
-export const DRAFT_IDS: DraftId[] = ['d1', 'd2'];
+export const DRAFT_IDS: DraftId[] = ['d1', 'd2', 'd3'];
+export const MAX_DRAFTS = DRAFT_IDS.length;
 export const DRAFT_NAMES: Record<DraftId, string> = {
   d1: 'Session Draft 1',
   d2: 'Session Draft 2',
+  d3: 'Session Draft 3',
 };
 
 export const STICKY_COLORS: StickyColor[] = ['yellow', 'pink', 'orange', 'blue'];

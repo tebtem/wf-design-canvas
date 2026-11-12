@@ -15,6 +15,12 @@ const fail = (m) => {
   process.exitCode = 1;
 };
 
+const axeCheck = async (p, label) => {
+  const res = await new AxeBuilder({ page: p }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+  for (const v of res.violations) console.log('AXE', label, v.id, v.impact, v.nodes.length, v.nodes[0]?.target);
+  if (res.violations.length) fail(`${res.violations.length} axe violations on ${label}`);
+};
+
 await page.goto(APP_URL);
 
 // Details, stickies-only cells, and the new section order.
@@ -83,6 +89,25 @@ await page.getByRole('button', { name: 'Add another draft' }).click();
 const focusedDraft = await page.evaluate(() => document.activeElement?.id);
 if (focusedDraft !== 'draft-d2-heading') fail(`focus after adding draft: ${focusedDraft}`);
 
+// A third draft; moving between three drafts uses a dialog. Then remove it again.
+await page.getByRole('button', { name: 'Add another draft' }).click();
+if (await page.getByRole('button', { name: 'Add another draft' }).count()) fail('more than three drafts allowed');
+await page.getByRole('button', { name: 'Add 20 min block to Session Draft 3' }).click();
+await page.getByRole('button', { name: /^Move 5 minute block to another draft/ }).click();
+await page.getByLabel('Move to the end of').selectOption('d3');
+await page.getByRole('dialog', { name: 'Move time block' }).getByRole('button', { name: 'Move', exact: true }).click();
+await page.waitForTimeout(200);
+const d3Total = await page.getByRole('group', { name: 'Session Draft 3' }).locator('.draft__total').textContent();
+if (d3Total !== 'Total 25 min') fail(`draft 3 total after move: ${d3Total}`);
+const afterMove = await page.evaluate(() => document.activeElement?.getAttribute('aria-label'));
+if (!afterMove?.startsWith('Move 5 minute block')) fail(`focus after block move dialog: ${afterMove}`);
+await axeCheck(page, "three drafts");
+await page.screenshot({ path: out + 'three-drafts.png', fullPage: true });
+page.once('dialog', (d) => d.accept());
+await page.getByRole('button', { name: 'Remove Session Draft 3' }).click();
+await page.waitForTimeout(200);
+if (await page.getByRole('group', { name: 'Session Draft 3' }).count()) fail('draft 3 not removed');
+
 // Button alternative.
 await page.getByRole('button', { name: 'Add 60 min block to Session Draft 2' }).click();
 await page.getByRole('textbox', { name: /^Activity for 60 minute block/ }).fill('Deep work');
@@ -101,7 +126,7 @@ const savedNotes = await page.getByRole('textbox', { name: /^Notes for 60 minute
 if (savedNotes !== '• Pairs discuss\n• Share out') fail(`block notes wrong: ${JSON.stringify(savedNotes)}`);
 const blocks = await page.locator('.tblock').count();
 console.log('Blocks after reload:', blocks);
-if (blocks < 5) fail('expected blocks to persist');
+if (blocks < 4) fail('expected blocks to persist');
 
 if ((await page.getByRole('link', { name: /^Learn about facilitation design/ }).getAttribute('href')) !== 'https://www.womenfacilitating.com/facilitation-design') fail('Learn link href wrong');
 for (const name of [/^Women Facilitating website/, /^Women Facilitating \(opens/]) {

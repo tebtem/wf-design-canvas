@@ -1,5 +1,5 @@
 import { CELL_GROUPS } from '../state/cells';
-import { formatMinutes, totalMinutes } from '../state/reducer';
+import { formatMinutes, totalMinutes, visibleDrafts } from '../state/reducer';
 import type { CanvasState } from '../state/types';
 
 export const TOTAL_CELLS = CELL_GROUPS.reduce((n, g) => n + g.cells.length, 0);
@@ -7,8 +7,8 @@ export const TOTAL_CELLS = CELL_GROUPS.reduce((n, g) => n + g.cells.length, 0);
 export interface CanvasSummary {
   filled: number;
   stickies: number;
-  d1: string;
-  d2: string;
+  /** Total time of each visible draft, e.g. ["1 hr", "Empty"]. */
+  drafts: string[];
 }
 
 /** A quick read of how far along a canvas is, for the gallery cards. */
@@ -19,8 +19,7 @@ export function summarize(state: CanvasState): CanvasSummary {
   return {
     filled: cells.filter((c) => c.text.trim() || c.stickies.length).length,
     stickies: cells.reduce((n, c) => n + c.stickies.length, 0),
-    d1: draft(state.drafts.d1),
-    d2: draft(state.drafts.d2),
+    drafts: visibleDrafts(state).map((d) => draft(state.drafts[d])),
   };
 }
 

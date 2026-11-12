@@ -32,12 +32,17 @@ export function parseState(raw: string | null | undefined): CanvasState | null {
     const parsed = JSON.parse(raw) as Partial<CanvasState>;
     if (parsed?.version !== 1 || typeof parsed.cells !== 'object' || !parsed.drafts) return null;
     const d2 = migrateBlocks(parsed.drafts.d2);
+    const d3 = migrateBlocks(parsed.drafts.d3);
+    const old = parsed as { showDraft2?: boolean };
+    const saved = typeof parsed.draftCount === 'number' ? parsed.draftCount : old.showDraft2 ? 2 : 1;
+    // Never hide a draft that has blocks in it.
+    const draftCount = Math.max(1, Math.min(3, Math.floor(saved)), d3.length ? 3 : d2.length ? 2 : 1);
     return {
       version: 1,
       details: migrateDetails(parsed.details),
       cells: migrateCells(parsed.cells ?? {}),
-      drafts: { d1: migrateBlocks(parsed.drafts.d1), d2 },
-      showDraft2: parsed.showDraft2 === true || d2.length > 0,
+      drafts: { d1: migrateBlocks(parsed.drafts.d1), d2, d3 },
+      draftCount,
     };
   } catch {
     return null;

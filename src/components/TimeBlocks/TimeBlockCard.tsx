@@ -5,6 +5,8 @@ import { useCanvas } from '../../state/CanvasContext';
 import { DRAFT_NAMES, type DraftId, type TimeBlock } from '../../state/types';
 import { DownIcon, GripIcon, SwapIcon, UpIcon, XIcon } from '../Icons';
 import { clock, type DragData } from './dnd';
+import { useOpenBlockMove } from './TimeBlocksSection';
+import { visibleDrafts } from '../../state/reducer';
 
 const BULLET = '• ';
 
@@ -42,7 +44,10 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
     disabled: readOnly,
   });
 
-  const other: DraftId = draftId === 'd1' ? 'd2' : 'd1';
+  const openMove = useOpenBlockMove();
+  const others = visibleDrafts(state).filter((d) => d !== draftId);
+  // With two drafts the button moves straight to the other one; with three it asks which.
+  const other: DraftId | null = others.length === 1 ? others[0] : null;
   const name = `${block.minutes} minute block${block.label ? ` "${block.label}"` : ''}`;
   const where = `position ${index + 1} of ${count} in ${DRAFT_NAMES[draftId]}`;
   const inputId = `label-${block.id}`;
@@ -67,6 +72,7 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
   };
 
   const moveToOther = () => {
+    if (!other) return openMove(block.id);
     dispatch({ type: 'moveBlock', id: block.id, toDraft: other, toIndex: Number.MAX_SAFE_INTEGER });
     announce(`${name} moved to the end of ${DRAFT_NAMES[other]}.`);
     requestAnimationFrame(() =>
@@ -177,12 +183,13 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
           >
             <DownIcon />
           </button>
-          {state.showDraft2 && (
+          {others.length > 0 && (
             <button
               type="button"
               className="icon-btn js-move-other"
-              aria-label={`Move ${name} to ${DRAFT_NAMES[other]}`}
-              title={`Move to ${DRAFT_NAMES[other]}`}
+              aria-label={other ? `Move ${name} to ${DRAFT_NAMES[other]}` : `Move ${name} to another draft`}
+              aria-haspopup={other ? undefined : 'dialog'}
+              title={other ? `Move to ${DRAFT_NAMES[other]}` : 'Move to another draft'}
               onClick={moveToOther}
             >
               <SwapIcon />

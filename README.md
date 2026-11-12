@@ -5,7 +5,7 @@ An interactive version of the "Designing Facilitated Experiences" canvas!
 - Fill in the Working Title, Client Name and Number of Participants at the top.
 - Every section collects sticky notes (change color, delete). Drag a sticky by its grip to reorder it or move it to another section, or use its Move button to pick a section and position. Text typed into sections in older versions becomes a sticky note automatically.
 - Sections are stacked in one column: Session Brief, Participants at the Center, Participant Before, Participant After, Facilitator at the Center, Time Blocks, Flow + Function, Activity Ideation.
-- Drag time blocks (5, 10, 15, 20, 30, 45, 60 min) from the Time Block Bank into Session Draft 1. Use Add another draft for a second draft. Name them, add bullet-point notes (Enter starts a new bullet; Enter on an empty bullet ends the list), reorder, move between drafts, or remove them. Drafts show running times and totals.
+- Drag time blocks (5, 10, 15, 20, 30, 45, 60 min) from the Time Block Bank into Session Draft 1. Use Add another draft for up to three drafts; only the last draft can be removed. With three drafts, a block's move button asks which draft to move it to. Name them, add bullet-point notes (Enter starts a new bullet; Enter on an empty bullet ends the list), reorder, move between drafts, or remove them. Drafts show running times and totals.
 - Everything autosaves in your browser. **Save as PDF** opens the print dialog. Print uses landscape pages in your chosen paper size (Letter or A4), keeps each section whole so pages never break mid-section, and leaves out the Time Block Bank.
 
 ## Workshop mode
