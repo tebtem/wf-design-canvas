@@ -62,6 +62,7 @@ export function Gallery({ entries, onOpen, spotlightUid, empty }: GalleryProps) 
               {e.name}
               {e.isYou && <span className="ws-card__you"> (you)</span>}
             </h3>
+            {state?.details.title && <p className="ws-card__title">{state.details.title}</p>}
             {spot && (
               <p className="ws-badge">
                 <SpotlightIcon /> Spotlighted
@@ -109,13 +110,13 @@ export function Gallery({ entries, onOpen, spotlightUid, empty }: GalleryProps) 
 }
 
 /** Someone else's canvas, live and view only. */
-export function CanvasView({ canvas, name }: { canvas: RemoteCanvas | null | undefined; name: string }) {
+export function CanvasView({ canvas, name, step }: { canvas: RemoteCanvas | null | undefined; name: string; step?: number }) {
   const state = useMemo(() => parseState(canvas?.state), [canvas?.state]);
   if (canvas === undefined) return <p className="ws-empty">Loading {name}&apos;s canvas…</p>;
   if (!state) return <p className="ws-empty">{name} has not started their canvas yet.</p>;
   return (
     <ReadOnlyCanvasProvider state={state}>
-      <CanvasBody label={`${name}'s canvas, view only`} />
+      <CanvasBody label={`${name}'s canvas, view only`} step={step} />
     </ReadOnlyCanvasProvider>
   );
 }

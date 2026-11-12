@@ -2,8 +2,10 @@
 
 An interactive version of the "Designing Facilitated Experiences" canvas!
 
-- Type in any section, or add sticky notes (change color, delete). Drag a sticky by its grip to reorder it or move it to another section, or use its Move button to pick a section and position.
-- Drag time blocks (15, 20, 30, 45, 60 min) from the Time Block Bank into Session Draft 1 or 2. Name them, add bullet-point notes (Enter starts a new bullet; Enter on an empty bullet ends the list), reorder, move between drafts, or remove them. Drafts show running times and totals.
+- Fill in the Working Title, Client Name and Number of Participants at the top.
+- Every section collects sticky notes (change color, delete). Drag a sticky by its grip to reorder it or move it to another section, or use its Move button to pick a section and position. Text typed into sections in older versions becomes a sticky note automatically.
+- Sections are stacked in one column: Session Brief, Participants at the Center, Participant Before, Participant After, Facilitator at the Center, Time Blocks, Flow + Function, Activity Ideation.
+- Drag time blocks (5, 10, 15, 20, 30, 45, 60 min) from the Time Block Bank into Session Draft 1. Use Add another draft for a second draft. Name them, add bullet-point notes (Enter starts a new bullet; Enter on an empty bullet ends the list), reorder, move between drafts, or remove them. Drafts show running times and totals.
 - Everything autosaves in your browser. **Save as PDF** opens the print dialog. Print uses landscape pages in your chosen paper size (Letter or A4), keeps each section whole so pages never break mid-section, and leaves out the Time Block Bank.
 
 ## Workshop mode
@@ -12,6 +14,7 @@ Facilitators can host a live workshop and see every participant's canvas as they
 
 - **Host:** Workshop > Host a workshop. You get a 6-character code and a join link. The host view shows a live card for each participant. Open one to see their canvas (view only), send private comments tied to a section, or spotlight it so everyone can open it. A toggle lets participants see each other's canvases.
 - **Join:** Workshop > Join a workshop, enter the code and your name. Your workshop canvas is saved separately from your personal one, and you can copy it to your personal canvas when you leave.
+- **Guided reveal:** by default participants start with the Session Brief group (Session Brief, Participants at the Center, Participant Before and After). The host reveals Facilitator at the Center, then Time Blocks, Flow + Function and Activity Ideation one at a time, or everything at once, and can hide the last step again. Participants get a notice with a Go to it button. Uncheck the guided option when hosting to show the full canvas from the start.
 - Ending a workshop deletes it online. Workshops expire after 30 days: they become unreadable straight away and are deleted by a daily cleanup job.
 - The Workshop button only appears when the build has Firebase settings.
 
@@ -33,7 +36,7 @@ For local development put the same `VITE_FIREBASE_*` values in `.env.local`.
 Needs Java (for the database emulator) and `npm i -g firebase-tools`.
 
 ```bash
-npm run test:rules          # 49 security rule checks against the emulator
+npm run test:rules          # 53 security rule checks against the emulator
 npm run emulators           # terminal 1
 npm run dev:emulator        # terminal 2: app wired to the emulators
 ```

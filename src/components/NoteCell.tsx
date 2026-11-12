@@ -14,12 +14,11 @@ interface Props {
   accessibleTitle?: string;
   hideTitle?: boolean;
   className?: string;
-  placeholder?: string;
 }
 
 const EMPTY: Cell = { text: '', stickies: [] };
 
-export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', placeholder = 'Type here' }: Props) {
+export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '' }: Props) {
   const { state, dispatch, readOnly } = useCanvas();
   const cell = state.cells[cellId] ?? EMPTY;
   const uid = useId();
@@ -53,17 +52,6 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           </>
         )}
       </h3>
-      <textarea
-        className="note-cell__text"
-        aria-labelledby={headingId}
-        value={cell.text}
-        readOnly={readOnly}
-        placeholder={readOnly ? '' : placeholder}
-        onChange={(e) => dispatch({ type: 'setText', cellId, text: e.target.value })}
-      />
-      <div className="print-text" aria-hidden="true">
-        {cell.text}
-      </div>
       <SortableContext items={cell.stickies.map((s) => s.id)} strategy={rectSortingStrategy}>
         {cell.stickies.length > 0 && (
           <ul className="sticky-list" aria-label={`Sticky notes in ${fullTitle}`}>
@@ -85,17 +73,19 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           </ul>
         )}
       </SortableContext>
+      {readOnly && cell.stickies.length === 0 && <p className="note-cell__empty">No notes yet</p>}
       {!readOnly && (
         <button
           ref={addRef}
           type="button"
           className="add-sticky no-print"
-          title="Add sticky note"
           onClick={addSticky}
         >
           <PlusIcon />
           <StickyIcon />
-          <span className="sr-only">Add sticky note in {fullTitle}</span>
+          <span className="add-sticky__label">
+            Add sticky note<span className="sr-only"> in {fullTitle}</span>
+          </span>
         </button>
       )}
     </div>

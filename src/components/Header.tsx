@@ -1,3 +1,5 @@
+import { useCanvas } from '../state/CanvasContext';
+import { DETAIL_FIELDS } from '../state/types';
 import { SITE_URL } from './Footer';
 import wordmark from '../assets/designing-facilitated-experiences.png';
 
@@ -13,6 +15,7 @@ export function Logo() {
 
 export function Header({ asHeading = true }: { asHeading?: boolean }) {
   const Title = asHeading ? 'h1' : 'div';
+  const { state, dispatch, readOnly } = useCanvas();
   return (
     <header className="canvas-header">
       <Title className="title">
@@ -30,6 +33,25 @@ export function Header({ asHeading = true }: { asHeading?: boolean }) {
           <Logo />
           <span className="sr-only">Women Facilitating website (opens in a new tab)</span>
         </a>
+      </div>
+      <div className="details" role="group" aria-label="Session details">
+        {DETAIL_FIELDS.map(({ key, label }) => (
+          <div key={key} className="details__field">
+            <label htmlFor={`detail-${key}`}>{label}</label>
+            <input
+              id={`detail-${key}`}
+              className="details__input"
+              value={state.details[key]}
+              readOnly={readOnly}
+              maxLength={120}
+              autoComplete="off"
+              onChange={(e) => dispatch({ type: 'setDetail', key, value: e.target.value })}
+            />
+            <span className="print-text" aria-hidden="true">
+              {state.details[key]}
+            </span>
+          </div>
+        ))}
       </div>
     </header>
   );

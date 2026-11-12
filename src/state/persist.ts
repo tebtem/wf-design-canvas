@@ -1,18 +1,27 @@
-import { initialState } from './reducer';
-import { STICKY_COLORS, type CanvasState, type Cell, type TimeBlock } from './types';
+import { emptyDetails, initialState } from './reducer';
+import { STICKY_COLORS, type CanvasDetails, type CanvasState, type Cell, type TimeBlock } from './types';
 
 /** Blocks saved before notes existed get an empty notes field. */
 const migrateBlocks = (blocks: TimeBlock[] = []) => blocks.map((b) => ({ ...b, notes: b.notes ?? '' }));
 
-/** Keep stickies saved with a color that no longer exists (e.g. the old "green") readable. */
+/**
+ * Keep stickies saved with a color that no longer exists (e.g. the old "green") readable, and turn
+ * text typed into a cell before cells became sticky-only into the cell's first sticky note.
+ */
 function migrateCells(cells: Record<string, Cell>): Record<string, Cell> {
   return Object.fromEntries(
-    Object.entries(cells).map(([id, c]) => [
-      id,
-      { ...c, stickies: c.stickies.map((st) => (STICKY_COLORS.includes(st.color) ? st : { ...st, color: 'orange' })) },
-    ]),
+    Object.entries(cells).map(([id, c]) => {
+      const stickies = (c.stickies ?? []).map((st) => (STICKY_COLORS.includes(st.color) ? st : { ...st, color: 'orange' as const }));
+      const text = (c.text ?? '').trim();
+      if (text) stickies.unshift({ id: `text-${id}`, text, color: 'yellow' });
+      return [id, { text: '', stickies }];
+    }),
   );
 }
+
+const str = (v: unknown) => (typeof v === 'string' ? v : '');
+const migrateDetails = (d: Partial<CanvasDetails> | undefined): CanvasDetails =>
+  d ? { title: str(d.title), client: str(d.client), participants: str(d.participants) } : emptyDetails();
 
 export const STORAGE_KEY = 'wf-design-canvas:v1';
 
@@ -22,10 +31,13 @@ export function parseState(raw: string | null | undefined): CanvasState | null {
   try {
     const parsed = JSON.parse(raw) as Partial<CanvasState>;
     if (parsed?.version !== 1 || typeof parsed.cells !== 'object' || !parsed.drafts) return null;
+    const d2 = migrateBlocks(parsed.drafts.d2);
     return {
       version: 1,
+      details: migrateDetails(parsed.details),
       cells: migrateCells(parsed.cells ?? {}),
-      drafts: { d1: migrateBlocks(parsed.drafts.d1), d2: migrateBlocks(parsed.drafts.d2) },
+      drafts: { d1: migrateBlocks(parsed.drafts.d1), d2 },
+      showDraft2: parsed.showDraft2 === true || d2.length > 0,
     };
   } catch {
     return null;

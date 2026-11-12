@@ -26,6 +26,8 @@ export interface SessionMeta {
   createdAt: number;
   expiresAt: number;
   canView: boolean;
+  /** Guided reveal: how many sections participants see (see REVEAL_STEPS). Missing means all. */
+  step?: number;
   spotlight?: { uid: string; name: string } | null;
 }
 export interface Member {
@@ -70,13 +72,13 @@ function serverOffset(): Promise<number> {
   });
 }
 
-export async function createSession(title: string): Promise<{ code: string; uid: string }> {
+export async function createSession(title: string, step: number): Promise<{ code: string; uid: string }> {
   const uid = await signIn();
   const offset = await serverOffset();
   for (let attempt = 0; attempt < 6; attempt++) {
     const code = generateCode();
     const expiresAt = Date.now() + offset + RETENTION_DAYS * DAY - 10 * 60 * 1000;
-    const meta = { title, facilitator: uid, createdAt: serverTimestamp(), expiresAt, canView: false };
+    const meta = { title, facilitator: uid, createdAt: serverTimestamp(), expiresAt, canView: false, step };
     try {
       await update(r(), { [p(code, 'meta')]: meta, [`expiries/${code}`]: expiresAt });
       return { code, uid };
@@ -168,6 +170,8 @@ export function addComment(code: string, uid: string, text: string, cellId?: str
 }
 
 export const deleteComment = (code: string, uid: string, id: string) => remove(r(p(code, 'comments', uid, id)));
+
+export const setStep = (code: string, step: number) => set(r(p(code, 'meta', 'step')), step);
 
 export const setCanView = (code: string, canView: boolean) => set(r(p(code, 'meta', 'canView')), canView);
 

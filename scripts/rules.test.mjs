@@ -30,7 +30,7 @@ const check = async (name, p) => {
 };
 
 const S = 'ABC234';
-const meta = (extra = {}) => ({ title: 'Test', facilitator: 'fac', createdAt: TS, expiresAt: Date.now() + 29 * DAY, canView: false, ...extra });
+const meta = (extra = {}) => ({ title: 'Test', facilitator: 'fac', createdAt: TS, expiresAt: Date.now() + 29 * DAY, canView: false, step: 0, ...extra });
 const canvas = (text) => ({ state: JSON.stringify({ version: 1, text }), updatedAt: TS });
 
 await check('host creates a session with its expiry index', assertSucceeds(fac.ref().update({ [`sessions/${S}/meta`]: meta(), [`expiries/${S}`]: meta().expiresAt })));
@@ -67,6 +67,10 @@ await check("spotlight: bob reads alice's canvas", assertSucceeds(bob.ref(`sessi
 await check("spotlight: alice still cannot read bob's", assertFails(alice.ref(`sessions/${S}/canvases/bob`).get()));
 await check('spotlight: non-members still cannot read', assertFails(eve.ref(`sessions/${S}/canvases/alice`).get()));
 await check('host cannot change the expiry', assertFails(fac.ref(`sessions/${S}/meta/expiresAt`).set(Date.now() + 2 * DAY)));
+await check('host reveals the next step', assertSucceeds(fac.ref(`sessions/${S}/meta/step`).set(1)));
+await check('reveal step must be 0 to 4', assertFails(fac.ref(`sessions/${S}/meta/step`).set(5)));
+await check('reveal step must be a whole number', assertFails(fac.ref(`sessions/${S}/meta/step`).set(1.5)));
+await check('participants cannot reveal steps', assertFails(alice.ref(`sessions/${S}/meta/step`).set(4)));
 await check('host turns sharing on', assertSucceeds(fac.ref(`sessions/${S}/meta/canView`).set(true)));
 await check('sharing on: bob lists canvases', assertSucceeds(bob.ref(`sessions/${S}/canvases`).get()));
 await check('sharing on: bob lists members', assertSucceeds(bob.ref(`sessions/${S}/members`).get()));

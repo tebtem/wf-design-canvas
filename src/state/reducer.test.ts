@@ -109,3 +109,33 @@ describe('persistence', () => {
     expect(loadState()).toEqual(initialState());
   });
 });
+
+describe('canvas details and drafts', () => {
+  it('sets details and adds and removes draft 2', () => {
+    let s = reducer(initialState(), { type: 'setDetail', key: 'client', value: 'Acme' });
+    expect(s.details.client).toBe('Acme');
+    expect(s.showDraft2).toBe(false);
+    s = reducer(s, { type: 'addDraft' });
+    s = reducer(s, { type: 'addBlock', draftId: 'd2', id: 'z', minutes: 5 });
+    expect(s.drafts.d2).toHaveLength(1);
+    s = reducer(s, { type: 'removeDraft' });
+    expect(s.showDraft2).toBe(false);
+    expect(s.drafts.d2).toHaveLength(0);
+  });
+
+  it('turns old cell text into a sticky and keeps draft 2 when it has blocks', () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        cells: { 'brief.0': { text: ' Old purpose ', stickies: [{ id: 's', text: 'note', color: 'pink' }] } },
+        drafts: { d1: [], d2: [{ id: 'b', minutes: 30, label: '' }] },
+      }),
+    );
+    const s = loadState();
+    expect(s.cells['brief.0'].stickies.map((x) => x.text)).toEqual(['Old purpose', 'note']);
+    expect(s.cells['brief.0'].text).toBe('');
+    expect(s.showDraft2).toBe(true);
+    expect(s.details).toEqual({ title: '', client: '', participants: '' });
+  });
+});

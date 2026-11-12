@@ -9,10 +9,7 @@ import { clock, type DragData } from './dnd';
 const BULLET = '• ';
 
 /** Enter on a bulleted line starts the next bullet; Enter on an empty bullet ends the list. */
-function continueBullets(
-  e: KeyboardEvent<HTMLTextAreaElement>,
-  setValue: (v: string, caret: number) => void,
-) {
+function continueBullets(e: KeyboardEvent<HTMLTextAreaElement>, setValue: (v: string, caret: number) => void) {
   if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
   const { value, selectionStart, selectionEnd } = e.currentTarget;
   const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
@@ -37,10 +34,13 @@ interface Props {
 }
 
 export function TimeBlockCard({ block, draftId, index, count, start, announce }: Props) {
-  const { dispatch, readOnly } = useCanvas();
+  const { state, dispatch, readOnly } = useCanvas();
   const data: DragData = { type: 'block', draftId, minutes: block.minutes, label: block.label };
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
-    useSortable({ id: block.id, data, disabled: readOnly });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+    id: block.id,
+    data,
+    disabled: readOnly,
+  });
 
   const other: DraftId = draftId === 'd1' ? 'd2' : 'd1';
   const name = `${block.minutes} minute block${block.label ? ` "${block.label}"` : ''}`;
@@ -77,9 +77,7 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
   const remove = () => {
     dispatch({ type: 'removeBlock', id: block.id });
     announce(`${name} removed from ${DRAFT_NAMES[draftId]}.`);
-    requestAnimationFrame(() =>
-      document.querySelector<HTMLElement>(`#draft-${draftId}-heading`)?.focus(),
-    );
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(`#draft-${draftId}-heading`)?.focus());
   };
 
   return (
@@ -179,22 +177,18 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
           >
             <DownIcon />
           </button>
-          <button
-            type="button"
-            className="icon-btn js-move-other"
-            aria-label={`Move ${name} to ${DRAFT_NAMES[other]}`}
-            title={`Move to ${DRAFT_NAMES[other]}`}
-            onClick={moveToOther}
-          >
-            <SwapIcon />
-          </button>
-          <button
-            type="button"
-            className="icon-btn"
-            aria-label={`Remove ${name}`}
-            title="Remove"
-            onClick={remove}
-          >
+          {state.showDraft2 && (
+            <button
+              type="button"
+              className="icon-btn js-move-other"
+              aria-label={`Move ${name} to ${DRAFT_NAMES[other]}`}
+              title={`Move to ${DRAFT_NAMES[other]}`}
+              onClick={moveToOther}
+            >
+              <SwapIcon />
+            </button>
+          )}
+          <button type="button" className="icon-btn" aria-label={`Remove ${name}`} title="Remove" onClick={remove}>
             <XIcon />
           </button>
         </div>

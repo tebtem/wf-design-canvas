@@ -1,11 +1,13 @@
 import { useDraggable } from '@dnd-kit/core';
 import { newId, useCanvas } from '../../state/CanvasContext';
-import { BLOCK_MINUTES, DRAFT_IDS, DRAFT_NAMES, type BlockMinutes } from '../../state/types';
+import { visibleDrafts } from '../../state/reducer';
+import { BLOCK_MINUTES, DRAFT_NAMES, type BlockMinutes } from '../../state/types';
 import { GripIcon, PlusIcon } from '../Icons';
 import { bankDraggableId, type DragData } from './dnd';
 
 function BankItem({ minutes, announce }: { minutes: BlockMinutes; announce: (m: string) => void }) {
-  const { dispatch } = useCanvas();
+  const { state, dispatch } = useCanvas();
+  const drafts = visibleDrafts(state);
   const data: DragData = { type: 'bank', minutes };
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
     id: bankDraggableId(minutes),
@@ -29,7 +31,7 @@ function BankItem({ minutes, announce }: { minutes: BlockMinutes; announce: (m: 
         <GripIcon />
       </button>
       <div className="bank-item__add no-print">
-        {DRAFT_IDS.map((d) => (
+        {drafts.map((d) => (
           <button
             key={d}
             type="button"
@@ -41,7 +43,7 @@ function BankItem({ minutes, announce }: { minutes: BlockMinutes; announce: (m: 
             }}
           >
             <PlusIcon />
-            {DRAFT_NAMES[d].replace('Session ', '')}
+            {drafts.length === 1 ? 'Add' : DRAFT_NAMES[d].replace('Session ', '')}
           </button>
         ))}
       </div>

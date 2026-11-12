@@ -8,6 +8,7 @@ import {
   endSession,
   setCanView,
   setSpotlight,
+  setStep,
   signIn,
   watchAllComments,
   watchCanvases,
@@ -22,6 +23,8 @@ import {
 import { formatCode, spellCode } from './code';
 import { joinUrl, type ActiveWorkshop } from './session';
 import { CanvasView, CommentsPanel, Gallery, useAnnouncer } from './ui';
+import { RevealControls } from './RevealControls';
+import { clampStep, LAST_STEP, REVEAL_STEPS } from '../state/cells';
 
 interface Props {
   workshop: ActiveWorkshop;
@@ -136,6 +139,16 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
     .sort(([, a], [, b]) => a.joinedAt - b.joinedAt)
     .map(([uid, m]) => ({ uid, name: m.name, canvas: canvases[uid], comments: comments[uid]?.length ?? 0 }));
   const spotlight = meta?.spotlight ?? null;
+  const step = clampStep(meta?.step);
+  const changeStep = (next: number) =>
+    run(
+      setStep(code, next),
+      next >= LAST_STEP
+        ? 'All sections revealed.'
+        : next > step
+          ? `${REVEAL_STEPS[next]} revealed to participants.`
+          : `${REVEAL_STEPS[step]} hidden from participants.`,
+    );
   const person = selected ? members[selected] : null;
 
   return (
@@ -197,7 +210,7 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
           </h1>
           <div className="ws-detail">
             <div className="ws-detail__canvas">
-              <CanvasView canvas={canvases[selected] ?? null} name={person?.name ?? 'This participant'} />
+              <CanvasView canvas={canvases[selected] ?? null} name={person?.name ?? 'This participant'} step={step} />
             </div>
             <CommentsPanel
               name={person?.name ?? 'this participant'}
@@ -274,6 +287,8 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
               </p>
             </section>
           </div>
+
+          <RevealControls step={step} onChange={changeStep} />
 
           <section aria-labelledby="ws-people-h">
             <h2 id="ws-people-h" className="ws-h2">

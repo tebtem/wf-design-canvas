@@ -1,4 +1,4 @@
-import type { BlockMinutes, CanvasState, Cell, DraftId, StickyColor, TimeBlock } from './types';
+import type { BlockMinutes, CanvasDetails, CanvasState, Cell, DraftId, StickyColor, TimeBlock } from './types';
 
 export type Action =
   | { type: 'setText'; cellId: string; text: string }
@@ -10,13 +10,23 @@ export type Action =
   | { type: 'moveBlock'; id: string; toDraft: DraftId; toIndex: number }
   | { type: 'editBlock'; id: string; label?: string; notes?: string }
   | { type: 'removeBlock'; id: string }
+  | { type: 'setDetail'; key: keyof CanvasDetails; value: string }
+  | { type: 'addDraft' }
+  | { type: 'removeDraft' }
   | { type: 'reset' };
+
+export const emptyDetails = (): CanvasDetails => ({ title: '', client: '', participants: '' });
 
 export const initialState = (): CanvasState => ({
   version: 1,
+  details: emptyDetails(),
   cells: {},
   drafts: { d1: [], d2: [] },
+  showDraft2: false,
 });
+
+/** Drafts currently on screen. */
+export const visibleDrafts = (state: CanvasState): DraftId[] => (state.showDraft2 ? ['d1', 'd2'] : ['d1']);
 
 const emptyCell: Cell = { text: '', stickies: [] };
 
@@ -131,6 +141,15 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
       const list = state.drafts[loc.draftId].filter((b) => b.id !== action.id);
       return { ...state, drafts: { ...state.drafts, [loc.draftId]: list } };
     }
+
+    case 'setDetail':
+      return { ...state, details: { ...state.details, [action.key]: action.value } };
+
+    case 'addDraft':
+      return { ...state, showDraft2: true };
+
+    case 'removeDraft':
+      return { ...state, showDraft2: false, drafts: { ...state.drafts, d2: [] } };
 
     case 'reset':
       return initialState();

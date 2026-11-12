@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useCanvas } from '../state/CanvasContext';
 import { parseState, readState, saveState } from '../state/persist';
+import { LAST_STEP } from '../state/cells';
 import { normalizeCode } from '../workshop/code';
 import { RETENTION_DAYS } from '../workshop/config';
 import { workshopCanvasKey, type ActiveWorkshop } from '../workshop/session';
@@ -23,6 +24,7 @@ export function WorkshopDialog({ open, initialCode, onClose, onEnter }: Props) {
   const [name, setName] = useState('');
   const [title, setTitle] = useState('');
   const [copyCurrent, setCopyCurrent] = useState(false);
+  const [guided, setGuided] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ field: Field; text: string } | null>(null);
 
@@ -50,7 +52,7 @@ export function WorkshopDialog({ open, initialCode, onClose, onEnter }: Props) {
     try {
       const api = await import('../workshop/api');
       if (mode === 'host') {
-        const res = await api.createSession(title.trim() || 'Workshop');
+        const res = await api.createSession(title.trim() || 'Workshop', guided ? 0 : LAST_STEP);
         onEnter({ code: res.code, role: 'facilitator', uid: res.uid });
         return;
       }
@@ -152,6 +154,10 @@ export function WorkshopDialog({ open, initialCode, onClose, onEnter }: Props) {
             <p id={`${uid}-title-hint`} className="ws-hint">
               You get a code to share. You will see every participant&apos;s canvas live.
             </p>
+            <label className="ws-check">
+              <input type="checkbox" checked={guided} onChange={(e) => setGuided(e.target.checked)} />
+              Guide participants through the canvas one section at a time (you can reveal everything at any point)
+            </label>
           </>
         )}
 

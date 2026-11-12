@@ -4,7 +4,7 @@ import { Section } from './Section';
 
 export function FlowFunction() {
   return (
-    <Section title="Flow + Function" className="band--flow">
+    <Section id="section-flow" title="Flow + Function" className="band--flow">
       <div className="panel">
         <div className="flow-grid">
           {cellsIn('Flow + Function').map((c, i) => (
@@ -14,7 +14,6 @@ export function FlowFunction() {
               title={c.title}
               hideTitle
               className={`flow-col flow-col--${i}`}
-              placeholder=""
             />
           ))}
         </div>

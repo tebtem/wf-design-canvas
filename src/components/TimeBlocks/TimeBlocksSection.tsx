@@ -19,8 +19,9 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { newId, useCanvas } from '../../state/CanvasContext';
-import { findBlock } from '../../state/reducer';
-import { DRAFT_IDS, DRAFT_NAMES, type CanvasState, type DraftId } from '../../state/types';
+import { findBlock, visibleDrafts } from '../../state/reducer';
+import { DRAFT_NAMES, type CanvasState, type DraftId } from '../../state/types';
+import { PlusIcon } from '../Icons';
 import { Section } from '../Section';
 import { BlockBank } from './BlockBank';
 import { DraftColumn } from './DraftColumn';
@@ -96,6 +97,22 @@ export function TimeBlocksSection() {
   const [active, setActive] = useState<DragData | null>(null);
   const [message, setMessage] = useState('');
 
+  const drafts = visibleDrafts(state);
+
+  const addDraft = () => {
+    dispatch({ type: 'addDraft' });
+    announce(`${DRAFT_NAMES.d2} added.`);
+    requestAnimationFrame(() => document.getElementById('draft-d2-heading')?.focus());
+  };
+
+  const removeDraft = () => {
+    const n = state.drafts.d2.length;
+    if (n && !window.confirm(`Remove ${DRAFT_NAMES.d2} and its ${n} time block${n === 1 ? '' : 's'}?`)) return;
+    dispatch({ type: 'removeDraft' });
+    announce(`${DRAFT_NAMES.d2} removed.`);
+    requestAnimationFrame(() => document.getElementById('add-draft')?.focus());
+  };
+
   const announce = (msg: string) => {
     // Clear first so repeating the same message is still announced.
     setMessage('');
@@ -154,7 +171,7 @@ export function TimeBlocksSection() {
   };
 
   return (
-    <Section title="Time Blocks" className="band--time">
+    <Section id="section-time" title="Time Blocks" className="band--time">
       <DndContext
         sensors={sensors}
         collisionDetection={collision}
@@ -170,9 +187,25 @@ export function TimeBlocksSection() {
           },
         }}
       >
-        <div className={`panel time-grid${readOnly ? ' time-grid--readonly' : ''}`}>
-          {DRAFT_IDS.map((d) => (
-            <DraftColumn key={d} draftId={d} blocks={state.drafts[d]} announce={announce} />
+        <div
+          className={`panel time-grid time-grid--${drafts.length}${readOnly ? ' time-grid--readonly' : ''}`}
+        >
+          {drafts.map((d) => (
+            <DraftColumn
+              key={d}
+              draftId={d}
+              blocks={state.drafts[d]}
+              announce={announce}
+              onRemove={d === 'd2' && !readOnly ? removeDraft : undefined}
+              footer={
+                d === 'd1' && !state.showDraft2 && !readOnly ? (
+                  <button id="add-draft" type="button" className="btn draft__add no-print" onClick={addDraft}>
+                    <PlusIcon />
+                    Add another draft
+                  </button>
+                ) : null
+              }
+            />
           ))}
           {!readOnly && <BlockBank announce={announce} />}
         </div>

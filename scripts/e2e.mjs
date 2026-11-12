@@ -17,8 +17,19 @@ const fail = (m) => {
 
 await page.goto(APP_URL);
 
-// Typing and stickies persist.
-await page.getByRole('textbox', { name: 'Purpose', exact: true }).fill('Align on Q3 goals');
+// Details, stickies-only cells, and the new section order.
+await page.getByLabel('Working Title').fill('Q3 planning');
+await page.getByLabel('Client Name').fill('Acme');
+await page.getByLabel('Number of Participants').fill('24');
+if (await page.locator('.note-cell__text').count()) fail('free-text boxes should be gone');
+const order = await page.locator('.band__title').allTextContents();
+const expected = ['Session Brief', 'Participants at the Center', 'Participant Before', 'Participant After', 'Facilitator at the Center', 'Time Blocks', 'Flow + Function', 'Activity Ideation'];
+if (order.join('|') !== expected.join('|')) fail(`section order: ${order.join(', ')}`);
+for (const name of ['Timing + Logistics', 'Space + Materials']) {
+  if (!(await page.getByRole('group', { name, exact: true }).count())) fail(`missing cell ${name}`);
+}
+await page.getByRole('button', { name: 'Add sticky note in Purpose' }).click();
+await page.keyboard.type('Align on Q3 goals');
 await page.getByRole('button', { name: 'Add sticky note in Activity ideas' }).click();
 await page.keyboard.type('Gallery walk');
 
@@ -26,21 +37,21 @@ await page.keyboard.type('Gallery walk');
 await page.getByRole('button', { name: 'Add sticky note in Activity ideas' }).click();
 await page.keyboard.type('Fishbowl');
 await page.getByRole('button', { name: /^Move Sticky note 2 in Activity ideas/ }).click();
-await page.getByLabel('Section', { exact: true }).selectOption('brief.0');
+await page.getByLabel('Section', { exact: true }).selectOption('brief.1');
 await page.getByRole('button', { name: 'Move', exact: true }).click();
 await page.waitForTimeout(200);
-if ((await page.getByRole('textbox', { name: 'Sticky note 1 in Purpose' }).inputValue()) !== 'Fishbowl') fail('move dialog did not move sticky');
+if ((await page.getByRole('textbox', { name: 'Sticky note 1 in Outcomes' }).inputValue()) !== 'Fishbowl') fail('move dialog did not move sticky');
 const focused = await page.evaluate(() => document.activeElement?.getAttribute('aria-label'));
-if (!focused?.startsWith('Move Sticky note 1 in Purpose')) fail(`focus after move dialog: ${focused}`);
-await page.getByRole('button', { name: 'Drag Sticky note 1 in Purpose' }).hover();
+if (!focused?.startsWith('Move Sticky note 1 in Outcomes')) fail(`focus after move dialog: ${focused}`);
+await page.getByRole('button', { name: 'Drag Sticky note 1 in Outcomes' }).hover();
 await page.mouse.down();
-const outcomes = await page.getByRole('group', { name: 'Outcomes' }).boundingBox();
-await page.mouse.move(outcomes.x + outcomes.width / 2, outcomes.y + outcomes.height / 2, { steps: 12 });
-await page.mouse.move(outcomes.x + outcomes.width / 2 + 4, outcomes.y + outcomes.height / 2, { steps: 3 });
+const target = await page.getByRole('group', { name: 'Space + Materials' }).boundingBox();
+await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 12 });
+await page.mouse.move(target.x + target.width / 2 + 4, target.y + target.height / 2, { steps: 3 });
 await page.mouse.up();
 await page.waitForTimeout(300);
-if ((await page.getByRole('textbox', { name: 'Sticky note 1 in Outcomes' }).inputValue()) !== 'Fishbowl') fail('drag did not move sticky to Outcomes');
-if (await page.getByRole('textbox', { name: 'Sticky note 1 in Purpose' }).count()) fail('sticky still in Purpose after drag');
+if ((await page.getByRole('textbox', { name: 'Sticky note 1 in Space + Materials' }).inputValue()) !== 'Fishbowl') fail('drag did not move sticky');
+if (await page.getByRole('textbox', { name: 'Sticky note 1 in Outcomes' }).count()) fail('sticky still in Outcomes after drag');
 
 // Mouse drag: 30 min bank block into Draft 1.
 const draft1 = page.getByRole('group', { name: 'Session Draft 1' });
@@ -61,9 +72,16 @@ await page.waitForTimeout(200);
 await page.keyboard.press('Space');
 await page.waitForTimeout(300);
 const total1 = await draft1.locator('.draft__total').textContent();
-const total2 = await page.getByRole('group', { name: 'Session Draft 2' }).locator('.draft__total').textContent();
-console.log('Draft 1:', total1, '| Draft 2:', total2);
+console.log('Draft 1:', total1);
 if (total1 !== 'Total 45 min') fail('expected Draft 1 to total 45 min');
+
+// One draft until another is added; 5 and 10 minute blocks exist.
+if (await page.getByRole('group', { name: 'Session Draft 2' }).count()) fail('draft 2 should start hidden');
+await page.getByRole('button', { name: 'Add 5 min block to Session Draft 1' }).click();
+await page.getByRole('button', { name: 'Add 10 min block to Session Draft 1' }).click();
+await page.getByRole('button', { name: 'Add another draft' }).click();
+const focusedDraft = await page.evaluate(() => document.activeElement?.id);
+if (focusedDraft !== 'draft-d2-heading') fail(`focus after adding draft: ${focusedDraft}`);
 
 // Button alternative.
 await page.getByRole('button', { name: 'Add 60 min block to Session Draft 2' }).click();
@@ -76,13 +94,14 @@ await page.keyboard.type('Share out');
 
 await page.waitForTimeout(600);
 await page.reload();
-if ((await page.getByRole('textbox', { name: 'Purpose', exact: true }).inputValue()) !== 'Align on Q3 goals') fail('text did not persist');
+if ((await page.getByRole('textbox', { name: 'Sticky note 1 in Purpose' }).inputValue()) !== 'Align on Q3 goals') fail('sticky in Purpose did not persist');
+if ((await page.getByLabel('Client Name').inputValue()) !== 'Acme') fail('details did not persist');
 if ((await page.getByRole('textbox', { name: /Sticky note 1 in Activity ideas/ }).inputValue()) !== 'Gallery walk') fail('sticky did not persist');
 const savedNotes = await page.getByRole('textbox', { name: /^Notes for 60 minute block/ }).inputValue();
 if (savedNotes !== '• Pairs discuss\n• Share out') fail(`block notes wrong: ${JSON.stringify(savedNotes)}`);
 const blocks = await page.locator('.tblock').count();
 console.log('Blocks after reload:', blocks);
-if (blocks < 2) fail('expected blocks to persist');
+if (blocks < 5) fail('expected blocks to persist');
 
 if ((await page.getByRole('link', { name: /^Learn about facilitation design/ }).getAttribute('href')) !== 'https://www.womenfacilitating.com/facilitation-design') fail('Learn link href wrong');
 for (const name of [/^Women Facilitating website/, /^Women Facilitating \(opens/]) {

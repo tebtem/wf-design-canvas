@@ -21,6 +21,7 @@ import {
 import { formatCode, spellCode } from './code';
 import { workshopCanvasKey, type ActiveWorkshop } from './session';
 import { CanvasView, CommentList, Gallery, useAnnouncer } from './ui';
+import { clampStep, LAST_STEP, REVEAL_STEPS, STEP_ANCHORS } from '../state/cells';
 
 type View = { kind: 'mine' } | { kind: 'gallery' } | { kind: 'other'; uid: string; name: string };
 type Sync = 'ok' | 'offline' | 'error';
@@ -68,6 +69,15 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
   const ended = meta === null;
   const canView = Boolean(meta?.canView);
   const spotlight = meta?.spotlight ?? null;
+  // Show only the first step until the workshop settings load; an ended workshop shows everything.
+  const step = meta === undefined ? 0 : meta === null ? LAST_STEP : clampStep(meta.step);
+  const [revealed, setRevealed] = useState<number | null>(null);
+  const [lastStep, setLastStep] = useState(step);
+  if (step !== lastStep) {
+    setLastStep(step);
+    if (meta !== undefined && meta !== null && step > lastStep) setRevealed(step);
+    if (step < lastStep) setRevealed(null);
+  }
 
   // Restore the anonymous sign-in before reading anything.
   useEffect(() => {
@@ -112,6 +122,27 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
     return watchCanvas(code, viewedUid, (canvas) => setViewed({ uid: viewedUid, canvas }));
   }, [ready, code, viewedUid]);
   const viewedCanvas = viewed && viewed.uid === viewedUid ? viewed.canvas : undefined;
+
+  useEffect(() => {
+    if (revealed === null) return;
+    announce(
+      revealed >= LAST_STEP
+        ? `Your facilitator revealed ${REVEAL_STEPS[revealed]}. You can now see the full canvas.`
+        : `Your facilitator revealed ${REVEAL_STEPS[revealed]}.`,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealed]);
+
+  const goToRevealed = () => {
+    if (revealed === null) return;
+    if (view.kind !== 'mine') setView({ kind: 'mine' });
+    window.setTimeout(() => {
+      const section = document.getElementById(STEP_ANCHORS[revealed]);
+      section?.scrollIntoView({ block: 'start' });
+      section?.querySelector<HTMLElement>('h2')?.focus();
+      setRevealed(null);
+    }, 50);
+  };
 
   // Tell screen reader users about new comments, but not the ones already there on load.
   useEffect(() => {
@@ -201,6 +232,18 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
             own canvas, and choose whether to keep this one.
           </p>
         )}
+        {revealed !== null && (
+          <p className="ws-notice">
+            New section revealed: <strong>{REVEAL_STEPS[revealed]}</strong>
+            {revealed >= LAST_STEP && '. You can now see the full canvas.'}
+            <button type="button" className="btn btn--small" onClick={goToRevealed}>
+              Go to it
+            </button>
+            <button type="button" className="btn btn--small" onClick={() => setRevealed(null)}>
+              Dismiss
+            </button>
+          </p>
+        )}
         <div aria-live="polite">
           {spotlight && !ended && (
             <p className="ws-notice">
@@ -266,7 +309,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
               <h1 id="ws-view-title" className="ws-h1" tabIndex={-1}>
                 {view.name}&apos;s canvas <span className="ws-h1__note">(view only)</span>
               </h1>
-              <CanvasView canvas={viewedCanvas} name={view.name} />
+              <CanvasView canvas={viewedCanvas} name={view.name} step={step} />
             </>
           )}
         </div>
@@ -276,7 +319,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
         <CanvasProvider storageKey={workshopCanvasKey(code)}>
           <Toolbar />
           <CanvasSync code={code} uid={uid} active={ready && !ended} onResult={setPushOk} />
-          {view.kind === 'mine' && <CanvasBody />}
+          {view.kind === 'mine' && <CanvasBody step={step} />}
         </CanvasProvider>
       </div>
       <Footer />
