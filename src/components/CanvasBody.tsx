@@ -8,6 +8,7 @@ import { FlowFunction } from './FlowFunction';
 import { StickyDnd } from './StickyDnd';
 import { ActivityIdeation } from './ActivityIdeation';
 import { SessionOutline } from './SessionOutline';
+import { effectiveLayout, useLayoutPref } from '../state/layout';
 
 interface Props {
   label?: string;
@@ -30,6 +31,7 @@ export function CanvasBody({ label, step: forcedStep, guided = false }: Props) {
   const { state, dispatch, readOnly } = useCanvas();
   const step = forcedStep ?? (guided ? state.step : LAST_STEP);
   const [message, setMessage] = useState('');
+  const layout = effectiveLayout(useLayoutPref(), step);
 
   const next = () => {
     const to = Math.min(LAST_STEP, step + 1);
@@ -44,24 +46,29 @@ export function CanvasBody({ label, step: forcedStep, guided = false }: Props) {
   };
 
   return (
-    <div className={`canvas${readOnly ? ' canvas--readonly' : ''}`}>
+    <div className={`canvas canvas--${layout}${readOnly ? ' canvas--readonly' : ''}`}>
       <Header asHeading={!readOnly} />
-      <main id="canvas" className="canvas-body" tabIndex={-1} aria-label={label}>
+      <main id="canvas" className={`canvas-body canvas-body--${layout}`} tabIndex={-1} aria-label={label}>
         <StickyDnd step={step}>
-          <SessionBrief />
-          <ParticipantsCenter />
-          <ParticipantBefore />
-          <ParticipantAfter />
-          <Step shown={step >= 1}>
-            <FacilitatorCenter />
-          </Step>
-          <Step shown={step >= 2}>
-            <TimeBlocksSection />
-          </Step>
-          <Step shown={step >= 3}>
-            <FlowFunction />
-            <ActivityIdeation />
-          </Step>
+          {/* Two columns in the canvas layout; in the stacked layout they read top to bottom. */}
+          <div className="col col--left">
+            <SessionBrief />
+            <ParticipantsCenter />
+            <ParticipantBefore />
+            <ParticipantAfter />
+            <Step shown={step >= 1}>
+              <FacilitatorCenter />
+            </Step>
+          </div>
+          <div className="col col--right">
+            <Step shown={step >= 2}>
+              <TimeBlocksSection />
+            </Step>
+            <Step shown={step >= 3}>
+              <FlowFunction />
+              <ActivityIdeation />
+            </Step>
+          </div>
           <Step shown={step >= 4}>
             <SessionOutline />
           </Step>
