@@ -109,3 +109,125 @@ describe('persistence', () => {
     expect(loadState()).toEqual(initialState());
   });
 });
+
+describe('canvas details and drafts', () => {
+  it('sets details and adds up to three drafts, removing the last one', () => {
+    let s = reducer(initialState(), { type: 'setDetail', key: 'client', value: 'Acme' });
+    expect(s.details.client).toBe('Acme');
+    expect(s.draftCount).toBe(1);
+    s = reducer(s, { type: 'addDraft' });
+    s = reducer(s, { type: 'addDraft' });
+    s = reducer(s, { type: 'addDraft' });
+    expect(s.draftCount).toBe(3);
+    s = reducer(s, { type: 'addBlock', draftId: 'd2', id: 'y', minutes: 10 });
+    s = reducer(s, { type: 'addBlock', draftId: 'd3', id: 'z', minutes: 5 });
+    s = reducer(s, { type: 'removeDraft' });
+    expect(s.draftCount).toBe(2);
+    expect(s.drafts.d3).toHaveLength(0);
+    expect(s.drafts.d2).toHaveLength(1);
+    s = reducer(s, { type: 'removeDraft' });
+    s = reducer(s, { type: 'removeDraft' });
+    expect(s.draftCount).toBe(1);
+  });
+
+  it('turns old cell text into a sticky and keeps draft 2 when it has blocks', () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        cells: { 'brief.0': { text: ' Old purpose ', stickies: [{ id: 's', text: 'note', color: 'pink' }] } },
+        drafts: { d1: [], d2: [{ id: 'b', minutes: 30, label: '' }] },
+      }),
+    );
+    const s = loadState();
+    expect(s.cells['brief.0'].stickies.map((x) => x.text)).toEqual(['Old purpose', 'note']);
+    expect(s.cells['brief.0'].text).toBe('');
+    expect(s.draftCount).toBe(2);
+    expect(s.step).toBe(4);
+    expect(s.details).toEqual({ title: '', client: '', participants: '' });
+  });
+});
+
+describe('solo guide', () => {
+  it('starts new canvases at step 0, advances, shows all, and starts over on reset', () => {
+    let s = initialState();
+    expect(s.step).toBe(0);
+    s = reducer(s, { type: 'nextStep' });
+    expect(s.step).toBe(1);
+    s = reducer(s, { type: 'showAll' });
+    expect(s.step).toBe(4);
+    s = reducer(s, { type: 'nextStep' });
+    expect(s.step).toBe(4);
+    expect(reducer(s, { type: 'reset' }).step).toBe(0);
+  });
+
+  it('keeps column titles', () => {
+    let s = reducer(initialState(), { type: 'setCellTitle', cellId: 'flow.0', title: 'Open' });
+    saveState(s);
+    s = loadState();
+    expect(s.cells['flow.0'].title).toBe('Open');
+  });
+});
+
+describe('block lengths', () => {
+  it('snaps to 5-minute steps between 5 and 180', () => {
+    let s = reducer(initialState(), { type: 'addBlock', draftId: 'd1', id: 'a', minutes: 15 });
+    s = reducer(s, { type: 'setBlockMinutes', id: 'a', minutes: 23 });
+    expect(s.drafts.d1[0].minutes).toBe(25);
+    s = reducer(s, { type: 'setBlockMinutes', id: 'a', minutes: 1 });
+    expect(s.drafts.d1[0].minutes).toBe(5);
+    s = reducer(s, { type: 'setBlockMinutes', id: 'a', minutes: 999 });
+    expect(s.drafts.d1[0].minutes).toBe(180);
+  });
+
+  it('colors blocks by length band', async () => {
+    const { blockTone } = await import('./types');
+    expect([5, 10, 15, 20, 25, 30, 40, 45, 60, 75, 90, 120, 180].map(blockTone)).toEqual([
+      5, 10, 15, 20, 20, 30, 45, 45, 60, 60, 90, 90, 120,
+    ]);
+  });
+});
+
+describe('session outline', () => {
+  it('keeps row text per block and falls back to draft 1 when its draft is removed', () => {
+    let s = reducer(initialState(), { type: 'addDraft' });
+    s = reducer(s, { type: 'addBlock', draftId: 'd2', id: 'b1', minutes: 15 });
+    s = reducer(s, { type: 'setOutlineDraft', draft: 'd2' });
+    s = reducer(s, { type: 'setOutlineRow', blockId: 'b1', field: 'moves', value: 'Markers' });
+    expect(s.outline.rows.b1).toEqual({ activities: '', moves: 'Markers' });
+    saveState(s);
+    expect(loadState().outline.draft).toBe('d2');
+    s = reducer(s, { type: 'removeDraft' });
+    expect(s.outline.draft).toBe('d1');
+  });
+});
+
+describe('backups', () => {
+  it('round-trips a canvas and rejects other files', async () => {
+    const { backupJson, readBackup, backupFileName } = await import('./backup');
+    let s = reducer(initialState(), { type: 'setDetail', key: 'title', value: 'Q3 Offsite!' });
+    s = reducer(s, { type: 'addSticky', cellId: 'ideas', id: 'x' });
+    const back = readBackup(backupJson(s));
+    expect(back?.state.details.title).toBe('Q3 Offsite!');
+    expect(back?.state.cells.ideas.stickies).toHaveLength(1);
+    expect(back?.savedAt).toBeTruthy();
+    expect(readBackup('{"hello":1}')).toBeNull();
+    expect(readBackup('not json')).toBeNull();
+    expect(backupFileName(s, new Date('2026-11-12T10:00:00Z'))).toBe('q3-offsite-backup-2026-11-12.json');
+  });
+});
+
+describe('clock times', () => {
+  it('parses typed times and formats them', async () => {
+    const { parseClock, hhmm } = await import('./types');
+    expect(['9', '9:30', '09.30', '930', '1415', '0:05'].map(parseClock)).toEqual([540, 570, 570, 570, 855, 5]);
+    expect(['', 'abc', '25:00', '9:75', '12345'].map(parseClock)).toEqual([null, null, null, null, null]);
+    expect(hhmm(75)).toBe('01:15');
+    expect(hhmm(1440 + 30)).toBe('00:30');
+  });
+
+  it('stores the session start time', () => {
+    const s = reducer(initialState(), { type: 'setOutlineStart', start: 540 });
+    expect(s.outline.start).toBe(540);
+  });
+});

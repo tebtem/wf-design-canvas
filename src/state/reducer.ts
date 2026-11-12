@@ -1,4 +1,6 @@
-import type { BlockMinutes, CanvasState, Cell, DraftId, StickyColor, TimeBlock } from './types';
+import { clampMinutes, DRAFT_IDS, MAX_DRAFTS } from './types';
+import { LAST_STEP } from './cells';
+import type { BlockMinutes, CanvasDetails, CanvasState, Cell, DraftId, OutlineRow, StickyColor, TimeBlock } from './types';
 
 export type Action =
   | { type: 'setText'; cellId: string; text: string }
@@ -10,13 +12,34 @@ export type Action =
   | { type: 'moveBlock'; id: string; toDraft: DraftId; toIndex: number }
   | { type: 'editBlock'; id: string; label?: string; notes?: string }
   | { type: 'removeBlock'; id: string }
+  | { type: 'setBlockMinutes'; id: string; minutes: number }
+  | { type: 'setDetail'; key: keyof CanvasDetails; value: string }
+  | { type: 'setCellTitle'; cellId: string; title: string }
+  | { type: 'nextStep' }
+  | { type: 'showAll' }
+  | { type: 'setOutlineDraft'; draft: DraftId }
+  | { type: 'setOutlineStart'; start: number }
+  | { type: 'setOutlineRow'; blockId: string; field: keyof OutlineRow; value: string }
+  | { type: 'load'; state: CanvasState }
+  | { type: 'addDraft' }
+  | { type: 'removeDraft' }
   | { type: 'reset' };
+
+export const emptyDetails = (): CanvasDetails => ({ title: '', client: '', participants: '' });
 
 export const initialState = (): CanvasState => ({
   version: 1,
+  details: emptyDetails(),
   cells: {},
-  drafts: { d1: [], d2: [] },
+  drafts: { d1: [], d2: [], d3: [] },
+  draftCount: 1,
+  outline: { draft: 'd1', start: 0, rows: {} },
+  // A brand-new canvas starts guided; Clear canvas starts the guide over.
+  step: 0,
 });
+
+/** Drafts currently on screen. */
+export const visibleDrafts = (state: CanvasState): DraftId[] => DRAFT_IDS.slice(0, state.draftCount);
 
 const emptyCell: Cell = { text: '', stickies: [] };
 
@@ -99,7 +122,7 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
     case 'addBlock': {
       const list = [...state.drafts[action.draftId]];
       const index = clamp(action.index ?? list.length, 0, list.length);
-      list.splice(index, 0, { id: action.id, minutes: action.minutes, label: '', notes: '' });
+      list.splice(index, 0, { id: action.id, minutes: clampMinutes(action.minutes), label: '', notes: '' });
       return { ...state, drafts: { ...state.drafts, [action.draftId]: list } };
     }
 
@@ -125,11 +148,60 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
       return { ...state, drafts: { ...state.drafts, [loc.draftId]: list } };
     }
 
+    case 'setBlockMinutes': {
+      const loc = findBlock(state, action.id);
+      if (!loc) return state;
+      const minutes = clampMinutes(action.minutes);
+      const list = state.drafts[loc.draftId].map((b) => (b.id === action.id ? { ...b, minutes } : b));
+      return { ...state, drafts: { ...state.drafts, [loc.draftId]: list } };
+    }
+
     case 'removeBlock': {
       const loc = findBlock(state, action.id);
       if (!loc) return state;
       const list = state.drafts[loc.draftId].filter((b) => b.id !== action.id);
       return { ...state, drafts: { ...state.drafts, [loc.draftId]: list } };
+    }
+
+    case 'setDetail':
+      return { ...state, details: { ...state.details, [action.key]: action.value } };
+
+    case 'setCellTitle':
+      return updateCell(state, action.cellId, (c) => ({ ...c, title: action.title }));
+
+    case 'nextStep':
+      return { ...state, step: Math.min(LAST_STEP, state.step + 1) };
+
+    case 'showAll':
+      return { ...state, step: LAST_STEP };
+
+    case 'setOutlineDraft':
+      return { ...state, outline: { ...state.outline, draft: action.draft } };
+
+    case 'setOutlineStart':
+      return { ...state, outline: { ...state.outline, start: ((Math.round(action.start) % 1440) + 1440) % 1440 } };
+
+    case 'setOutlineRow': {
+      const row = state.outline.rows[action.blockId] ?? { activities: '', moves: '' };
+      return {
+        ...state,
+        outline: { ...state.outline, rows: { ...state.outline.rows, [action.blockId]: { ...row, [action.field]: action.value } } },
+      };
+    }
+
+    case 'load':
+      return action.state;
+
+    case 'addDraft':
+      return { ...state, draftCount: Math.min(MAX_DRAFTS, state.draftCount + 1) };
+
+    case 'removeDraft':
+    {
+      // Only the last draft can be removed, so the remaining drafts keep their numbers.
+      if (state.draftCount <= 1) return state;
+      const last = DRAFT_IDS[state.draftCount - 1];
+      const outline = state.outline.draft === last ? { ...state.outline, draft: 'd1' as DraftId } : state.outline;
+      return { ...state, draftCount: state.draftCount - 1, drafts: { ...state.drafts, [last]: [] }, outline };
     }
 
     case 'reset':

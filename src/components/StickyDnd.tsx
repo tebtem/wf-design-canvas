@@ -46,7 +46,7 @@ const focusSticky = (id: string, selector: string) =>
 const StickyMoveContext = createContext<(stickyId: string) => void>(() => {});
 export const useOpenStickyMove = () => useContext(StickyMoveContext);
 
-export function StickyDnd({ children }: { children: ReactNode }) {
+export function StickyDnd({ children, step = Infinity }: { children: ReactNode; step?: number }) {
   const { state, dispatch } = useCanvas();
   const [active, setActive] = useState<Sticky | null>(null);
   const [message, setMessage] = useState('');
@@ -171,7 +171,7 @@ export function StickyDnd({ children }: { children: ReactNode }) {
               setToIndex(state.cells[e.target.value]?.stickies.length ?? 0);
             }}
           >
-            {CELL_GROUPS.map((g) => (
+            {CELL_GROUPS.filter((g) => g.step <= step).map((g) => (
               <optgroup key={g.section} label={g.section}>
                 {g.cells.map((c) => (
                   <option key={c.id} value={c.id}>

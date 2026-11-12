@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useCanvas } from '../state/CanvasContext';
 import { STICKY_COLORS, type Sticky } from '../state/types';
 import { GripIcon, MoveIcon, PaletteIcon, XIcon } from './Icons';
 import { useOpenStickyMove, type StickyDragData } from './StickyDnd';
@@ -18,9 +19,10 @@ interface Props {
 export function StickyNote({ sticky, cellId, index, cellTitle, focusOnMount, onChange, onDelete }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const openMove = useOpenStickyMove();
+  const { readOnly } = useCanvas();
   const data: StickyDragData = { type: 'sticky', cellId };
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
-    useSortable({ id: sticky.id, data });
+    useSortable({ id: sticky.id, data, disabled: readOnly });
   useEffect(() => {
     if (focusOnMount) ref.current?.focus();
   }, [focusOnMount]);
@@ -40,7 +42,8 @@ export function StickyNote({ sticky, cellId, index, cellTitle, focusOnMount, onC
         className="sticky__text"
         aria-label={name}
         value={sticky.text}
-        placeholder="Write a note"
+        readOnly={readOnly}
+        placeholder={readOnly ? '' : 'Write a note'}
         rows={3}
         onChange={(e) => onChange({ text: e.target.value })}
         onKeyDown={(e) => {
@@ -50,48 +53,50 @@ export function StickyNote({ sticky, cellId, index, cellTitle, focusOnMount, onC
       <div className="print-text" aria-hidden="true">
         {sticky.text}
       </div>
-      <div className="sticky__actions no-print">
-        <button
-          type="button"
-          ref={setActivatorNodeRef}
-          className="icon-btn icon-btn--sm sticky__handle"
-          {...attributes}
-          {...listeners}
-          aria-roledescription="draggable sticky note"
-          aria-label={`Drag ${name}`}
-          title="Drag to move"
-        >
-          <GripIcon />
-        </button>
-        <button
-          type="button"
-          className="icon-btn icon-btn--sm js-sticky-move"
-          aria-label={`Move ${name} to another section or position`}
-          title="Move to…"
-          onClick={() => openMove(sticky.id)}
-        >
-          <MoveIcon />
-        </button>
-        <span className="sticky__spacer" />
-        <button
-          type="button"
-          className="icon-btn icon-btn--sm"
-          aria-label={`Change color of ${name}. Current color ${sticky.color}`}
-          title={`Color: ${sticky.color}`}
-          onClick={() => onChange({ color: nextColor })}
-        >
-          <PaletteIcon />
-        </button>
-        <button
-          type="button"
-          className="icon-btn icon-btn--sm"
-          aria-label={`Delete ${name}`}
-          title="Delete sticky note"
-          onClick={onDelete}
-        >
-          <XIcon />
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="sticky__actions no-print">
+          <button
+            type="button"
+            ref={setActivatorNodeRef}
+            className="icon-btn icon-btn--sm sticky__handle"
+            {...attributes}
+            {...listeners}
+            aria-roledescription="draggable sticky note"
+            aria-label={`Drag ${name}`}
+            title="Drag to move"
+          >
+            <GripIcon />
+          </button>
+          <button
+            type="button"
+            className="icon-btn icon-btn--sm js-sticky-move"
+            aria-label={`Move ${name} to another section or position`}
+            title="Move to…"
+            onClick={() => openMove(sticky.id)}
+          >
+            <MoveIcon />
+          </button>
+          <span className="sticky__spacer" />
+          <button
+            type="button"
+            className="icon-btn icon-btn--sm"
+            aria-label={`Change color of ${name}. Current color ${sticky.color}`}
+            title={`Color: ${sticky.color}`}
+            onClick={() => onChange({ color: nextColor })}
+          >
+            <PaletteIcon />
+          </button>
+          <button
+            type="button"
+            className="icon-btn icon-btn--sm"
+            aria-label={`Delete ${name}`}
+            title="Delete sticky note"
+            onClick={onDelete}
+          >
+            <XIcon />
+          </button>
+        </div>
+      )}
     </li>
   );
 }

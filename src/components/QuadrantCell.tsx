@@ -11,7 +11,6 @@ export function QuadrantCell({ section }: { section: string }) {
           title={c.title}
           accessibleTitle={c.fullTitle}
           className={`quadrant__cell quadrant__cell--${c.title.toLowerCase()}`}
-          placeholder=""
         />
       ))}
     </div>

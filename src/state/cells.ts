@@ -10,6 +10,8 @@ export interface CellDef {
 export interface CellGroup {
   section: string;
   cells: CellDef[];
+  /** Guided workshops reveal sections in steps. This is the step that shows the section. */
+  step: number;
 }
 
 const simple = (prefix: string, titles: string[]): CellDef[] =>
@@ -23,11 +25,14 @@ const quadrant = (prefix: string, section: string): CellDef[] =>
   }));
 
 export const CELL_GROUPS: CellGroup[] = [
-  { section: 'Session Brief', cells: simple('brief', ['Purpose', 'Outcomes', 'Time', 'Stats']) },
-  { section: 'Participant Before', cells: quadrant('before', 'Participant Before') },
-  { section: 'Participant After', cells: quadrant('after', 'Participant After') },
+  {
+    section: 'Session Brief',
+    step: 0,
+    cells: simple('brief', ['Purpose', 'Outcomes', 'Timing + Logistics', 'Space + Materials']),
+  },
   {
     section: 'Participants at the Center',
+    step: 0,
     cells: simple('participants', [
       'Who is participating?',
       'What is their level of psych safety?',
@@ -35,8 +40,11 @@ export const CELL_GROUPS: CellGroup[] = [
       'What else do I need to consider?',
     ]),
   },
+  { section: 'Participant Before', step: 0, cells: quadrant('before', 'Participant Before') },
+  { section: 'Participant After', step: 0, cells: quadrant('after', 'Participant After') },
   {
     section: 'Facilitator at the Center',
+    step: 1,
     cells: simple('facilitator', [
       'My goals as a facilitator…',
       'What I want to learn…',
@@ -45,15 +53,40 @@ export const CELL_GROUPS: CellGroup[] = [
     ]),
   },
   {
-    section: 'Flow + Function',
+    section: 'Flow, Function, and Form',
+    step: 3,
     cells: Array.from({ length: 9 }, (_, i) => ({
       id: `flow.${i}`,
       title: `Flow step ${i + 1}`,
       fullTitle: `Flow step ${i + 1}`,
     })),
   },
-  { section: 'Activity Ideation', cells: [{ id: 'ideas', title: 'Activity ideas', fullTitle: 'Activity ideas' }] },
+  { section: 'Activity Ideation', step: 3, cells: [{ id: 'ideas', title: 'Activity ideas', fullTitle: 'Activity ideas' }] },
 ];
+
+/** Guided reveal steps, in order. Step 2 is Time Blocks, which has no note cells. */
+export const REVEAL_STEPS = [
+  'Session Brief',
+  'Facilitator at the Center',
+  'Time Blocks',
+  'Flow, Function, and Form + Activity Ideation',
+  'Session Outline',
+] as const;
+export const LAST_STEP = REVEAL_STEPS.length - 1;
+/** What each step adds, for the host's controls. */
+export const STEP_DETAIL = [
+  'Session Brief, Participants at the Center, Participant Before and After',
+  'Facilitator at the Center',
+  'Time Blocks',
+  'Flow, Function, and Form, and Activity Ideation',
+  'Session Outline',
+];
+/** Section anchor for each step (matches the Section ids in the canvas). */
+export const STEP_ANCHORS = ['section-brief', 'section-facilitator', 'section-time', 'section-flow', 'section-outline'];
+
+/** A step value from the database, clamped. Missing means everything is shown. */
+export const clampStep = (step: number | undefined | null) =>
+  typeof step === 'number' ? Math.max(0, Math.min(LAST_STEP, Math.floor(step))) : LAST_STEP;
 
 const byId = new Map(CELL_GROUPS.flatMap((g) => g.cells.map((c) => [c.id, c] as const)));
 

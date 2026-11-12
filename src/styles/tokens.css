@@ -20,11 +20,15 @@
   --flow-3: #c8d4fc;
   --flow-4: #dbe2fc;
 
+  --b5: #fdf1f1;
+  --b10: #eef6fb;
   --b15: #e2e7fb;
   --b20: #fdf6e9;
   --b30: #fdebfa;
   --b45: #f1eafd;
   --b60: #e6f7ec;
+  --b90: #fff0d6;
+  --b120: #e8f3f1;
 
   /* Brand palette */
   --brand-yellow: #fbd36b;

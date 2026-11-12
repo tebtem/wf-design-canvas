@@ -14,13 +14,14 @@ interface Props {
   accessibleTitle?: string;
   hideTitle?: boolean;
   className?: string;
-  placeholder?: string;
+  /** Adds a title field above the stickies, labeled with this text (Flow, Function, and Form columns). */
+  columnTitle?: string;
 }
 
 const EMPTY: Cell = { text: '', stickies: [] };
 
-export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', placeholder = 'Type here' }: Props) {
-  const { state, dispatch } = useCanvas();
+export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', columnTitle }: Props) {
+  const { state, dispatch, readOnly } = useCanvas();
   const cell = state.cells[cellId] ?? EMPTY;
   const uid = useId();
   const headingId = `${uid}-h`;
@@ -53,16 +54,25 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           </>
         )}
       </h3>
-      <textarea
-        className="note-cell__text"
-        aria-labelledby={headingId}
-        value={cell.text}
-        placeholder={placeholder}
-        onChange={(e) => dispatch({ type: 'setText', cellId, text: e.target.value })}
-      />
-      <div className="print-text" aria-hidden="true">
-        {cell.text}
-      </div>
+      {columnTitle && (
+        <div className="note-cell__heading">
+          <label htmlFor={`${uid}-title`} className="note-cell__heading-label">
+            {columnTitle}
+          </label>
+          <input
+            id={`${uid}-title`}
+            className="note-cell__heading-input"
+            value={cell.title ?? ''}
+            readOnly={readOnly}
+            maxLength={80}
+            autoComplete="off"
+            onChange={(e) => dispatch({ type: 'setCellTitle', cellId, title: e.target.value })}
+          />
+          <span className="print-text" aria-hidden="true">
+            {cell.title}
+          </span>
+        </div>
+      )}
       <SortableContext items={cell.stickies.map((s) => s.id)} strategy={rectSortingStrategy}>
         {cell.stickies.length > 0 && (
           <ul className="sticky-list" aria-label={`Sticky notes in ${fullTitle}`}>
@@ -84,17 +94,21 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           </ul>
         )}
       </SortableContext>
-      <button
-        ref={addRef}
-        type="button"
-        className="add-sticky no-print"
-        title="Add sticky note"
-        onClick={addSticky}
-      >
-        <PlusIcon />
-        <StickyIcon />
-        <span className="sr-only">Add sticky note in {fullTitle}</span>
-      </button>
+      {readOnly && cell.stickies.length === 0 && <p className="note-cell__empty">No notes yet</p>}
+      {!readOnly && (
+        <button
+          ref={addRef}
+          type="button"
+          className="add-sticky no-print"
+          onClick={addSticky}
+        >
+          <PlusIcon />
+          <StickyIcon />
+          <span className="add-sticky__label">
+            Add sticky note<span className="sr-only"> in {fullTitle}</span>
+          </span>
+        </button>
+      )}
     </div>
   );
 }
