@@ -17,6 +17,11 @@ const fail = (m) => {
   process.exitCode = 1;
 };
 const step = (m) => console.log('-', m);
+// Workshop lives in the More menu.
+const openWorkshop = async (page) => {
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'Workshop', exact: true }).click();
+};
 const newPage = async () => (await browser.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();
 const axe = async (page, label) => {
   const res = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
@@ -53,7 +58,7 @@ async function hostSignIn(page, email) {
 // Participants never see hosting.
 const visitor = await newPage();
 await visitor.goto(APP_URL);
-await visitor.getByRole('button', { name: 'Workshop' }).click();
+await openWorkshop(visitor);
 if (await visitor.getByRole('radio', { name: 'Host a workshop' }).count()) fail('participants should not see Host a workshop');
 await axe(visitor, 'workshop dialog');
 // Unapproved emails cannot get a sign-in link.
@@ -97,7 +102,7 @@ const bob = await newPage();
 await bob.goto(APP_URL);
 await bob.getByRole('textbox', { name: 'Working Title', exact: true }).fill('Personal canvas text');
 await bob.waitForTimeout(500);
-await bob.getByRole('button', { name: 'Workshop' }).click();
+await openWorkshop(bob);
 await bob.getByLabel('Workshop code').fill('zzz-zzz');
 await bob.getByLabel('Your name').fill('Bob');
 await bob.getByRole('button', { name: 'Join' }).click();
@@ -254,7 +259,7 @@ await host.getByRole('button', { name: 'Back to all canvases' }).click().catch((
 await until(async () => (await host.locator('.ws-card').first().textContent()).includes(rejoinCode), 'host sees rejoin code');
 const alice2 = await newPage();
 await alice2.goto(APP_URL);
-await alice2.getByRole('button', { name: 'Workshop' }).click();
+await openWorkshop(alice2);
 await alice2.getByRole('radio', { name: 'Return on a new device' }).check();
 await alice2.getByLabel('Workshop code').fill(code);
 await alice2.getByLabel('Your rejoin code').fill('ZZZZ-ZZZZ');
@@ -285,13 +290,13 @@ step('rejoin on a new device works');
 await alice.getByRole('button', { name: 'Leave workshop' }).click();
 await alice.getByLabel(/Copy this canvas to my personal canvas/).check();
 await alice.getByRole('button', { name: 'Leave', exact: true }).click();
-await until(async () => (await alice.getByRole('button', { name: 'Workshop' }).count()) === 1, 'alice back to solo');
+await until(async () => (await alice.getByRole('button', { name: 'Account' }).count()) === 1, 'alice back to solo');
 if ((await alice.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) !== 'Alice purpose, edited') fail('copy to personal failed');
 
 // Host ends; Bob is told, and his personal canvas is untouched.
 await host.getByRole('button', { name: 'End workshop' }).click();
 await host.getByRole('dialog').getByRole('button', { name: 'End workshop' }).click();
-await until(async () => (await host.getByRole('button', { name: 'Workshop' }).count()) === 1, 'host back to solo');
+await until(async () => (await host.getByRole('button', { name: 'Account' }).count()) === 1, 'host back to solo');
 await until(async () => (await bob.locator('.ws-notice--warn').textContent()).startsWith('This workshop has ended'), 'bob told it ended');
 await bob.screenshot({ path: out + 'ws-ended.png' });
 await bob.getByRole('button', { name: 'Leave workshop' }).click();
@@ -301,7 +306,7 @@ step('end workshop works');
 
 // Free accounts: sign up from a canvas (opting in to updates), then open it on another device.
 async function accountSignIn(page, email, optIn = false) {
-  await page.getByRole('button', { name: /^(Create free account|My canvases)$/ }).click();
+  await page.getByRole('button', { name: 'Account', exact: true }).click();
   await page.getByRole('dialog').getByLabel('Email', { exact: true }).fill(email);
   if (optIn) await page.getByLabel('Email me about upcoming facilitation courses and bootcamps').check();
   await page.getByRole('button', { name: 'Email me a sign-in link' }).click();
@@ -324,7 +329,7 @@ await device1.getByRole('button', { name: 'Add sticky note in Purpose' }).click(
 await device1.locator('.ProseMirror:focus').waitFor();
 await device1.keyboard.type('Align the team');
 await device1.keyboard.press('Escape');
-await device1.getByRole('button', { name: 'Create free account' }).click();
+await device1.getByRole('button', { name: 'Account', exact: true }).click();
 await axe(device1, 'account sign-up');
 await device1.keyboard.press('Escape');
 await accountSignIn(device1, 'pat@example.com', true);
@@ -333,7 +338,7 @@ if (!(await device1.locator('.ws-host__list').textContent()).includes('Offsite p
 if (subscribed[0] !== 'pat@example.com') fail(`opt-in should subscribe once confirmed: ${subscribed}`);
 await axe(device1, 'my canvases');
 await device1.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
-if (!(await device1.getByRole('button', { name: 'My canvases' }).count())) fail('toolbar should say My canvases when signed in');
+if ((await device1.getByRole('button', { name: 'Account', exact: true }).getAttribute('title')) !== 'Signed in as pat@example.com') fail('Account button should show who is signed in');
 
 const device2 = await newPage();
 await device2.goto(APP_URL);
@@ -347,16 +352,16 @@ await device1.reload();
 await until(async () => (await device1.getByLabel('Client Name').inputValue()) === 'From device 2', 'changes come back to the first device');
 
 // Three canvases: start a new one, switch back, delete it.
-await device1.getByRole('button', { name: 'My canvases' }).click();
+await device1.getByRole('button', { name: 'Account', exact: true }).click();
 await device1.getByRole('button', { name: 'Start a new canvas' }).click();
 await until(async () => (await device1.getByLabel('Working Title').inputValue()) === '', 'new canvas is blank');
 await device1.getByLabel('Working Title').fill('Second canvas');
 await device1.waitForTimeout(2000);
-await device1.getByRole('button', { name: 'My canvases' }).click();
+await device1.getByRole('button', { name: 'Account', exact: true }).click();
 await until(async () => (await device1.locator('.ws-host__list li').count()) === 2, 'two canvases listed');
 await device1.getByRole('button', { name: 'Open Offsite plan' }).click();
 await until(async () => (await device1.getByLabel('Working Title').inputValue()) === 'Offsite plan', 'opens a saved canvas');
-await device1.getByRole('button', { name: 'My canvases' }).click();
+await device1.getByRole('button', { name: 'Account', exact: true }).click();
 device1.once('dialog', (d) => d.accept());
 await device1.getByRole('button', { name: 'Delete Second canvas' }).click();
 await until(async () => (await device1.locator('.ws-host__list li').count()) === 1, 'deleting removes a canvas');
@@ -365,8 +370,8 @@ await until(async () => (await device1.locator('.ws-host__list li').count()) ===
 await device1.getByRole('button', { name: 'Sign out' }).click();
 await until(async () => (await device1.getByLabel('Working Title').inputValue()) === '', 'sign out clears the canvas from this browser');
 await device1.keyboard.press('Escape');
-if (!(await device1.getByRole('button', { name: 'Create free account' }).count())) fail('toolbar should offer an account again after signing out');
-await device2.getByRole('button', { name: 'My canvases' }).click();
+if ((await device1.getByRole('button', { name: 'Account', exact: true }).getAttribute('title')) !== 'Create a free account or sign in') fail('Account button should offer sign-in again after signing out');
+await device2.getByRole('button', { name: 'Account', exact: true }).click();
 device2.once('dialog', (d) => d.accept());
 await device2.getByRole('button', { name: 'Delete my account' }).click();
 await device2.getByText('Your account and saved canvases were deleted.').waitFor();

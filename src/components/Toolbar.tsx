@@ -103,23 +103,28 @@ export function Toolbar({ onWorkshop, guided = false, accounts = false }: Toolba
           ))}
         </fieldset>
         {guided && state.step < LAST_STEP && (
-          <button type="button" className="btn" onClick={() => {
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
               dispatch({ type: 'showAll' });
               track('guide-skipped');
-            }}>
+            }}
+          >
             Show full canvas
           </button>
         )}
         {accounts && (
-          <button type="button" className="btn" onClick={openAccountDialog} aria-haspopup="dialog">
+          // One button for creating an account, signing in, and My canvases.
+          <button
+            type="button"
+            className="btn"
+            onClick={openAccountDialog}
+            aria-haspopup="dialog"
+            title={accountEmail ? `Signed in as ${accountEmail}` : 'Create a free account or sign in'}
+          >
             <UserIcon />
-            {accountEmail ? 'My canvases' : 'Create free account'}
-          </button>
-        )}
-        {onWorkshop && (
-          <button type="button" className="btn" onClick={onWorkshop} aria-haspopup="dialog">
-            <PeopleIcon />
-            Workshop
+            Account
           </button>
         )}
         <a
@@ -145,6 +150,22 @@ export function Toolbar({ onWorkshop, guided = false, accounts = false }: Toolba
             <ChevronIcon />
           </button>
           <div id="more-panel" className={`more__panel more__panel--${moreAlign}`} hidden={!moreOpen}>
+            {onWorkshop && (
+              <button
+                type="button"
+                className="more__item"
+                aria-haspopup="dialog"
+                onClick={() => {
+                  setMoreOpen(false);
+                  // When the dialog closes, browsers return focus to More (the menu item is hidden by then).
+                  moreBtn.current?.focus();
+                  onWorkshop();
+                }}
+              >
+                <PeopleIcon />
+                Workshop
+              </button>
+            )}
             <button
               type="button"
               className="more__item"
@@ -217,17 +238,15 @@ export function Toolbar({ onWorkshop, guided = false, accounts = false }: Toolba
         onClose={() => moreBtn.current?.focus()}
       >
         <h2 id="clear-title">Clear the whole canvas?</h2>
-        <p id="clear-desc">This removes all text, sticky notes and time blocks saved in this browser, and starts the step-by-step guide again. It cannot be undone.</p>
+        <p id="clear-desc">
+          This removes all text, sticky notes and time blocks saved in this browser, and starts the step-by-step guide
+          again. It cannot be undone.
+        </p>
         <form method="dialog" className="dialog__actions">
           <button type="submit" className="btn" value="cancel">
             Cancel
           </button>
-          <button
-            type="submit"
-            className="btn btn--danger"
-            value="clear"
-            onClick={() => dispatch({ type: 'reset' })}
-          >
+          <button type="submit" className="btn btn--danger" value="clear" onClick={() => dispatch({ type: 'reset' })}>
             Clear everything
           </button>
         </form>

@@ -501,7 +501,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
         <p id="ws-leave-desc">
           {ended
             ? 'Your workshop canvas stays in this browser until you clear it.'
-            : `Your workshop canvas stays saved online and in this browser. To come back on any device, choose Workshop, then Return on a new device, and enter workshop code ${formatCode(code)}${rejoinCode ? ` and your rejoin code ${formatRejoinCode(rejoinCode)}` : ''}.`}
+            : `Your workshop canvas stays saved online and in this browser. To come back on any device, choose More, then Workshop, then Return on a new device, and enter workshop code ${formatCode(code)}${rejoinCode ? ` and your rejoin code ${formatRejoinCode(rejoinCode)}` : ''}.`}
         </p>
         <form method="dialog" className="ws-form">
           <label className="ws-check">
