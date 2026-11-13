@@ -1,6 +1,6 @@
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { LAST_STEP } from '../state/cells';
-import { formatCode, spellCode } from '../workshop/code';
+import { formatCode, normalizeCode, spellCode } from '../workshop/code';
 import { clearLinkParams, hostSignedInEmail, type ActiveWorkshop } from '../workshop/session';
 import type { HostedWorkshop } from '../workshop/api';
 
@@ -18,10 +18,36 @@ type View =
   | { kind: 'signedIn'; uid: string; email: string };
 
 const api = () => import('../workshop/api');
-const errorText = (err: unknown) =>
-  ['HostSignInError', 'WorkshopError'].includes((err as Error)?.name)
-    ? (err as Error).message
-    : 'Could not connect. Check your internet connection and try again.';
+/** Firebase's reasons, in plain words, so a setup problem says what to fix. */
+const FIREBASE_REASONS: Record<string, string> = {
+  'auth/unauthorized-continue-uri': `This site's address (${window.location.hostname}) is not approved in Firebase. Add it under Authentication > Settings > Authorized domains.`,
+  'auth/unauthorized-domain': `This site's address (${window.location.hostname}) is not approved in Firebase. Add it under Authentication > Settings > Authorized domains.`,
+  'auth/operation-not-allowed': 'Email link sign-in is turned off in Firebase. Turn on Email/Password with Email link (passwordless sign-in) under Authentication > Sign-in method.',
+  'auth/admin-restricted-operation': 'Anonymous sign-in is turned off in Firebase. Turn it on under Authentication > Sign-in method.',
+  'auth/invalid-api-key': 'The Firebase API key in the site settings is wrong. Check VITE_FIREBASE_API_KEY in Vercel and redeploy.',
+  'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'The Firebase API key in the site settings is wrong. Check VITE_FIREBASE_API_KEY in Vercel and redeploy.',
+  'auth/invalid-email': 'That email address does not look right. Check it and try again.',
+  'auth/quota-exceeded': 'Firebase has sent its daily limit of sign-in emails. Try again tomorrow.',
+  'auth/too-many-requests': 'Too many attempts. Wait a few minutes and try again.',
+  'auth/network-request-failed': 'Could not reach Firebase. Check your internet connection and try again.',
+  'auth/invalid-action-code': 'That sign-in link has expired or was already used. Request a new one.',
+  'auth/expired-action-code': 'That sign-in link has expired. Request a new one.',
+};
+
+const errorText = (err: unknown) => {
+  const e = err as { name?: string; message?: string; code?: string };
+  if (e?.name === 'HostSignInError' || e?.name === 'WorkshopError') return e.message ?? '';
+  console.error(err);
+  if (e?.code && FIREBASE_REASONS[e.code]) return FIREBASE_REASONS[e.code];
+  if (e?.code?.startsWith('auth/requests-from-referer')) {
+    return `The Firebase API key is restricted to other websites. In Google Cloud Console > APIs & Services > Credentials, allow ${window.location.hostname} on the Browser key.`;
+  }
+  if (e?.code?.startsWith('auth/')) return `Sign-in failed (${e.code}). Check the Firebase sign-in settings.`;
+  if (String(e?.message).toLowerCase().includes('permission')) {
+    return 'The database refused this. Check that the latest rules from database.rules.json are published in Firebase.';
+  }
+  return 'Could not connect. Check your internet connection and try again.';
+};
 
 /** Facilitator sign-in (email link), their workshops, and starting a new one. */
 export function HostPanel({ emailLink, onEnter }: Props) {
@@ -29,6 +55,7 @@ export function HostPanel({ emailLink, onEnter }: Props) {
   const [view, setView] = useState<View>({ kind: 'checking' });
   const [email, setEmail] = useState(hostSignedInEmail() ?? '');
   const [title, setTitle] = useState('');
+  const [joinCode, setJoinCode] = useState('');
   const [guided, setGuided] = useState(true);
   const [workshops, setWorkshops] = useState<HostedWorkshop[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -95,6 +122,17 @@ export function HostPanel({ emailLink, onEnter }: Props) {
       clearLinkParams();
       const host = await a.currentHost();
       if (host) await showSignedIn(host);
+    });
+  };
+
+  /** Co-facilitating: open someone else's workshop in the host view by its code. */
+  const openByCode = (e: FormEvent) => {
+    e.preventDefault();
+    const c = normalizeCode(joinCode);
+    if (!c) return setError('Enter the 6-character workshop code, like ABC-234.');
+    void run(async () => {
+      const res = await (await api()).joinSession(c, '');
+      onEnter({ code: c, role: 'facilitator', uid: res.uid });
     });
   };
 
@@ -213,6 +251,26 @@ export function HostPanel({ emailLink, onEnter }: Props) {
           </ul>
         )}
       </section>
+
+      <form className="ws-form" onSubmit={openByCode} noValidate>
+        <h3 className="ws-host__h">Co-facilitating?</h3>
+        <label htmlFor={`${uid}-code`}>Workshop code</label>
+        <div className="ws-inline">
+          <input
+            id={`${uid}-code`}
+            className="ws-input ws-input--code"
+            value={joinCode}
+            onChange={(e) => setJoinCode(e.target.value)}
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            maxLength={9}
+          />
+          <button type="submit" className="btn" aria-disabled={busy}>
+            Open host view
+          </button>
+        </div>
+      </form>
 
       <form className="ws-form" onSubmit={start} noValidate>
         <h3 className="ws-host__h">Start a new workshop</h3>

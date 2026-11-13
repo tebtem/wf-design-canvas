@@ -40,6 +40,7 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
   return (
     <div
       ref={setNodeRef}
+      data-cell-id={cellId}
       className={`note-cell ${className}${isOver ? ' is-over' : ''}`}
       role="group"
       aria-labelledby={headingId}

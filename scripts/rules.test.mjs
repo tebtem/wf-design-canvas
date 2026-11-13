@@ -119,6 +119,19 @@ await check("new device cannot write bob's canvas", assertFails(alice2.ref(`sess
 await check('aliased device counts as a member when sharing is on', assertSucceeds(alice2.ref(`sessions/${S}/canvases`).get()));
 await check('host cannot alias into a participant', assertFails(fac.ref(`sessions/${S}/aliases/fac`).set({ pid: 'alice', key: KEY })));
 
+// Co-facilitators: any approved, signed-in facilitator gets the host view of a workshop.
+const co = db('co', verified('shannon@theteamtogether.com'));
+await check('co-facilitator reads members', assertSucceeds(co.ref(`sessions/${S}/members`).get()));
+await check('co-facilitator reads every canvas', assertSucceeds(co.ref(`sessions/${S}/canvases`).get()));
+await check('co-facilitator reads comments', assertSucceeds(co.ref(`sessions/${S}/comments`).get()));
+await check('co-facilitator comments', assertSucceeds(co.ref(`sessions/${S}/comments/bob`).push({ text: 'From co', createdAt: TS })));
+await check('co-facilitator reveals steps', assertSucceeds(co.ref(`sessions/${S}/meta/step`).set(2)));
+await check('co-facilitator reads rejoin codes', assertSucceeds(co.ref(`sessions/${S}/rejoinKeys`).get()));
+await check('co-facilitator adds the workshop to their list', assertSucceeds(co.ref(`hosts/co/${S}`).set(Date.now())));
+await check('co-facilitator cannot take over as creator', assertFails(co.ref(`sessions/${S}/meta/facilitator`).set('co')));
+await check('co-facilitator cannot list a workshop that does not exist', assertFails(co.ref('hosts/co/NOPE23').set(1)));
+await check('unapproved emails get no host view', assertFails(db('z9', verified('someone@example.com')).ref(`sessions/${S}/members`).get()));
+
 await check('participants cannot end the session', assertFails(alice.ref(`sessions/${S}`).remove()));
 await check('participants cannot remove the expiry entry', assertFails(alice.ref(`expiries/${S}`).remove()));
 await check('expiry index cannot be listed freely', assertFails(alice.ref('expiries').get()));

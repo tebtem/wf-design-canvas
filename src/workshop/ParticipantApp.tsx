@@ -25,7 +25,7 @@ import { formatCode, formatRejoinCode, spellCode } from './code';
 import { hasUnsent, setUnsent, workshopCanvasKey, type ActiveWorkshop } from './session';
 import { parseState, saveState } from '../state/persist';
 import { CanvasView, CommentList, Gallery, useAnnouncer } from './ui';
-import { clampStep, LAST_STEP, REVEAL_STEPS, STEP_ANCHORS } from '../state/cells';
+import { cellTitle, clampStep, LAST_STEP, REVEAL_STEPS, STEP_ANCHORS } from '../state/cells';
 
 type View = { kind: 'mine' } | { kind: 'gallery' } | { kind: 'other'; uid: string; name: string };
 type Sync = 'ok' | 'offline' | 'error';
@@ -78,7 +78,10 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
   const [announce, region] = useAnnouncer();
   const leaveRef = useRef<HTMLDialogElement>(null);
   const [copyOnLeave, setCopyOnLeave] = useState(false);
-  const seenComments = useRef<number | null>(null);
+  const seenComments = useRef<Set<string> | null>(null);
+  // Notifications that float in the bottom-right corner so they are seen wherever you have scrolled.
+  const [commentToasts, setCommentToasts] = useState<Comment[]>([]);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
   const returnFocus = useRef<string | null>(null);
 
   const ended = meta === null;
@@ -124,7 +127,10 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
     const offs = [
       watchMeta(code, setMeta),
       watchConnected(setConnected),
-      watchComments(code, uid, setComments),
+      watchComments(code, uid, (list) => {
+        setComments(list);
+        setCommentsLoaded(true);
+      }),
       watchRejoinCode(code, uid, setRejoinCode),
     ];
     return () => offs.forEach((off) => off());
@@ -177,14 +183,48 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
     }, 50);
   };
 
-  // Tell screen reader users about new comments, but not the ones already there on load.
+  /** Jumps to the section a comment is about and briefly highlights it. */
+  const goToCell = (c: Comment) => {
+    if (view.kind !== 'mine') setView({ kind: 'mine' });
+    setCommentToasts((list) => list.filter((x) => x.id !== c.id));
+    window.setTimeout(() => {
+      const cell = c.cellId ? document.querySelector<HTMLElement>(`[data-cell-id="${c.cellId}"]`) : null;
+      if (!cell || cell.offsetParent === null) {
+        // Whole-canvas comments (or a section not revealed yet) open the comments list instead.
+        setShowComments(true);
+        window.scrollTo({ top: 0 });
+        document.getElementById('ws-comments-btn')?.focus();
+        return;
+      }
+      cell.scrollIntoView({ block: 'center' });
+      cell.classList.add('is-flagged');
+      window.setTimeout(() => cell.classList.remove('is-flagged'), 2500);
+      cell.querySelector<HTMLElement>('textarea, button')?.focus();
+    }, 50);
+  };
+
+  // New comments (not the ones already there on load) pop up in the corner and are announced.
   useEffect(() => {
-    if (seenComments.current !== null && comments.length > seenComments.current) {
-      announce('New comment from your facilitator.');
+    if (seenComments.current === null) {
+      // The first batch is what was already there; only later ones are new.
+      if (commentsLoaded) seenComments.current = new Set(comments.map((c) => c.id));
+      return;
     }
-    seenComments.current = comments.length;
+    const fresh = comments.filter((c) => !seenComments.current!.has(c.id));
+    fresh.forEach((c) => seenComments.current!.add(c.id));
+    if (!fresh.length) return;
+    setCommentToasts((list) => [...list, ...fresh].slice(-3));
+    const last = fresh[fresh.length - 1];
+    announce(`New comment from your facilitator${last.cellId ? ` about ${cellTitle(last.cellId)}` : ''}: ${last.text}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [comments.length]);
+  }, [comments, commentsLoaded]);
+
+  const hasToasts = revealed !== null || commentToasts.length > 0;
+  // Leave room at the bottom so the notifications never cover what you are typing in.
+  useEffect(() => {
+    document.body.classList.toggle('has-toasts', hasToasts);
+    return () => document.body.classList.remove('has-toasts');
+  }, [hasToasts]);
 
   useEffect(() => {
     if (view.kind !== 'mine') document.getElementById('ws-view-title')?.focus();
@@ -272,20 +312,6 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
             own canvas, and choose whether to keep this one.
           </p>
         )}
-        {revealed !== null && (
-          <p className="ws-notice">
-            <span>
-              Newly revealed: <strong>{REVEAL_STEPS[revealed]}</strong>
-              {revealed >= LAST_STEP && '. You can now see the full canvas.'}
-            </span>
-            <button type="button" className="btn btn--small" onClick={goToRevealed}>
-              Go to it
-            </button>
-            <button type="button" className="btn btn--small" onClick={() => setRevealed(null)}>
-              Dismiss
-            </button>
-          </p>
-        )}
         <div aria-live="polite">
           {spotlight && !ended && (
             <p className="ws-notice">
@@ -336,6 +362,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
               </h1>
               <p className="ws-hint">View only. These update live.</p>
               <Gallery
+                compact
                 entries={others}
                 spotlightUid={spotlight?.uid}
                 empty="Nobody else has joined yet."
@@ -371,6 +398,47 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
         )}
       </div>
       <Footer />
+      {hasToasts && (
+        <section className="ws-toasts no-print" aria-label="Notifications">
+          {revealed !== null && (
+            <div className="ws-toast">
+              <p className="ws-toast__title">Newly revealed</p>
+              <p>
+                <strong>{REVEAL_STEPS[revealed]}</strong>
+                {revealed >= LAST_STEP && '. You can now see the full canvas.'}
+              </p>
+              <div className="ws-toast__actions">
+                <button type="button" className="btn btn--small btn--primary" onClick={goToRevealed}>
+                  Go to it
+                </button>
+                <button type="button" className="btn btn--small" onClick={() => setRevealed(null)}>
+                  Dismiss<span className="sr-only"> newly revealed notice</span>
+                </button>
+              </div>
+            </div>
+          )}
+          {commentToasts.map((c) => (
+            <div key={c.id} className="ws-toast ws-toast--comment">
+              <p className="ws-toast__title">
+                Comment from your facilitator{c.cellId ? ` on ${cellTitle(c.cellId)}` : ''}
+              </p>
+              <p className="ws-toast__text">{c.text}</p>
+              <div className="ws-toast__actions">
+                <button type="button" className="btn btn--small btn--primary" onClick={() => goToCell(c)}>
+                  {c.cellId ? `Go to ${cellTitle(c.cellId)}` : 'See all comments'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--small"
+                  onClick={() => setCommentToasts((list) => list.filter((x) => x.id !== c.id))}
+                >
+                  Dismiss<span className="sr-only"> comment</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
       {region}
 
       <dialog ref={leaveRef} className="dialog" aria-labelledby="ws-leave-title" aria-describedby="ws-leave-desc">
