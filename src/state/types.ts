@@ -89,6 +89,8 @@ export interface CanvasState {
   /** Solo guided mode: sections are revealed up to this step (see REVEAL_STEPS). */
   step: number;
   outline: Outline;
+  /** How many Flow, Function, and Form columns are shown: rows of six (6, 12, 18 or 24). */
+  flowColumns: number;
   /** How many drafts are on screen (1 to 3). Drafts are added with Add another draft. */
   draftCount: number;
 }

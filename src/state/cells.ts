@@ -55,7 +55,8 @@ export const CELL_GROUPS: CellGroup[] = [
   {
     section: 'Flow, Function, and Form',
     step: 3,
-    cells: Array.from({ length: 9 }, (_, i) => ({
+    // Up to four rows of six; a canvas shows state.flowColumns of them (see FLOW_ROW).
+    cells: Array.from({ length: 24 }, (_, i) => ({
       id: `flow.${i}`,
       title: `Flow step ${i + 1}`,
       fullTitle: `Flow step ${i + 1}`,
@@ -87,6 +88,15 @@ export const STEP_ANCHORS = ['section-brief', 'section-facilitator', 'section-ti
 /** A step value from the database, clamped. Missing means everything is shown. */
 export const clampStep = (step: number | undefined | null) =>
   typeof step === 'number' ? Math.max(0, Math.min(LAST_STEP, Math.floor(step))) : LAST_STEP;
+
+/** Flow, Function, and Form columns come in rows of six, up to four rows. */
+export const FLOW_ROW = 6;
+export const FLOW_MAX = 24;
+export const FLOW_SECTION = 'Flow, Function, and Form';
+
+/** Cells on screen for a canvas: only the Flow columns it has added. */
+export const isCellShown = (cellId: string, flowColumns: number) =>
+  !cellId.startsWith('flow.') || Number(cellId.slice(5)) < flowColumns;
 
 const byId = new Map(CELL_GROUPS.flatMap((g) => g.cells.map((c) => [c.id, c] as const)));
 

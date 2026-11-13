@@ -66,6 +66,15 @@ if (await page.locator('.note-cell__text').count()) fail('free-text boxes should
 const order = await visibleTitles();
 const expected = ['Session Brief', 'Participants at the Center', 'Participant Before', 'Participant After', 'Facilitator at the Center', 'Time Blocks', 'Flow, Function, and Form', 'Activity Ideation', 'Session Outline'];
 await page.getByLabel('Name of function 1').fill('Opening');
+// Flow, Function, and Form: six columns left to right; add or remove rows of six.
+if ((await page.locator('.flow-col').count()) !== 6) fail('flow should start with six columns');
+await page.getByRole('button', { name: 'Add more columns' }).click();
+await page.waitForTimeout(120);
+if ((await page.locator('.flow-col').count()) !== 12) fail('Add more columns should add a row');
+if ((await page.evaluate(() => document.activeElement?.id)) !== 'flow-name-6') fail('focus should move to the new row');
+await page.getByRole('button', { name: 'Remove last row' }).click();
+await page.waitForTimeout(120);
+if ((await page.locator('.flow-col').count()) !== 6) fail('Remove last row should remove six columns');
 if (order.join('|') !== expected.join('|')) fail(`section order: ${order.join(', ')}`);
 for (const name of ['Timing + Logistics', 'Space + Materials']) {
   if (!(await page.getByRole('group', { name, exact: true }).count())) fail(`missing cell ${name}`);
@@ -315,7 +324,7 @@ await page.route('**/api/subscribe', async (route) => {
   signedUp = JSON.parse(route.request().postData() || '{}').email;
   await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
 });
-await page.getByRole('button', { name: 'More' }).click();
+await page.getByRole('button', { name: 'More', exact: true }).click();
 await page.getByRole('button', { name: 'Save as PDF' }).click();
 const waitlist = page.locator('.ws-toast--waitlist');
 await waitlist.waitFor();
@@ -328,14 +337,14 @@ await waitlist.getByRole('button', { name: 'Join the waitlist' }).click();
 await waitlist.getByText("You're on the waitlist!").waitFor();
 if (signedUp !== 'person@example.com') fail(`waitlist sent ${signedUp}`);
 await waitlist.getByRole('button', { name: 'Close waitlist invitation' }).click();
-await page.getByRole('button', { name: 'More' }).click();
+await page.getByRole('button', { name: 'More', exact: true }).click();
 await page.getByRole('button', { name: 'Save as PDF' }).click();
 await page.waitForTimeout(300);
 if (await waitlist.count()) fail('waitlist should not show again after joining');
 
 // Backup: download, clear, restore.
 // More menu: opens, closes with Escape (focus back on More), and holds backup, restore and clear.
-const more = page.getByRole('button', { name: 'More' });
+const more = page.getByRole('button', { name: 'More', exact: true });
 await more.click();
 if ((await more.getAttribute('aria-expanded')) !== 'true') fail('More should expand');
 // Scan the open menu itself; whatever sits underneath an open menu is covered until it closes.
@@ -349,7 +358,7 @@ if (!download.suggestedFilename().startsWith('q3-planning-backup-')) fail(`backu
 const backupPath = out + 'backup.json';
 await download.saveAs(backupPath);
 await page.setViewportSize({ width: 1440, height: 1000 });
-await page.getByRole('button', { name: 'More' }).click();
+await page.getByRole('button', { name: 'More', exact: true }).click();
 await page.getByRole('button', { name: 'Clear canvas' }).click();
 await page.getByRole('button', { name: 'Clear everything' }).click();
 if ((await page.getByLabel('Client Name').inputValue()) !== '') fail('clear did not clear');
@@ -364,7 +373,7 @@ if (!(await page.getByText('That file is not a canvas backup').count())) fail('b
 
 // Clear canvas starts the guide over, and print still shows every section.
 await page.setViewportSize({ width: 1440, height: 1000 });
-await page.getByRole('button', { name: 'More' }).click();
+await page.getByRole('button', { name: 'More', exact: true }).click();
 await page.getByRole('button', { name: 'Clear canvas' }).click();
 await page.getByRole('button', { name: 'Clear everything' }).click();
 await page.getByRole('button', { name: 'Next: Facilitator at the Center' }).waitFor();

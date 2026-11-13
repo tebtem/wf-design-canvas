@@ -281,3 +281,23 @@ describe('backup reminder', () => {
     expect(shouldRemindBackup(s, Date.now() + 86_400_000)).toBe(false);
   });
 });
+
+describe('flow columns', () => {
+  it('start at six, add and remove rows of six, and keep older canvases whole', () => {
+    let s = initialState();
+    expect(s.flowColumns).toBe(6);
+    s = reducer(s, { type: 'addFlowRow' });
+    expect(s.flowColumns).toBe(12);
+    s = reducer(s, { type: 'addSticky', cellId: 'flow.8', id: 'x' });
+    s = reducer(s, { type: 'removeFlowRow' });
+    expect(s.flowColumns).toBe(6);
+    expect(s.cells['flow.8']).toBeUndefined();
+    for (let i = 0; i < 5; i++) s = reducer(s, { type: 'addFlowRow' });
+    expect(s.flowColumns).toBe(24);
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ version: 1, cells: { 'flow.7': { text: '', stickies: [{ id: 'a', text: 'hi', color: 'yellow' }] } }, drafts: { d1: [], d2: [] } }),
+    );
+    expect(loadState().flowColumns).toBe(12);
+  });
+});

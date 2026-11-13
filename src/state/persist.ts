@@ -1,5 +1,5 @@
 import { emptyDetails, initialState } from './reducer';
-import { clampStep } from './cells';
+import { clampStep, FLOW_MAX, FLOW_ROW } from './cells';
 import { clampMinutes, DRAFT_IDS, STICKY_COLORS, type CanvasDetails, type Outline, type CanvasState, type Cell, type TimeBlock } from './types';
 
 /** Blocks saved before notes existed get an empty notes field. */
@@ -39,6 +39,16 @@ function migrateOutline(o: Partial<Outline> | undefined, draftCount: number): Ou
   return { draft, start, rows };
 }
 
+/** Rows of six; never hide a column that has something in it (older canvases had nine columns). */
+function migrateFlowColumns(parsed: Partial<CanvasState>): number {
+  const used = Object.entries(parsed.cells ?? {})
+    .filter(([id, c]) => id.startsWith('flow.') && ((c.stickies?.length ?? 0) > 0 || (c.text ?? '').trim() || (c.title ?? '').trim()))
+    .map(([id]) => Number(id.slice(5)) + 1);
+  const saved = typeof parsed.flowColumns === 'number' ? parsed.flowColumns : FLOW_ROW;
+  const needed = Math.max(saved, ...used, FLOW_ROW);
+  return Math.min(FLOW_MAX, Math.ceil(needed / FLOW_ROW) * FLOW_ROW);
+}
+
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
 const migrateDetails = (d: Partial<CanvasDetails> | undefined): CanvasDetails =>
   d ? { title: str(d.title), client: str(d.client), participants: str(d.participants) } : emptyDetails();
@@ -64,6 +74,7 @@ export function parseState(raw: string | null | undefined): CanvasState | null {
       drafts: { d1: migrateBlocks(parsed.drafts.d1), d2, d3 },
       draftCount,
       outline: migrateOutline(parsed.outline, draftCount),
+      flowColumns: migrateFlowColumns(parsed),
       // Canvases saved before the guide existed open fully revealed.
       step: clampStep(parsed.step),
     };

@@ -2,7 +2,11 @@ import { CELL_GROUPS } from '../state/cells';
 import { formatMinutes, totalMinutes, visibleDrafts } from '../state/reducer';
 import type { CanvasState } from '../state/types';
 
-export const TOTAL_CELLS = CELL_GROUPS.reduce((n, g) => n + g.cells.length, 0);
+import { isCellShown } from '../state/cells';
+
+/** Note sections on a canvas (Flow, Function, and Form counts only the columns it shows). */
+export const totalCells = (state: CanvasState) =>
+  CELL_GROUPS.reduce((n, g) => n + g.cells.filter((c) => isCellShown(c.id, state.flowColumns)).length, 0);
 
 export interface CanvasSummary {
   filled: number;

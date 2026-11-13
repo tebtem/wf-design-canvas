@@ -17,11 +17,13 @@ interface Props {
   className?: string;
   /** Adds a "Name this function" field above the stickies; this is its accessible label. */
   nameLabel?: string;
+  /** id for the name field, so focus can move to it. */
+  nameId?: string;
 }
 
 const EMPTY: Cell = { text: '', stickies: [] };
 
-export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', nameLabel }: Props) {
+export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', nameLabel, nameId }: Props) {
   const { state, dispatch, readOnly } = useCanvas();
   const cell = state.cells[cellId] ?? EMPTY;
   const uid = useId();
@@ -58,18 +60,26 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
       </h3>
       {nameLabel && (
         <div className="note-cell__heading">
-          <label htmlFor={`${uid}-title`} className="sr-only">
+          <label htmlFor={nameId ?? `${uid}-title`} className="sr-only">
             {nameLabel}
           </label>
-          <input
-            id={`${uid}-title`}
+          {/* Wraps onto more lines for longer names; Enter finishes instead of adding a line break. */}
+          <textarea
+            id={nameId ?? `${uid}-title`}
             className="note-cell__heading-input"
             value={cell.title ?? ''}
             placeholder={readOnly ? '' : 'Name this function'}
             readOnly={readOnly}
-            maxLength={80}
+            maxLength={120}
+            rows={1}
             autoComplete="off"
-            onChange={(e) => dispatch({ type: 'setCellTitle', cellId, title: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.currentTarget.blur();
+              }
+            }}
+            onChange={(e) => dispatch({ type: 'setCellTitle', cellId, title: e.target.value.replace(/\n/g, ' ') })}
           />
           <span className="print-text" aria-hidden="true">
             {cell.title}
