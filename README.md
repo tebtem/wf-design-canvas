@@ -71,7 +71,7 @@ npm run e2e:workshop
 ## Privacy, terms and analytics
 
 - `privacy.html` and `terms.html` are plain pages built alongside the canvas (see `vite.config.ts`), linked from the footer and the workshop join dialog. They are drafts written for Women Facilitating to review; they are not legal advice.
-- Analytics uses [Umami](https://umami.is) (Women Facilitating's site ID is built in): no cookies, no personal data, so no consent banner is needed. It never runs on localhost. Set `VITE_UMAMI_WEBSITE_ID=off` in Vercel to turn it off (for example on previews). It counts page views plus a few actions: `guide-next`, `guide-skipped`, `pdf-saved`, `backup-downloaded`, `backup-restored`, `workshop-joined`, `workshop-hosted`, `waitlist-shown`, `waitlist-joined`. It never sends what people type, and query strings (like workshop codes) are excluded.
+- Analytics uses [Umami](https://umami.is) (Women Facilitating's site ID is built in): no cookies, no personal data, so no consent banner is needed. It never runs on localhost. Set `VITE_UMAMI_WEBSITE_ID=off` in Vercel to turn it off (for example on previews). It counts page views plus a few actions: `guide-next`, `guide-skipped`, `pdf-saved`, `backup-downloaded`, `backup-restored`, `workshop-joined`, `workshop-hosted`, `waitlist-shown`, `waitlist-joined`, `account-created` (new accounts), `account-signed-in` (returning), `updates-opt-in`, `learn-clicked` (with `from`: `learn-button` or `wordmark`). It never sends what people type, and query strings (like workshop codes) are excluded.
 
 ## Waitlist (MailerLite)
 

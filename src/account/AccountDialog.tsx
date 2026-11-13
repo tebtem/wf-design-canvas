@@ -67,7 +67,6 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
       setPendingOptIn(false);
       track('updates-opt-in');
     }
-    track('account-signed-in');
     announceAccountChange();
     // List the canvases once the one on screen has moved into the account.
     window.addEventListener(ACCOUNT_READY_EVENT, () => void refresh(signedIn), { once: true });
