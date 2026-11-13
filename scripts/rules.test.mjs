@@ -142,6 +142,19 @@ await check('participants cannot read who is online', assertFails(bob.ref(`sessi
 await check('host reads who is online', assertSucceeds(fac.ref(`sessions/${S}/presence`).get()));
 await check('alice goes offline', assertSucceeds(alice.ref(`sessions/${S}/presence/alice`).remove()));
 
+// Accounts: three saved canvas slots per person, private to them.
+const acct = db('acct', verified('someone@example.com'));
+const saved = { state: JSON.stringify({ version: 1 }), name: 'Retreat', updatedAt: TS };
+await check('an account saves a canvas', assertSucceeds(acct.ref('users/acct/canvases/c1').set(saved)));
+await check('an account reads its canvases', assertSucceeds(acct.ref('users/acct/canvases').get()));
+await check('only three slots', assertFails(acct.ref('users/acct/canvases/c4').set(saved)));
+await check("others cannot read someone's canvases", assertFails(eve.ref('users/acct/canvases').get()));
+await check("others cannot write someone's canvases", assertFails(eve.ref('users/acct/canvases/c2').set(saved)));
+await check('anonymous participants cannot save account canvases', assertFails(alice.ref('users/alice/canvases/c1').set(saved)));
+await check('unverified emails cannot save', assertFails(db('uv', { email: 'u@example.com', email_verified: false }).ref('users/uv/canvases/c1').set(saved)));
+await check('extra fields are rejected', assertFails(acct.ref('users/acct/canvases/c2').set({ ...saved, x: 1 })));
+await check('an account deletes everything', assertSucceeds(acct.ref('users/acct').remove()));
+
 await check('participants cannot end the session', assertFails(alice.ref(`sessions/${S}`).remove()));
 await check('participants cannot remove the expiry entry', assertFails(alice.ref(`expiries/${S}`).remove()));
 await check('expiry index cannot be listed freely', assertFails(alice.ref('expiries').get()));

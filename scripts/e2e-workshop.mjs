@@ -289,6 +289,79 @@ await bob.getByRole('button', { name: 'Leave', exact: true }).click();
 await until(async () => (await bob.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) === 'Personal canvas text', 'bob personal canvas intact');
 step('end workshop works');
 
+// Free accounts: sign up from a canvas (opting in to updates), then open it on another device.
+async function accountSignIn(page, email, optIn = false) {
+  await page.getByRole('button', { name: /^(Create free account|My canvases)$/ }).click();
+  await page.getByRole('dialog').getByLabel('Email', { exact: true }).fill(email);
+  if (optIn) await page.getByLabel('Send me updates about facilitation design learning experiences').check();
+  await page.getByRole('button', { name: 'Email me a sign-in link' }).click();
+  await page.getByText('Check your inbox').waitFor();
+  const { oobCodes } = await (await fetch(AUTH_EMU)).json();
+  const latest = oobCodes.filter((c) => c.email === email && c.requestType === 'EMAIL_SIGNIN').pop();
+  await page.goto(`${APP_URL}?account&apiKey=demo-key&oobCode=${latest.oobCode}&mode=signIn&lang=en`);
+  await page.getByRole('heading', { name: 'My canvases' }).waitFor();
+}
+const subscribed = [];
+const device1 = await newPage();
+await device1.route('**/api/subscribe', async (route) => {
+  subscribed.push(JSON.parse(route.request().postData() || '{}').email);
+  await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+});
+await device1.goto(APP_URL);
+await device1.evaluate(() => localStorage.setItem('wf-design-canvas:backup-snooze', String(Date.now() + 864e5)));
+await device1.getByLabel('Working Title').fill('Offsite plan');
+await device1.getByRole('button', { name: 'Add sticky note in Purpose' }).click();
+await device1.locator('.ProseMirror:focus').waitFor();
+await device1.keyboard.type('Align the team');
+await device1.keyboard.press('Escape');
+await device1.getByRole('button', { name: 'Create free account' }).click();
+await axe(device1, 'account sign-up');
+await device1.keyboard.press('Escape');
+await accountSignIn(device1, 'pat@example.com', true);
+await until(async () => (await device1.locator('.ws-host__list li').count()) === 1, 'canvas moved into the account');
+if (!(await device1.locator('.ws-host__list').textContent()).includes('Offsite plan')) fail('saved canvas should be named after the working title');
+if (subscribed[0] !== 'pat@example.com') fail(`opt-in should subscribe once confirmed: ${subscribed}`);
+await axe(device1, 'my canvases');
+await device1.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
+if (!(await device1.getByRole('button', { name: 'My canvases' }).count())) fail('toolbar should say My canvases when signed in');
+
+const device2 = await newPage();
+await device2.goto(APP_URL);
+await accountSignIn(device2, 'pat@example.com');
+await device2.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
+await until(async () => (await device2.getByLabel('Working Title').inputValue()) === 'Offsite plan', 'canvas opens on a second device');
+if (!(await device2.getByRole('textbox', { name: 'Sticky note 1 in Purpose' }).innerText()).includes('Align the team')) fail('sticky should come across');
+await device2.getByLabel('Client Name').fill('From device 2');
+await device2.waitForTimeout(2500);
+await device1.reload();
+await until(async () => (await device1.getByLabel('Client Name').inputValue()) === 'From device 2', 'changes come back to the first device');
+
+// Three canvases: start a new one, switch back, delete it.
+await device1.getByRole('button', { name: 'My canvases' }).click();
+await device1.getByRole('button', { name: 'Start a new canvas' }).click();
+await until(async () => (await device1.getByLabel('Working Title').inputValue()) === '', 'new canvas is blank');
+await device1.getByLabel('Working Title').fill('Second canvas');
+await device1.waitForTimeout(2000);
+await device1.getByRole('button', { name: 'My canvases' }).click();
+await until(async () => (await device1.locator('.ws-host__list li').count()) === 2, 'two canvases listed');
+await device1.getByRole('button', { name: 'Open Offsite plan' }).click();
+await until(async () => (await device1.getByLabel('Working Title').inputValue()) === 'Offsite plan', 'opens a saved canvas');
+await device1.getByRole('button', { name: 'My canvases' }).click();
+device1.once('dialog', (d) => d.accept());
+await device1.getByRole('button', { name: 'Delete Second canvas' }).click();
+await until(async () => (await device1.locator('.ws-host__list li').count()) === 1, 'deleting removes a canvas');
+
+// Sign out clears this browser; delete account removes everything.
+await device1.getByRole('button', { name: 'Sign out' }).click();
+await until(async () => (await device1.getByLabel('Working Title').inputValue()) === '', 'sign out clears the canvas from this browser');
+await device1.keyboard.press('Escape');
+if (!(await device1.getByRole('button', { name: 'Create free account' }).count())) fail('toolbar should offer an account again after signing out');
+await device2.getByRole('button', { name: 'My canvases' }).click();
+device2.once('dialog', (d) => d.accept());
+await device2.getByRole('button', { name: 'Delete my account' }).click();
+await device2.getByText('Your account and saved canvases were deleted.').waitFor();
+step('free accounts work');
+
 // Phone width.
 const phone = await newPage();
 await phone.setViewportSize({ width: 375, height: 800 });

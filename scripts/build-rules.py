@@ -154,6 +154,26 @@ rules = {
       },
     },
 
+    # Free accounts: up to three saved canvases each, readable and writable only by their owner.
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid && auth.token.email_verified === true",
+        # Deleting your account removes everything at once.
+        ".write": "auth != null && auth.uid === $uid && !newData.exists()",
+        "canvases": {
+          "$slot": {
+            ".write": "auth != null && auth.uid === $uid && auth.token.email_verified === true",
+            ".validate": "$slot.matches(/^c[123]$/) && newData.hasChildren(['state', 'updatedAt'])",
+            "state": {".validate": "newData.isString() && newData.val().length <= 300000"},
+            "name": {".validate": "newData.isString() && newData.val().length <= 120"},
+            "updatedAt": {".validate": "newData.val() === now"},
+            "$other": {".validate": False},
+          },
+        },
+        "$other": {".validate": False},
+      },
+    },
+
     # Each host's own list of workshops, so they can reopen them from any device.
     "hosts": {
       "$uid": {

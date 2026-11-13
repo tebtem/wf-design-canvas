@@ -700,3 +700,29 @@ html:has(.ws-toast) {
   outline-offset: 2px;
   transition: outline-color 0.3s;
 }
+
+/* Accounts */
+.ws-toast__cta {
+  margin-top: 6px;
+  font-weight: 700;
+}
+.acct__note {
+  margin: 8px 0;
+}
+.acct__current {
+  font-weight: 400;
+  color: var(--navy-soft);
+}
+.acct__actions {
+  grid-area: open;
+  display: flex;
+  gap: 6px;
+}
+.acct__footer {
+  flex-wrap: wrap;
+  border-top: 1px solid var(--divider);
+  padding-top: 14px;
+}
+.ws-host > .btn {
+  align-self: flex-start;
+}

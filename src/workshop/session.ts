@@ -89,13 +89,34 @@ export const hostSignedInEmail = () => load(HOST_KEY);
 export const setPendingHostEmail = (email: string | null) => store(PENDING_KEY, email);
 export const pendingHostEmail = () => load(PENDING_KEY);
 
-/** Where the emailed sign-in link returns to. */
-export const hostLinkUrl = () => {
+/** Where the emailed sign-in link returns to: ?host (facilitators) or ?account (everyone else). */
+const linkUrl = (param: 'host' | 'account') => {
   const url = new URL(window.location.href);
-  url.search = '?host';
+  url.search = `?${param}`;
   url.hash = '';
   return url.toString();
 };
+export const hostLinkUrl = () => linkUrl('host');
+export const accountLinkUrl = () => linkUrl('account');
+
+// Signed in with an account on this device (so the canvas can sync without loading Firebase for everyone).
+const ACCOUNT_KEY = 'wf-design-canvas:account';
+const OPT_IN_KEY = 'wf-design-canvas:account-opt-in';
+export const markAccountSignedIn = (email: string) => store(ACCOUNT_KEY, email);
+export const clearAccountSignedIn = () => store(ACCOUNT_KEY, null);
+export const accountSignedInEmail = () => load(ACCOUNT_KEY);
+/** "Send me updates" ticked when requesting the link; acted on once the email is confirmed. */
+export const setPendingOptIn = (optIn: boolean) => store(OPT_IN_KEY, optIn ? '1' : null);
+export const pendingOptIn = () => load(OPT_IN_KEY) === '1';
+
+/** Reads and removes ?account (an account sign-in link). */
+export function takeAccountParam(): boolean {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has('account')) return false;
+  url.searchParams.delete('account');
+  window.history.replaceState(null, '', url);
+  return true;
+}
 
 /** Reads and removes ?host (the facilitator link). Returns true if it was there. */
 export function takeHostParam(): boolean {

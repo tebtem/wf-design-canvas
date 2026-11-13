@@ -3,18 +3,23 @@ import { useEffect, useRef, useState, type ChangeEvent, type FocusEvent } from '
 import { downloadBackup, markBackedUp, readBackup } from '../state/backup';
 import { track } from '../analytics';
 import { celebrateMilestone } from './WaitlistCard';
+import { useAccountEmail } from '../account/useAccountEmail';
+import { openAccountDialog } from '../account/session';
 import { effectiveLayout, setLayoutPref, useLayoutPref, type Layout } from '../state/layout';
 import { useCanvas } from '../state/CanvasContext';
-import { ChevronIcon, DownloadIcon, ExternalIcon, PeopleIcon, PrintIcon, UploadIcon, XIcon } from './Icons';
+import { ChevronIcon, DownloadIcon, ExternalIcon, PeopleIcon, PrintIcon, UploadIcon, UserIcon, XIcon } from './Icons';
 
 import { LEARN_URL } from './Footer';
 
 interface ToolbarProps {
   onWorkshop?: () => void;
   guided?: boolean;
+  /** Show the free account button (solo canvas, with Firebase set up). */
+  accounts?: boolean;
 }
 
-export function Toolbar({ onWorkshop, guided = false }: ToolbarProps) {
+export function Toolbar({ onWorkshop, guided = false, accounts = false }: ToolbarProps) {
+  const accountEmail = useAccountEmail();
   const { state, dispatch, saveStatus } = useCanvas();
   const layout = effectiveLayout(useLayoutPref());
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -103,6 +108,12 @@ export function Toolbar({ onWorkshop, guided = false }: ToolbarProps) {
               track('guide-skipped');
             }}>
             Show full canvas
+          </button>
+        )}
+        {accounts && (
+          <button type="button" className="btn" onClick={openAccountDialog} aria-haspopup="dialog">
+            <UserIcon />
+            {accountEmail ? 'My canvases' : 'Create free account'}
           </button>
         )}
         {onWorkshop && (
