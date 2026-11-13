@@ -87,6 +87,10 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
   const ended = meta === null;
   const canView = Boolean(meta?.canView);
   const spotlight = meta?.spotlight ?? null;
+  // Spotlight card in the corner: shown for each new spotlight until dismissed, gone when it ends.
+  const [spotDismissed, setSpotDismissed] = useState<string | null>(null);
+  const spotKey = spotlight && !ended ? spotlight.uid : null;
+  const showSpotToast = spotKey !== null && spotDismissed !== spotKey;
   // Show only the first step until the workshop settings load; an ended workshop shows everything.
   const step = meta === undefined ? 0 : meta === null ? LAST_STEP : clampStep(meta.step);
   const [revealed, setRevealed] = useState<number | null>(null);
@@ -219,7 +223,17 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comments, commentsLoaded]);
 
-  const hasToasts = revealed !== null || commentToasts.length > 0;
+  useEffect(() => {
+    if (!spotlight || ended) return;
+    announce(
+      spotlight.uid === uid
+        ? 'Your facilitator is spotlighting your canvas for the group.'
+        : `Your facilitator is spotlighting ${spotlight.name}'s canvas.`,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spotKey]);
+
+  const hasToasts = revealed !== null || commentToasts.length > 0 || showSpotToast;
   // Leave room at the bottom so the notifications never cover what you are typing in.
   useEffect(() => {
     document.body.classList.toggle('has-toasts', hasToasts);
@@ -312,7 +326,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
             own canvas, and choose whether to keep this one.
           </p>
         )}
-        <div aria-live="polite">
+        <div>
           {spotlight && !ended && (
             <p className="ws-notice">
               {spotlight.uid === uid ? (
@@ -400,6 +414,39 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
       <Footer />
       {hasToasts && (
         <section className="ws-toasts no-print" aria-label="Notifications">
+          {showSpotToast && spotlight && (
+            <div className="ws-toast ws-toast--spotlight">
+              <p className="ws-toast__title">Spotlight</p>
+              <p>
+                {spotlight.uid === uid ? (
+                  <>
+                    Your facilitator is spotlighting <strong>your canvas</strong> for the group.
+                  </>
+                ) : (
+                  <>
+                    Your facilitator is spotlighting <strong>{spotlight.name}&apos;s canvas</strong>.
+                  </>
+                )}
+              </p>
+              <div className="ws-toast__actions">
+                {spotlight.uid !== uid && (
+                  <button
+                    type="button"
+                    className="btn btn--small btn--primary"
+                    onClick={() => {
+                      setSpotDismissed(spotlight.uid);
+                      open({ kind: 'other', uid: spotlight.uid, name: spotlight.name }, 'ws-spot-btn');
+                    }}
+                  >
+                    View it<span className="sr-only"> ({spotlight.name}&apos;s canvas)</span>
+                  </button>
+                )}
+                <button type="button" className="btn btn--small" onClick={() => setSpotDismissed(spotlight.uid)}>
+                  Dismiss<span className="sr-only"> spotlight notice</span>
+                </button>
+              </div>
+            </div>
+          )}
           {revealed !== null && (
             <div className="ws-toast">
               <p className="ws-toast__title">Newly revealed</p>

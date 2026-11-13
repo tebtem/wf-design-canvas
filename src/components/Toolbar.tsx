@@ -20,6 +20,13 @@ export function Toolbar({ onWorkshop, guided = false }: ToolbarProps) {
   const moreBtn = useRef<HTMLButtonElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  // Open toward whichever side has room, so the menu never runs off a narrow screen.
+  const [moreAlign, setMoreAlign] = useState<'left' | 'right'>('right');
+  const toggleMore = () => {
+    const r = moreBtn.current?.getBoundingClientRect();
+    if (r) setMoreAlign(r.left + 240 <= window.innerWidth - 16 ? 'left' : 'right');
+    setMoreOpen((v) => !v);
+  };
   const onMoreBlur = (e: FocusEvent<HTMLDivElement>) => {
     if (!moreRef.current?.contains(e.relatedTarget as Node | null)) setMoreOpen(false);
   };
@@ -109,12 +116,12 @@ export function Toolbar({ onWorkshop, guided = false }: ToolbarProps) {
             className="btn"
             aria-expanded={moreOpen}
             aria-controls="more-panel"
-            onClick={() => setMoreOpen((v) => !v)}
+            onClick={toggleMore}
           >
             More
             <ChevronIcon />
           </button>
-          <div id="more-panel" className="more__panel" hidden={!moreOpen}>
+          <div id="more-panel" className={`more__panel more__panel--${moreAlign}`} hidden={!moreOpen}>
             <button
               type="button"
               className="more__item"

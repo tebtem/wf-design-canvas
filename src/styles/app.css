@@ -157,6 +157,7 @@ button {
   top: calc(100% + 6px);
   z-index: 20;
   min-width: 220px;
+  max-width: calc(100vw - 32px);
   padding: 6px;
   display: flex;
   flex-direction: column;
@@ -165,6 +166,10 @@ button {
   border: 2px solid var(--navy);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgb(35 42 92 / 0.2);
+}
+.more__panel--left {
+  left: 0;
+  right: auto;
 }
 .more__panel[hidden] {
   display: none;
