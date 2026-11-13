@@ -191,7 +191,7 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
         <div className="ws-header__brand">
           <Logo />
           <p>
-            Facilitation Design Canvas <span className="ws-header__role">Host view</span>
+            Facilitation Design Canvas<span className="tm">™</span> <span className="ws-header__role">Host view</span>
           </p>
         </div>
         <p className={`ws-bar__sync ws-bar__sync--${connected ? 'ok' : 'offline'}`} role="status">

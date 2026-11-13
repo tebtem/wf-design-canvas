@@ -28,7 +28,9 @@ export function Header({ asHeading = true }: { asHeading?: boolean }) {
         />
       </Title>
       <div className="canvas-header__right">
-        <p className="canvas-name">Facilitation Design Canvas</p>
+        <p className="canvas-name">
+          Facilitation Design Canvas<span className="tm">™</span>
+        </p>
         <a className="logo-link" href={SITE_URL} target="_blank" rel="noopener noreferrer">
           <Logo />
           <span className="sr-only">Women Facilitating website (opens in a new tab)</span>
