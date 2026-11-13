@@ -104,6 +104,15 @@ rules = {
           },
         },
 
+        # Who is connected right now, for the host's "online" count. Each person marks only themselves.
+        "presence": {
+          ".read": all_of(SIGNED_IN, LIVE, HOST),
+          "$uid": {
+            ".write": all_of(SIGNED_IN, ME, LIVE, f"(!newData.exists() || {S}/members/' + $uid).exists())"),
+            ".validate": "newData.val() === true",
+          },
+        },
+
         # Rejoin codes: rejoin/<code> points to the participant's original id. Readable one code at a
         # time (never listed), so only someone holding the code can find their canvas.
         "rejoin": {

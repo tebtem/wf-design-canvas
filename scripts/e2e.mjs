@@ -21,6 +21,10 @@ const axeCheck = async (p, label) => {
   if (res.violations.length) fail(`${res.violations.length} axe violations on ${label}`);
 };
 
+// Notes are rich text: wait for the editor to take focus before typing, and read what they show.
+const editing = () => page.locator('.ProseMirror:focus').waitFor();
+const noteText = async (name) => (await page.getByRole('textbox', { name }).innerText()).trim();
+
 await page.goto(APP_URL);
 
 // Details, stickies-only cells, and the new section order.
@@ -63,18 +67,22 @@ for (const name of ['Timing + Logistics', 'Space + Materials']) {
   if (!(await page.getByRole('group', { name, exact: true }).count())) fail(`missing cell ${name}`);
 }
 await page.getByRole('button', { name: 'Add sticky note in Purpose' }).click();
+await editing();
 await page.keyboard.type('Align on Q3 goals');
 await page.getByRole('button', { name: 'Add sticky note in Activity ideas' }).click();
+await editing();
 await page.keyboard.type('Gallery walk');
 
 // Sticky notes: move with the dialog, then drag between sections.
 await page.getByRole('button', { name: 'Add sticky note in Activity ideas' }).click();
+await editing();
 await page.keyboard.type('Fishbowl');
+await page.keyboard.press('Escape');
 await page.getByRole('button', { name: /^Move Sticky note 2 in Activity ideas/ }).click();
 await page.getByLabel('Section', { exact: true }).selectOption('brief.1');
 await page.getByRole('button', { name: 'Move', exact: true }).click();
 await page.waitForTimeout(200);
-if ((await page.getByRole('textbox', { name: 'Sticky note 1 in Outcomes' }).inputValue()) !== 'Fishbowl') fail('move dialog did not move sticky');
+if ((await noteText('Sticky note 1 in Outcomes')) !== 'Fishbowl') fail('move dialog did not move sticky');
 const focused = await page.evaluate(() => document.activeElement?.getAttribute('aria-label'));
 if (!focused?.startsWith('Move Sticky note 1 in Outcomes')) fail(`focus after move dialog: ${focused}`);
 await page.getByRole('button', { name: 'Drag Sticky note 1 in Outcomes' }).hover();
@@ -84,7 +92,7 @@ await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2,
 await page.mouse.move(target.x + target.width / 2 + 4, target.y + target.height / 2, { steps: 3 });
 await page.mouse.up();
 await page.waitForTimeout(300);
-if ((await page.getByRole('textbox', { name: 'Sticky note 1 in Space + Materials' }).inputValue()) !== 'Fishbowl') fail('drag did not move sticky');
+if ((await noteText('Sticky note 1 in Space + Materials')) !== 'Fishbowl') fail('drag did not move sticky');
 if (await page.getByRole('textbox', { name: 'Sticky note 1 in Outcomes' }).count()) fail('sticky still in Outcomes after drag');
 
 // Mouse drag: 30 min bank block into Draft 1.
@@ -187,6 +195,7 @@ if (!(await page.locator('.tblock__time').first().textContent()).includes('09:00
 // Activities are rich text: a title, bullets, bold and italic.
 const acts = page.getByLabel(/^Activities, 09:00 to 09:40/);
 await acts.click();
+await editing();
 await page.keyboard.type('# Kickoff and goals');
 await page.keyboard.press('Enter');
 await page.keyboard.type('- Pairs share ');
@@ -195,10 +204,18 @@ await page.keyboard.type('hopes');
 await page.keyboard.press('ControlOrMeta+b');
 if ((await acts.locator('h3').textContent()) !== 'Kickoff and goals') fail('"# " should make a title');
 if ((await acts.locator('li strong').textContent()) !== 'hopes') fail('bullets and bold should work');
-await page.getByRole('toolbar', { name: /^Formatting for Activities, 09:00/ }).getByRole('button', { name: 'Italic' }).click();
+await page.keyboard.press('ControlOrMeta+i');
 await page.keyboard.type(' now');
-if ((await acts.locator('li em').textContent()) !== ' now') fail('italic button should work');
-await page.getByLabel(/^Moves and materials, 09:00 to 09:40/).fill('Slides, timer');
+if ((await acts.locator('li em').textContent()) !== ' now') fail('Ctrl/Cmd+I should make italic');
+if (await page.getByRole('toolbar').count()) fail('there should be no formatting toolbar');
+await page.getByLabel(/^Moves and materials, 09:00 to 09:40/).click();
+await editing();
+await page.keyboard.type('- Slides');
+await page.keyboard.press('Enter');
+await page.keyboard.type('Timer');
+if ((await page.getByLabel(/^Moves and materials, 09:00 to 09:40/).locator('li').count()) !== 2) fail('bullets in Moves + Materials');
+await page.keyboard.press('Escape');
+if (!(await page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? '')).startsWith('Moves and materials')) fail('Escape should keep focus on the field');
 await page.getByLabel('Based on').selectOption('d2');
 if (!(await outline.getByText('Add time blocks to Session Draft 2').count())) fail('empty outline message');
 await page.getByLabel('Based on').selectOption('d1');
@@ -241,11 +258,11 @@ await page.keyboard.type('Share out');
 
 await page.waitForTimeout(600);
 await page.reload();
-if ((await page.getByRole('textbox', { name: 'Sticky note 1 in Purpose' }).inputValue()) !== 'Align on Q3 goals') fail('sticky in Purpose did not persist');
+if ((await noteText('Sticky note 1 in Purpose')) !== 'Align on Q3 goals') fail('sticky in Purpose did not persist');
 if ((await page.getByLabel('Client Name').inputValue()) !== 'Acme') fail('details did not persist');
 if ((await page.getByLabel('Name of function 1').inputValue()) !== 'Opening') fail('column title did not persist');
 if (await page.getByRole('button', { name: /^Next:/ }).count()) fail('guide step did not persist');
-if ((await page.getByRole('textbox', { name: /Sticky note 1 in Activity ideas/ }).inputValue()) !== 'Gallery walk') fail('sticky did not persist');
+if ((await noteText(/Sticky note 1 in Activity ideas/)) !== 'Gallery walk') fail('sticky did not persist');
 const savedNotes = await page.getByRole('textbox', { name: /^Notes for 60 minute block/ }).inputValue();
 if (savedNotes !== '• Pairs discuss\n• Share out') fail(`block notes wrong: ${JSON.stringify(savedNotes)}`);
 const blocks = await page.locator('.tblock').count();

@@ -16,6 +16,7 @@ import {
   watchMembers,
   watchMeta,
   watchRejoinCodes,
+  watchPresence,
   type Comment,
   type Member,
   type RemoteCanvas,
@@ -40,6 +41,7 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
   const [canvases, setCanvases] = useState<Record<string, RemoteCanvas>>({});
   const [comments, setComments] = useState<Record<string, Comment[]>>({});
   const [rejoinCodes, setRejoinCodes] = useState<Record<string, string>>({});
+  const [online, setOnline] = useState<Record<string, boolean>>({});
   const [connected, setConnected] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [copied, setCopied] = useState('');
@@ -77,6 +79,7 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
       watchAllComments(code, setComments),
       watchConnected(setConnected),
       watchRejoinCodes(code, setRejoinCodes),
+      watchPresence(code, setOnline),
     ];
     return () => offs.forEach((off) => off());
   }, [ready, code]);
@@ -195,7 +198,9 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
           </p>
         </div>
         <p className={`ws-bar__sync ws-bar__sync--${connected ? 'ok' : 'offline'}`} role="status">
-          {connected ? 'Live' : 'Offline. Reconnecting…'}
+          {connected
+            ? `Live · ${Object.keys(online).length} participant${Object.keys(online).length === 1 ? '' : 's'} online`
+            : 'Offline. Reconnecting…'}
         </p>
         <div className="ws-bar__actions">
           <button type="button" className="btn" onClick={() => exitRef.current?.showModal()}>

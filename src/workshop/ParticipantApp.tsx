@@ -9,7 +9,7 @@ import {
   pushCanvas,
   signIn,
   watchCanvas,
-  watchCanvases,
+  trackPresence,
   watchComments,
   watchConnected,
   watchMembers,
@@ -48,7 +48,7 @@ function CanvasSync({ code, uid, active, onResult }: { code: string; uid: string
         },
         () => onResult(false),
       );
-    }, 500);
+    }, 1000); // about once a second while typing: smooth for the host, light on data
     return () => window.clearTimeout(t);
   }, [state, opened, code, uid, active, onResult]);
   return null;
@@ -70,7 +70,6 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [rejoinCode, setRejoinCode] = useState<string | null>(null);
   const [members, setMembers] = useState<Record<string, Member>>({});
-  const [canvases, setCanvases] = useState<Record<string, RemoteCanvas>>({});
   const [viewed, setViewed] = useState<{ uid: string; canvas: RemoteCanvas | null } | null>(null);
   const [view, setView] = useState<View>({ kind: 'mine' });
   const [revoked, setRevoked] = useState(0);
@@ -136,6 +135,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
         setCommentsLoaded(true);
       }),
       watchRejoinCode(code, uid, setRejoinCode),
+      trackPresence(code, uid),
     ];
     return () => offs.forEach((off) => off());
   }, [ready, code, uid]);
@@ -143,7 +143,8 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
   // Other people's canvases are only readable while the facilitator allows it.
   useEffect(() => {
     if (!ready || !canView) return;
-    const offs = [watchMembers(code, setMembers), watchCanvases(code, setCanvases)];
+    // Names only: a canvas downloads when someone opens it, which keeps data use low on the free plan.
+    const offs = [watchMembers(code, setMembers)];
     return () => offs.forEach((off) => off());
   }, [ready, canView, code]);
 
@@ -265,7 +266,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
 
   const others = Object.entries(members)
     .sort(([, a], [, b]) => a.joinedAt - b.joinedAt)
-    .map(([id, m]) => ({ uid: id, name: m.name, canvas: canvases[id], isYou: id === uid }));
+    .map(([id, m]) => ({ uid: id, name: m.name, isYou: id === uid }));
 
   return (
     <>

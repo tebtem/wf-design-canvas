@@ -101,6 +101,13 @@
             }
           }
         },
+        "presence": {
+          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')))",
+          "$uid": {
+            ".write": "auth != null && (auth.uid === $uid || root.child('sessions/' + $code + '/aliases/' + auth.uid + '/pid').val() === $uid) && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (!newData.exists() || root.child('sessions/' + $code + '/members/' + $uid).exists())",
+            ".validate": "newData.val() === true"
+          }
+        },
         "rejoin": {
           "$key": {
             ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now",

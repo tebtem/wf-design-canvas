@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useCanvas } from '../state/CanvasContext';
 import { STICKY_COLORS, type Sticky } from '../state/types';
 import { GripIcon, MoveIcon, PaletteIcon, XIcon } from './Icons';
 import { useOpenStickyMove, type StickyDragData } from './StickyDnd';
+import { RichNote } from './RichNote';
 
 interface Props {
   sticky: Sticky;
@@ -17,15 +17,11 @@ interface Props {
 }
 
 export function StickyNote({ sticky, cellId, index, cellTitle, focusOnMount, onChange, onDelete }: Props) {
-  const ref = useRef<HTMLTextAreaElement>(null);
   const openMove = useOpenStickyMove();
   const { readOnly } = useCanvas();
   const data: StickyDragData = { type: 'sticky', cellId };
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: sticky.id, data, disabled: readOnly });
-  useEffect(() => {
-    if (focusOnMount) ref.current?.focus();
-  }, [focusOnMount]);
 
   const nextColor = STICKY_COLORS[(STICKY_COLORS.indexOf(sticky.color) + 1) % STICKY_COLORS.length];
   const name = `Sticky note ${index + 1} in ${cellTitle}`;
@@ -37,22 +33,16 @@ export function StickyNote({ sticky, cellId, index, cellTitle, focusOnMount, onC
       className={`sticky sticky--${sticky.color}${isDragging ? ' is-dragging' : ''}`}
       style={{ transform: CSS.Translate.toString(transform), transition }}
     >
-      <textarea
-        ref={ref}
-        className="sticky__text"
-        aria-label={name}
+      {/* Bold (Ctrl/Cmd+B), italic (Ctrl/Cmd+I) and "- " bullets; Escape finishes editing. */}
+      <RichNote
         value={sticky.text}
+        label={name}
         readOnly={readOnly}
-        placeholder={readOnly ? '' : 'Write a note'}
-        rows={3}
-        onChange={(e) => onChange({ text: e.target.value })}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') e.currentTarget.blur();
-        }}
+        className="sticky__text"
+        placeholder="Write a note"
+        autoEdit={focusOnMount}
+        onChange={(text) => onChange({ text })}
       />
-      <div className="print-text" aria-hidden="true">
-        {sticky.text}
-      </div>
       {!readOnly && (
         <div className="sticky__actions no-print">
           <button

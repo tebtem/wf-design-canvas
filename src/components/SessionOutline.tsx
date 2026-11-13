@@ -1,22 +1,9 @@
 import { useCanvas } from '../state/CanvasContext';
 import { breakMinutes, schedule, totalMinutes, totalWithBreaks, visibleDrafts } from '../state/reducer';
 import { CupIcon } from './Icons';
-import { Component, lazy, Suspense, useState, type ReactNode } from 'react';
-import { richToText, toRichHtml } from './richText';
+import { useState } from 'react';
+import { RichNote } from './RichNote';
 
-// The rich text editor downloads only when the outline has rows to show.
-const RichText = lazy(() => import('./RichText'));
-
-/** If the rich text editor ever fails, that cell falls back to a plain text box instead of breaking the page. */
-class RichFallback extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  render() {
-    return this.state.failed ? this.props.fallback : this.props.children;
-  }
-}
 import {
   BLOCK_STEP,
   clampMinutes,
@@ -56,34 +43,16 @@ export function SessionOutline() {
     }
   };
 
-  const field = (blockId: string, key: keyof OutlineRow, label: string, value: string) => (
-    <>
-      <textarea
-        className="outline__input"
-        aria-label={label}
-        value={value}
-        readOnly={readOnly}
-        rows={2}
-        onChange={(e) => dispatch({ type: 'setOutlineRow', blockId, field: key, value: e.target.value })}
-      />
-      <div className="print-text" aria-hidden="true">
-        {value}
-      </div>
-    </>
-  );
-
-  /** Activities: title, bold, italic and bullets. */
-  const richField = (blockId: string, label: string, value: string) => (
-    <RichFallback fallback={field(blockId, 'activities', label, richToText(toRichHtml(value)))}>
-      <Suspense fallback={<div className="rich__loading">{richToText(toRichHtml(value))}</div>}>
-        <RichText
-          value={value}
-          label={label}
-          readOnly={readOnly}
-          onChange={(html) => dispatch({ type: 'setOutlineRow', blockId, field: 'activities', value: html })}
-        />
-      </Suspense>
-    </RichFallback>
+  /** Activities allow a title; Moves + Materials and break notes allow bold, italic and bullets. */
+  const field = (blockId: string, key: keyof OutlineRow, label: string, value: string, allowTitle = false) => (
+    <RichNote
+      value={value}
+      label={label}
+      readOnly={readOnly}
+      allowTitle={allowTitle}
+      className="outline__rich"
+      onChange={(html) => dispatch({ type: 'setOutlineRow', blockId, field: key, value: html })}
+    />
   );
 
   return (
@@ -226,10 +195,12 @@ export function SessionOutline() {
                           </td>
                           {brk ? (
                             // Breaks rarely need both columns: one quiet notes cell.
-                            <td colSpan={2}>{richField(b.id, `Notes for break, ${spoken}`, row.activities)}</td>
+                            <td colSpan={2}>
+                              {field(b.id, 'activities', `Notes for break, ${spoken}`, row.activities)}
+                            </td>
                           ) : (
                             <>
-                              <td>{richField(b.id, `Activities, ${spoken}`, row.activities)}</td>
+                              <td>{field(b.id, 'activities', `Activities, ${spoken}`, row.activities, true)}</td>
                               <td>{field(b.id, 'moves', `Moves and materials, ${spoken}`, row.moves)}</td>
                             </>
                           )}

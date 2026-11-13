@@ -132,6 +132,14 @@ await check('co-facilitator cannot take over as creator', assertFails(co.ref(`se
 await check('co-facilitator cannot list a workshop that does not exist', assertFails(co.ref('hosts/co/NOPE23').set(1)));
 await check('unapproved emails get no host view', assertFails(db('z9', verified('someone@example.com')).ref(`sessions/${S}/members`).get()));
 
+// Presence: people mark themselves online; only hosts read the list.
+await check('alice marks herself online', assertSucceeds(alice.ref(`sessions/${S}/presence/alice`).set(true)));
+await check("bob cannot mark alice online", assertFails(bob.ref(`sessions/${S}/presence/alice`).set(true)));
+await check('non-members cannot mark themselves online', assertFails(eve.ref(`sessions/${S}/presence/eve`).set(true)));
+await check('participants cannot read who is online', assertFails(bob.ref(`sessions/${S}/presence`).get()));
+await check('host reads who is online', assertSucceeds(fac.ref(`sessions/${S}/presence`).get()));
+await check('alice goes offline', assertSucceeds(alice.ref(`sessions/${S}/presence/alice`).remove()));
+
 await check('participants cannot end the session', assertFails(alice.ref(`sessions/${S}`).remove()));
 await check('participants cannot remove the expiry entry', assertFails(alice.ref(`expiries/${S}`).remove()));
 await check('expiry index cannot be listed freely', assertFails(alice.ref('expiries').get()));
