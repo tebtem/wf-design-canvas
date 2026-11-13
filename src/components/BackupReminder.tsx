@@ -28,7 +28,7 @@ export function BackupReminder({ accounts = false }: { accounts?: boolean }) {
         <div className="ws-toast ws-toast--backup">
           <p className="ws-toast__title">Keep your work safe</p>
           <p>Your canvas is only saved in this browser. Download a backup so you don&apos;t lose your good work.</p>
-          {accounts && <p className="ws-toast__cta">Save your canvas and open it anywhere.</p>}
+          {accounts && <p className="ws-toast__cta">Save your canvas, and open it anywhere.</p>}
           <div className="ws-toast__actions">
             {accounts && (
               <button

@@ -207,7 +207,7 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
       setNote('Your account and saved canvases were deleted.');
     });
 
-  const titleText = view.kind === 'signedIn' ? 'My canvases' : 'Save your canvas and open it anywhere';
+  const titleText = view.kind === 'signedIn' ? 'My canvases' : 'Save your canvas, and open it anywhere';
 
   return (
     <dialog ref={ref} className="dialog dialog--wide" aria-labelledby={`${uid}-h`}>
@@ -245,7 +245,7 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
           <p>
             {view.kind === 'confirm'
               ? 'Confirm the email you used to request this link.'
-              : 'Create a free account, or sign in if you have one. We will email you a link, no password needed. Save up to 3 canvases.'}
+              : 'Create a free account, or sign in. No password needed.'}
           </p>
           <label htmlFor={`${uid}-email`}>Email</label>
           <input
@@ -261,7 +261,7 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
           {view.kind === 'signedOut' && (
             <label className="ws-check">
               <input type="checkbox" checked={optIn} onChange={(e) => setOptIn(e.target.checked)} />
-              Send me updates about facilitation design learning experiences
+              Update me about upcoming facilitation courses and bootcamps
             </label>
           )}
           <p className="ws-hint">

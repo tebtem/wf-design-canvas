@@ -293,7 +293,7 @@ step('end workshop works');
 async function accountSignIn(page, email, optIn = false) {
   await page.getByRole('button', { name: /^(Create free account|My canvases)$/ }).click();
   await page.getByRole('dialog').getByLabel('Email', { exact: true }).fill(email);
-  if (optIn) await page.getByLabel('Send me updates about facilitation design learning experiences').check();
+  if (optIn) await page.getByLabel('Update me about upcoming facilitation courses and bootcamps').check();
   await page.getByRole('button', { name: 'Email me a sign-in link' }).click();
   await page.getByText('Check your inbox').waitFor();
   const { oobCodes } = await (await fetch(AUTH_EMU)).json();
