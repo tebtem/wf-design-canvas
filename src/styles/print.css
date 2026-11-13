@@ -17,7 +17,7 @@
   .no-print,
   .skip-link,
   .bank,
-  .sticky__text,
+  textarea.sticky__text,
   .tblock__label,
   .tblock__notes-text,
   .tblock__handle,

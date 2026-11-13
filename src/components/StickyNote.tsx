@@ -2,7 +2,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useCanvas } from '../state/CanvasContext';
 import { STICKY_COLORS, type Sticky } from '../state/types';
-import { GripIcon, MoveIcon, PaletteIcon, XIcon } from './Icons';
+import { GripIcon, PaletteIcon, XIcon } from './Icons';
 import { useOpenStickyMove, type StickyDragData } from './StickyDnd';
 import { RichNote } from './RichNote';
 
@@ -52,19 +52,12 @@ export function StickyNote({ sticky, cellId, index, cellTitle, focusOnMount, onC
             {...attributes}
             {...listeners}
             aria-roledescription="draggable sticky note"
-            aria-label={`Drag ${name}`}
-            title="Drag to move"
-          >
-            <GripIcon />
-          </button>
-          <button
-            type="button"
-            className="icon-btn icon-btn--sm js-sticky-move"
-            aria-label={`Move ${name} to another section or position`}
-            title="Move to…"
+            aria-label={`Move ${name}`}
+            aria-haspopup="dialog"
+            title="Drag to move, or click to choose where it goes"
             onClick={() => openMove(sticky.id)}
           >
-            <MoveIcon />
+            <GripIcon />
           </button>
           <span className="sticky__spacer" />
           <button

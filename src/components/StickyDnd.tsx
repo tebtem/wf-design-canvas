@@ -3,6 +3,7 @@ import {
   closestCorners,
   DndContext,
   DragOverlay,
+  KeyboardCode,
   KeyboardSensor,
   PointerSensor,
   pointerWithin,
@@ -59,7 +60,11 @@ export function StickyDnd({ children, step = Infinity }: { children: ReactNode; 
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    // Space picks a note up to move with the arrow keys; Enter on the grip opens the Move dialog instead.
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+      keyboardCodes: { start: [KeyboardCode.Space], cancel: [KeyboardCode.Esc], end: [KeyboardCode.Space, KeyboardCode.Enter] },
+    }),
   );
 
   const where = (over: Over) => {
@@ -94,6 +99,7 @@ export function StickyDnd({ children, step = Infinity }: { children: ReactNode; 
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
+    lastDragEnd.current = Date.now();
     setActive(null);
     const id = String(active.id);
     const from = findSticky(state, id);
@@ -110,7 +116,10 @@ export function StickyDnd({ children, step = Infinity }: { children: ReactNode; 
   const [toCell, setToCell] = useState('');
   const [toIndex, setToIndex] = useState(0);
 
+  const lastDragEnd = useRef(0);
   const openMove = (stickyId: string) => {
+    // A click that ends a drag is not a request for the dialog.
+    if (Date.now() - lastDragEnd.current < 400) return;
     const loc = findSticky(state, stickyId);
     if (!loc) return;
     setMoving({ id: stickyId, fromCell: loc.cellId });
@@ -141,7 +150,7 @@ export function StickyDnd({ children, step = Infinity }: { children: ReactNode; 
           announcements,
           screenReaderInstructions: {
             draggable:
-              'To pick up a sticky note, press Space or Enter. Use the arrow keys to move it, then press Space or Enter to drop it, or Escape to cancel. You can also use the Move button.',
+              'To pick up a sticky note, press Space, use the arrow keys to move it, then press Space again to drop it, or Escape to cancel. Press Enter (or click) instead to choose a section and position from a list.',
           },
         }}
       >
@@ -159,7 +168,7 @@ export function StickyDnd({ children, step = Infinity }: { children: ReactNode; 
         ref={dialogRef}
         className="dialog"
         aria-labelledby="move-title"
-        onClose={() => moving && focusSticky(moving.id, '.js-sticky-move')}
+        onClose={() => moving && focusSticky(moving.id, '.sticky__handle')}
       >
         <h2 id="move-title">Move sticky note</h2>
         <form method="dialog" className="move-form" onSubmit={confirmMove}>
