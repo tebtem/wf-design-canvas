@@ -18,6 +18,8 @@ export type DraftId = 'd1' | 'd2' | 'd3';
 
 /** Starter blocks in the bank. Placed blocks can be resized in 5-minute steps. */
 export const BANK_MINUTES = [15, 30, 60] as const;
+/** Default length of a Break block from the bank. */
+export const BREAK_MINUTES = 15;
 export const MIN_BLOCK = 5;
 export const MAX_BLOCK = 180;
 export const BLOCK_STEP = 5;
@@ -46,6 +48,12 @@ export interface TimeBlock {
   label: string;
   /** Free-form details, e.g. bullet points about what happens in this block. */
   notes: string;
+  /** A break (lunch, coffee): shown quieter than activities and totaled separately. */
+  isBreak?: boolean;
+  /** A day divider ("Day 2"): the blocks after it are the next day and the clock starts again. */
+  kind?: 'day';
+  /** Day dividers only: when that day starts, in minutes after midnight. Defaults to Day 1's start. */
+  start?: number;
 }
 
 export interface CanvasDetails {

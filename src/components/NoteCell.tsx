@@ -6,6 +6,7 @@ import type { Cell } from '../state/types';
 import { StickyNote } from './StickyNote';
 import { PlusIcon, StickyIcon } from './Icons';
 import { cellDroppableId, type StickyDragData } from './StickyDnd';
+import { loadEditor } from './RichNote';
 
 interface Props {
   cellId: string;
@@ -103,6 +104,9 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           type="button"
           className="add-sticky no-print"
           onClick={addSticky}
+          // Start fetching the note editor before the click, so the first keystrokes are not lost.
+          onMouseEnter={() => void loadEditor()}
+          onFocus={() => void loadEditor()}
         >
           <PlusIcon />
           <StickyIcon />

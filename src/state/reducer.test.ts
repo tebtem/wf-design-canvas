@@ -231,3 +231,35 @@ describe('clock times', () => {
     expect(s.outline.start).toBe(540);
   });
 });
+
+describe('multi-day schedules', () => {
+  it('starts each day fresh and totals days separately', async () => {
+    const { schedule } = await import('./reducer');
+    let s = initialState();
+    s = reducer(s, { type: 'addBlock', draftId: 'd1', id: 'a', minutes: 60 });
+    s = reducer(s, { type: 'addDay', draftId: 'd1', id: 'day2' });
+    s = reducer(s, { type: 'addBlock', draftId: 'd1', id: 'b', minutes: 30 });
+    s = reducer(s, { type: 'addBlock', draftId: 'd1', id: 'c', minutes: 15 });
+    s = reducer(s, { type: 'setDayStart', id: 'day2', start: 510 });
+    s = reducer(s, { type: 'setBlockMinutes', id: 'day2', minutes: 45 });
+    const { slots, days } = schedule(s.drafts.d1, 540);
+    expect(days.map((d) => [d.day, d.start, d.total])).toEqual([[1, 540, 60], [2, 510, 45]]);
+    expect(slots.map((x) => [x.block.id, x.day, x.start])).toEqual([['a', 1, 540], ['day2', 2, 510], ['b', 2, 510], ['c', 2, 540]]);
+    expect(totalMinutes(s.drafts.d1)).toBe(105);
+    saveState(s);
+    const back = loadState().drafts.d1;
+    expect(back[1]).toEqual({ id: 'day2', kind: 'day', minutes: 0, label: '', notes: '', start: 510 });
+  });
+});
+
+describe('rich text', () => {
+  it('turns old plain text into paragraphs and bullets, safely', async () => {
+    const { toRichHtml, richToText } = await import('../components/richText');
+    expect(toRichHtml('Kickoff\n• Pairs <talk>\n• Share out')).toBe(
+      '<p>Kickoff</p><ul><li><p>Pairs &lt;talk&gt;</p></li><li><p>Share out</p></li></ul>',
+    );
+    expect(toRichHtml('<h3>Title</h3>')).toBe('<h3>Title</h3>');
+    expect(toRichHtml('  ')).toBe('');
+    expect(richToText('<h3>Title</h3><ul><li><p>One</p></li></ul>')).toBe('Title\nOne');
+  });
+});

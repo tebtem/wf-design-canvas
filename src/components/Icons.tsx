@@ -119,3 +119,8 @@ export const ChevronIcon = () => (
     <path d="M6 9l6 6 6-6" />
   </svg>
 );
+export const CupIcon = () => (
+  <svg {...base}>
+    <path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9zM16 10h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M12 3v3" />
+  </svg>
+);

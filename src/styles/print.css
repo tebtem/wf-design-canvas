@@ -107,6 +107,21 @@
   .add-sticky {
     display: none !important;
   }
+  /* Working Title, Client Name and Number of Participants in one row on any paper size. */
+  .details {
+    grid-template-columns: 2fr 1.4fr 1fr !important;
+    gap: 8px 24px;
+  }
+  .details__field {
+    padding-top: 16px;
+  }
+  /* Screen reader helpers (including the drag-and-drop instructions) have no use on paper,
+     and some browsers print them as small blank boxes. */
+  .sr-only,
+  [id^='DndLiveRegion'],
+  [id^='DndDescribedBy'] {
+    display: none !important;
+  }
   .details__field .print-text {
     padding: 0;
     font-size: 1rem;
@@ -163,6 +178,17 @@
   }
   .outline__table tr {
     break-inside: avoid;
+  }
+  /* A multi-day outline may run over several pages, with each day starting a new page. */
+  .band--outline {
+    break-inside: auto;
+  }
+  .outline__daygroup + .outline__daygroup {
+    break-before: page;
+  }
+  .outline__day th {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .card,
   .quadrant,

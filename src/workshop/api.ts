@@ -5,6 +5,7 @@
  */
 import {
   get,
+  onDisconnect,
   onValue,
   push,
   ref,
@@ -187,6 +188,25 @@ export function pushCanvas(code: string, uid: string, state: CanvasState) {
 export function watchMeta(code: string, cb: (meta: SessionMeta | null) => void): Unsub {
   return onValue(r(p(code, 'meta')), (s) => cb(s.val() as SessionMeta | null), () => cb(null));
 }
+
+/** Marks this participant online while connected; Firebase clears it if the connection drops. */
+export function trackPresence(code: string, pid: string): Unsub {
+  const me = r(p(code, 'presence', pid));
+  const off = onValue(r('.info/connected'), (s) => {
+    if (s.val() !== true) return;
+    onDisconnect(me)
+      .remove()
+      .then(() => set(me, true))
+      .catch(() => {});
+  });
+  return () => {
+    off();
+    void remove(me).catch(() => {});
+  };
+}
+
+export const watchPresence = (code: string, cb: (online: Record<string, boolean>) => void) =>
+  watchMap<boolean>(p(code, 'presence'), cb);
 
 export function watchConnected(cb: (connected: boolean) => void): Unsub {
   return onValue(r('.info/connected'), (s) => cb(s.val() === true));

@@ -87,7 +87,9 @@ await alice.getByRole('button', { name: 'Join' }).click();
 await alice.getByRole('heading', { name: 'Team offsite' }).waitFor();
 await alice.getByRole('textbox', { name: 'Working Title', exact: true }).fill('Alice purpose');
 await alice.getByRole('button', { name: 'Add sticky note in Purpose' }).click();
+await alice.locator('.ProseMirror:focus').waitFor();
 await alice.keyboard.type('World cafe');
+await alice.keyboard.press('Escape');
 step('alice joined and typed');
 
 // Bob joins by typing the code, with a dash and lower case.
@@ -130,6 +132,7 @@ step('guided reveal works');
 
 // Host sees both, live.
 await until(async () => (await host.locator('.ws-card').count()) === 2, 'host sees 2 cards');
+await until(async () => (await host.locator('.ws-header').textContent()).includes('2 participants online'), 'host sees who is online');
 await until(async () => (await host.locator('.ws-card[data-uid]').first().textContent()).includes('1 of'), 'alice card shows progress');
 await axe(host, 'host dashboard (2 people)');
 await host.screenshot({ path: out + 'ws-host.png', fullPage: true });

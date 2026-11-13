@@ -1,6 +1,9 @@
 import { useCanvas } from '../state/CanvasContext';
-import { formatMinutes, totalMinutes, visibleDrafts } from '../state/reducer';
+import { breakMinutes, schedule, totalMinutes, totalWithBreaks, visibleDrafts } from '../state/reducer';
+import { CupIcon } from './Icons';
 import { useState } from 'react';
+import { RichNote } from './RichNote';
+
 import {
   BLOCK_STEP,
   clampMinutes,
@@ -23,7 +26,8 @@ export function SessionOutline() {
   const draft: DraftId = drafts.includes(state.outline.draft) ? state.outline.draft : 'd1';
   const blocks = state.drafts[draft];
   const title = state.details.title.trim();
-  const sessionStart = state.outline.start;
+  const { slots, days } = schedule(blocks, state.outline.start);
+  const multiDay = days.length > 1;
   const [message, setMessage] = useState('');
   const announce = (msg: string) => {
     setMessage('');
@@ -39,20 +43,16 @@ export function SessionOutline() {
     }
   };
 
-  const field = (blockId: string, key: keyof OutlineRow, label: string, value: string) => (
-    <>
-      <textarea
-        className="outline__input"
-        aria-label={label}
-        value={value}
-        readOnly={readOnly}
-        rows={2}
-        onChange={(e) => dispatch({ type: 'setOutlineRow', blockId, field: key, value: e.target.value })}
-      />
-      <div className="print-text" aria-hidden="true">
-        {value}
-      </div>
-    </>
+  /** Activities allow a title; Moves + Materials and break notes allow bold, italic and bullets. */
+  const field = (blockId: string, key: keyof OutlineRow, label: string, value: string, allowTitle = false) => (
+    <RichNote
+      value={value}
+      label={label}
+      readOnly={readOnly}
+      allowTitle={allowTitle}
+      className="outline__rich"
+      onChange={(html) => dispatch({ type: 'setOutlineRow', blockId, field: key, value: html })}
+    />
   );
 
   return (
@@ -79,7 +79,11 @@ export function SessionOutline() {
               </select>
             </div>
           )}
-          {blocks.length > 0 && <p className="outline__total">Total {formatMinutes(totalMinutes(blocks))}</p>}
+          {blocks.length > 0 && (
+            <p className="outline__total">
+              {multiDay && `${days.length} days · `}Total {totalWithBreaks(totalMinutes(blocks), breakMinutes(blocks))}
+            </p>
+          )}
         </div>
 
         {blocks.length === 0 ? (
@@ -104,71 +108,115 @@ export function SessionOutline() {
                   <th scope="col">Moves + Materials</th>
                 </tr>
               </thead>
-              <tbody>
-                {blocks.map((b, i) => {
-                  const start = sessionStart + totalMinutes(blocks.slice(0, i));
-                  const end = start + b.minutes;
-                  const spoken = `${hhmm(start)} to ${hhmm(end)}${b.label ? `, ${b.label}` : ''}`;
-                  const row = state.outline.rows[b.id] ?? EMPTY;
-                  return (
-                    <tr key={b.id}>
-                      <td className="outline__time">
-                        <span className="outline__range">
-                          {i === 0 ? (
+              {days.map((d) => {
+                const rows = slots.filter((x) => x.day === d.day && x.block.kind !== 'day');
+                const dayLabel = multiDay ? `Day ${d.day}, ` : '';
+                const setStart = (t: number) => {
+                  if (d.divider) dispatch({ type: 'setDayStart', id: d.divider.id, start: t });
+                  else dispatch({ type: 'setOutlineStart', start: t });
+                  announce(`${multiDay ? `Day ${d.day}` : 'Session'} starts at ${hhmm(t)}. Times updated.`);
+                };
+                return (
+                  <tbody key={d.day} className="outline__daygroup">
+                    {multiDay && (
+                      <tr className="outline__day">
+                        <th scope="colgroup" colSpan={4}>
+                          Day {d.day}
+                          <span className="outline__day-meta">
+                            {' '}
+                            · starts {hhmm(d.start)}
+                            {d.total > 0 && ` · ${totalWithBreaks(d.total, d.breaks)}`}
+                          </span>
+                        </th>
+                      </tr>
+                    )}
+                    {rows.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="outline__empty-day">
+                          No time blocks in Day {d.day} yet.
+                        </td>
+                      </tr>
+                    )}
+                    {rows.map(({ block: b, start }, i) => {
+                      const end = start + b.minutes;
+                      const brk = b.isBreak === true;
+                      const name = b.label || (brk ? 'Break' : '');
+                      const spoken = `${dayLabel}${hhmm(start)} to ${hhmm(end)}${name ? `, ${name}` : ''}`;
+                      const rowName = `${dayLabel}row ${i + 1}${name ? `, ${name}` : ''}`;
+                      const row = state.outline.rows[b.id] ?? EMPTY;
+                      return (
+                        <tr key={b.id} className={brk ? 'outline__break' : undefined}>
+                          <td className="outline__time">
+                            <span className="outline__range">
+                              {i === 0 ? (
+                                <TimeField
+                                  kind="clock"
+                                  value={start}
+                                  label={multiDay ? `Day ${d.day} start time` : 'Session start time'}
+                                  readOnly={readOnly}
+                                  onCommit={setStart}
+                                  onInvalid={announce}
+                                />
+                              ) : (
+                                <span className="outline__start">{hhmm(start)}</span>
+                              )}
+                              <span aria-hidden="true">-</span>
+                              <TimeField
+                                kind="clock"
+                                value={end}
+                                label={`End time, ${rowName}`}
+                                readOnly={readOnly}
+                                onCommit={(t) => {
+                                  // Allow ending after midnight: 23:30 to 00:15 is 45 minutes.
+                                  const length = (((t - start) % 1440) + 1440) % 1440;
+                                  setLength(b.id, length || MIN_BLOCK);
+                                }}
+                                onInvalid={announce}
+                              />
+                            </span>
+                            {brk ? (
+                              <span className="outline__block outline__block--break">
+                                <CupIcon /> {name}
+                              </span>
+                            ) : (
+                              b.label && <span className="outline__block">{b.label}</span>
+                            )}
+                          </td>
+                          <td className="outline__len">
                             <TimeField
-                              kind="clock"
-                              value={start}
-                              label="Session start time"
+                              kind="minutes"
+                              value={b.minutes}
+                              label={`Length in minutes, ${rowName}`}
                               readOnly={readOnly}
-                              onCommit={(t) => {
-                                dispatch({ type: 'setOutlineStart', start: t });
-                                announce(`Session starts at ${hhmm(t)}. All times updated.`);
-                              }}
+                              onCommit={(m) => setLength(b.id, m)}
                               onInvalid={announce}
-                            />
+                            />{' '}
+                            min
+                          </td>
+                          {brk ? (
+                            // Breaks rarely need both columns: one quiet notes cell.
+                            <td colSpan={2}>
+                              {field(b.id, 'activities', `Notes for break, ${spoken}`, row.activities)}
+                            </td>
                           ) : (
-                            <span className="outline__start">{hhmm(start)}</span>
+                            <>
+                              <td>{field(b.id, 'activities', `Activities, ${spoken}`, row.activities, true)}</td>
+                              <td>{field(b.id, 'moves', `Moves and materials, ${spoken}`, row.moves)}</td>
+                            </>
                           )}
-                          <span aria-hidden="true">-</span>
-                          <TimeField
-                            kind="clock"
-                            value={end}
-                            label={`End time, row ${i + 1}${b.label ? `, ${b.label}` : ''}`}
-                            readOnly={readOnly}
-                            onCommit={(t) => {
-                              // Allow ending after midnight: 23:30 to 00:15 is 45 minutes.
-                              const length = (((t - start) % 1440) + 1440) % 1440;
-                              setLength(b.id, length || MIN_BLOCK);
-                            }}
-                            onInvalid={announce}
-                          />
-                        </span>
-                        {b.label && <span className="outline__block">{b.label}</span>}
-                      </td>
-                      <td className="outline__len">
-                        <TimeField
-                          kind="minutes"
-                          value={b.minutes}
-                          label={`Length in minutes, row ${i + 1}${b.label ? `, ${b.label}` : ''}`}
-                          readOnly={readOnly}
-                          onCommit={(m) => setLength(b.id, m)}
-                          onInvalid={announce}
-                        />{' '}
-                        min
-                      </td>
-                      <td>{field(b.id, 'activities', `Activities, ${spoken}`, row.activities)}</td>
-                      <td>{field(b.id, 'moves', `Moves and materials, ${spoken}`, row.moves)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                );
+              })}
             </table>
           </div>
         )}
         {blocks.length > 0 && !readOnly && (
           <p className="outline__hint no-print">
-            Type the first start time, or any end time or length. Each row starts when the one above ends, and changes
-            update your time blocks too.
+            Type the first start time of a day, or any end time or length. Each row starts when the one above ends, and
+            changes update your time blocks too.
           </p>
         )}
         <p className="sr-only" role="status" aria-live="polite">

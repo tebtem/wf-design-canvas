@@ -8,11 +8,14 @@ export type Action =
   | { type: 'editSticky'; cellId: string; id: string; text?: string; color?: StickyColor }
   | { type: 'deleteSticky'; cellId: string; id: string }
   | { type: 'moveSticky'; id: string; toCell: string; toIndex: number }
-  | { type: 'addBlock'; draftId: DraftId; id: string; minutes: BlockMinutes; index?: number }
+  | { type: 'addBlock'; draftId: DraftId; id: string; minutes: BlockMinutes; index?: number; isBreak?: boolean }
   | { type: 'moveBlock'; id: string; toDraft: DraftId; toIndex: number }
   | { type: 'editBlock'; id: string; label?: string; notes?: string }
   | { type: 'removeBlock'; id: string }
   | { type: 'setBlockMinutes'; id: string; minutes: number }
+  | { type: 'setBreak'; id: string; isBreak: boolean }
+  | { type: 'addDay'; draftId: DraftId; id: string }
+  | { type: 'setDayStart'; id: string; start: number }
   | { type: 'setDetail'; key: keyof CanvasDetails; value: string }
   | { type: 'setCellTitle'; cellId: string; title: string }
   | { type: 'nextStep' }
@@ -70,6 +73,57 @@ export function totalMinutes(blocks: TimeBlock[]): number {
   return blocks.reduce((sum, b) => sum + b.minutes, 0);
 }
 
+export { hhmm as hhmmOf } from './types';
+
+export interface Slot {
+  block: TimeBlock;
+  /** 1-based day number. */
+  day: number;
+  /** Clock time in minutes after midnight (may pass 24:00 on very long days). */
+  start: number;
+}
+
+export interface DayInfo {
+  day: number;
+  start: number;
+  total: number;
+  /** Minutes of that day spent on breaks. */
+  breaks: number;
+  /** The divider that starts this day (none for Day 1). */
+  divider?: TimeBlock;
+}
+
+/**
+ * Works out each block's day and clock time. Day dividers start a new day whose clock begins at the
+ * divider's start time (or Day 1's start when none is set).
+ */
+export function schedule(blocks: TimeBlock[], day1Start: number): { slots: Slot[]; days: DayInfo[] } {
+  const days: DayInfo[] = [{ day: 1, start: day1Start, total: 0, breaks: 0 }];
+  const slots: Slot[] = [];
+  let clock = day1Start;
+  for (const b of blocks) {
+    if (b.kind === 'day') {
+      const start = b.start ?? day1Start;
+      days.push({ day: days.length + 1, start, total: 0, breaks: 0, divider: b });
+      clock = start;
+      slots.push({ block: b, day: days.length, start });
+      continue;
+    }
+    slots.push({ block: b, day: days.length, start: clock });
+    days[days.length - 1].total += b.minutes;
+    if (b.isBreak) days[days.length - 1].breaks += b.minutes;
+    clock += b.minutes;
+  }
+  return { slots, days };
+}
+
+export const breakMinutes = (blocks: TimeBlock[]) =>
+  blocks.reduce((sum, b) => sum + (b.isBreak && b.kind !== 'day' ? b.minutes : 0), 0);
+
+/** "3 hr" or "3 hr · 45 min of breaks". */
+export const totalWithBreaks = (total: number, breaks: number) =>
+  breaks > 0 ? `${formatMinutes(total)} · ${formatMinutes(breaks)} of breaks` : formatMinutes(total);
+
 export function formatMinutes(total: number): string {
   if (total < 60) return `${total} min`;
   const h = Math.floor(total / 60);
@@ -122,7 +176,9 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
     case 'addBlock': {
       const list = [...state.drafts[action.draftId]];
       const index = clamp(action.index ?? list.length, 0, list.length);
-      list.splice(index, 0, { id: action.id, minutes: clampMinutes(action.minutes), label: '', notes: '' });
+      const block: TimeBlock = { id: action.id, minutes: clampMinutes(action.minutes), label: '', notes: '' };
+      if (action.isBreak) block.isBreak = true;
+      list.splice(index, 0, block);
       return { ...state, drafts: { ...state.drafts, [action.draftId]: list } };
     }
 
@@ -152,7 +208,33 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
       const loc = findBlock(state, action.id);
       if (!loc) return state;
       const minutes = clampMinutes(action.minutes);
-      const list = state.drafts[loc.draftId].map((b) => (b.id === action.id ? { ...b, minutes } : b));
+      const list = state.drafts[loc.draftId].map((b) => (b.id === action.id && b.kind !== 'day' ? { ...b, minutes } : b));
+      return { ...state, drafts: { ...state.drafts, [loc.draftId]: list } };
+    }
+
+    case 'setBreak': {
+      const loc = findBlock(state, action.id);
+      if (!loc) return state;
+      const list = state.drafts[loc.draftId].map((b) => {
+        if (b.id !== action.id || b.kind === 'day') return b;
+        const next = { ...b };
+        if (action.isBreak) next.isBreak = true;
+        else delete next.isBreak;
+        return next;
+      });
+      return { ...state, drafts: { ...state.drafts, [loc.draftId]: list } };
+    }
+
+    case 'addDay': {
+      const list = [...state.drafts[action.draftId], { id: action.id, kind: 'day' as const, minutes: 0, label: '', notes: '' }];
+      return { ...state, drafts: { ...state.drafts, [action.draftId]: list } };
+    }
+
+    case 'setDayStart': {
+      const loc = findBlock(state, action.id);
+      if (!loc) return state;
+      const start = ((Math.round(action.start) % 1440) + 1440) % 1440;
+      const list = state.drafts[loc.draftId].map((b) => (b.id === action.id ? { ...b, start } : b));
       return { ...state, drafts: { ...state.drafts, [loc.draftId]: list } };
     }
 

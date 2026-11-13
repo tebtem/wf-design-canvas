@@ -16,6 +16,7 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useCanvas } from '../state/CanvasContext';
+import { richToText, toRichHtml } from './richText';
 import { CELL_GROUPS, cellTitle } from '../state/cells';
 import { findSticky } from '../state/reducer';
 import type { CanvasState, Sticky } from '../state/types';
@@ -148,7 +149,7 @@ export function StickyDnd({ children, step = Infinity }: { children: ReactNode; 
         <DragOverlay dropAnimation={null}>
           {active ? (
             <div className={`sticky sticky--${active.color} sticky--overlay`} aria-hidden="true">
-              <p className="sticky__preview">{active.text || 'Sticky note'}</p>
+              <p className="sticky__preview">{richToText(toRichHtml(active.text)) || 'Sticky note'}</p>
             </div>
           ) : null}
         </DragOverlay>

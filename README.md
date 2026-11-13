@@ -6,6 +6,9 @@ An interactive version of the "Designing Facilitated Experiences" canvas!
 - Every section collects sticky notes (change color, delete). Drag a sticky by its grip to reorder it or move it to another section, or use its Move button to pick a section and position. Text typed into sections in older versions becomes a sticky note automatically.
 - The canvas is stacked by default. On wide screens a Stacked / Canvas toggle in the toolbar switches to the original two-column canvas; the choice is remembered on that device. Phones and tablets stay stacked.
 - Sections, in order: Session Brief, Participants at the Center, Participant Before, Participant After, Facilitator at the Center, Time Blocks, Flow, Function, and Form (type a name for each column where it says Name this function), Activity Ideation, Session Outline.
+- **Formatting:** sticky notes, Activities and Moves + Materials support bold (Ctrl/Cmd+B), italic (Ctrl/Cmd+I) and bullets (start a line with "- "). Activities also take a title (start a line with "# "). There is no toolbar. Notes show as formatted text and switch into the editor when clicked; the editor downloads the first time someone heads for a note. Only those styles are kept, so pasted or synced content cannot carry anything else. Block details keep their simple automatic bullets.
+- **Breaks:** add a Break from the bank (15 min, resizable) or mark any block as a break with its cup button. Breaks are striped with a cup icon in Time Blocks and the outline, where their two text columns merge into one notes cell. Totals show break time separately ("3 hr · 45 min of breaks").
+- **Multi-day sessions:** Add next day puts a Day 2 divider in a draft; blocks after it are the next day and the clock starts again. Each day has its own start time (typed on its first row in the outline) and total. Dividers move and remove like blocks. The outline groups rows by day, and each day prints on its own page.
 - **Session Outline** is a run-of-show table built from a session draft: each time block becomes a row with its start and end time and length, plus Activities and Moves + Materials to fill in. Type the first start time to set when the session begins (all times, including the time blocks, follow it), or type any end time or length to resize that block; each row starts when the one above ends. It shows the Working Title, and with more than one draft you choose which draft it follows.
 - The **More** menu holds Save as PDF, Download backup, Restore backup and Clear canvas. **Download backup** saves the canvas as a file; **Restore backup** loads it on any device (it replaces the current canvas after confirming).
 - A new canvas guides you step by step: it starts with Session Brief, Participants at the Center and Participant Before and After, and Next adds Facilitator at the Center, then Time Blocks, then Flow, Function, and Form with Activity Ideation, then Session Outline. Show full canvas skips ahead. Canvases saved before the guide existed open in full, Clear canvas starts the guide over, and printing always shows the full canvas.
@@ -25,6 +28,10 @@ Facilitators can host a live workshop and see every participant's canvas as they
 - Ending a workshop deletes it online. Workshops expire after 30 days: they become unreadable straight away and are deleted by a daily cleanup job.
 - The Workshop button only appears when the build has Firebase settings.
 
+### Free plan usage
+
+The free Firebase plan (Spark) allows about 10 GB of downloads a month and 100 people connected at once; over that, Firebase pauses the database until the next month (no charge). The app keeps usage low: participants send changes about once a second while typing, and only download someone else's canvas when they open it. The host view shows how many participants are online. A typical 30-person, 3-hour workshop should use well under 1 GB. Check usage in the Firebase console under Realtime Database > Usage.
+
 ### Set up Firebase (one time)
 
 1. Create a project at console.firebase.google.com (the free Spark plan is enough).
@@ -43,7 +50,7 @@ For local development put the same `VITE_FIREBASE_*` values in `.env.local`.
 Needs Java (for the database emulator) and `npm i -g firebase-tools`.
 
 ```bash
-npm run test:rules          # 92 security rule checks against the emulator
+npm run test:rules          # 98 security rule checks against the emulator
 npm run emulators           # terminal 1
 npm run dev:emulator        # terminal 2: app wired to the emulators
 ```
