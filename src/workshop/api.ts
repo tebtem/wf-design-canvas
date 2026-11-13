@@ -16,7 +16,7 @@ import {
 import type { CanvasState } from '../state/types';
 import { generateCode, generateRejoinCode } from './code';
 import { RETENTION_DAYS } from './config';
-import { fb, signIn } from './firebase';
+import { currentHost, fb, signIn } from './firebase';
 
 export { signIn };
 
@@ -73,14 +73,16 @@ function serverOffset(): Promise<number> {
 }
 
 export async function createSession(title: string, step: number): Promise<{ code: string; uid: string }> {
-  const uid = await signIn();
+  const host = await currentHost();
+  if (!host) throw new WorkshopError('Sign in as a facilitator to host a workshop.');
+  const uid = host.uid;
   const offset = await serverOffset();
   for (let attempt = 0; attempt < 6; attempt++) {
     const code = generateCode();
     const expiresAt = Date.now() + offset + RETENTION_DAYS * DAY - 10 * 60 * 1000;
     const meta = { title, facilitator: uid, createdAt: serverTimestamp(), expiresAt, canView: false, step };
     try {
-      await update(r(), { [p(code, 'meta')]: meta, [`expiries/${code}`]: expiresAt });
+      await update(r(), { [p(code, 'meta')]: meta, [`expiries/${code}`]: expiresAt, [`hosts/${uid}/${code}`]: Date.now() });
       return { code, uid };
     } catch (e) {
       // A taken code is refused by the rules, so try another.
@@ -239,4 +241,37 @@ export const setSpotlight = (code: string, spotlight: { uid: string; name: strin
   set(r(p(code, 'meta', 'spotlight')), spotlight);
 
 /** Deletes the workshop and every canvas and comment in it. */
-export const endSession = (code: string) => update(r(), { [p(code)]: null, [`expiries/${code}`]: null });
+export async function endSession(code: string) {
+  const host = await currentHost();
+  const updates: Record<string, null> = { [p(code)]: null, [`expiries/${code}`]: null };
+  if (host) updates[`hosts/${host.uid}/${code}`] = null;
+  await update(r(), updates);
+}
+
+export interface HostedWorkshop {
+  code: string;
+  title: string;
+  createdAt: number;
+  expiresAt: number;
+}
+
+/** The signed-in facilitator's live workshops, newest first. Ended or expired ones are tidied away. */
+export async function listMyWorkshops(): Promise<HostedWorkshop[]> {
+  const host = await currentHost();
+  if (!host) return [];
+  const snap = await get(r(`hosts/${host.uid}`));
+  const codes = Object.keys((snap.val() as Record<string, number> | null) ?? {});
+  const found = await Promise.all(
+    codes.map(async (code) => {
+      const m = (await get(r(p(code, 'meta'))).catch(() => null))?.val() as SessionMeta | null;
+      if (!m || m.facilitator !== host.uid) {
+        await remove(r(`hosts/${host.uid}/${code}`)).catch(() => {});
+        return null;
+      }
+      return { code, title: m.title, createdAt: m.createdAt, expiresAt: m.expiresAt };
+    }),
+  );
+  return found.filter((w): w is HostedWorkshop => w !== null).sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export { completeHostSignIn, currentHost, isHostLink, sendHostLink, signOutHost } from './firebase';

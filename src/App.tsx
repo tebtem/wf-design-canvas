@@ -7,13 +7,24 @@ import { CanvasBody } from './components/CanvasBody';
 import { WorkshopDialog } from './components/WorkshopDialog';
 import { workshopsEnabled } from './workshop/config';
 import { LAST_STEP } from './state/cells';
-import { loadWorkshop, saveWorkshop, takeJoinParam, workshopCanvasKey, type ActiveWorkshop } from './workshop/session';
+import {
+  loadWorkshop,
+  looksLikeHostLink,
+  saveWorkshop,
+  takeHostParam,
+  takeJoinParam,
+  workshopCanvasKey,
+  type ActiveWorkshop,
+} from './workshop/session';
 
 // Firebase only downloads for people who join or host a workshop.
 const ParticipantApp = lazy(() => import('./workshop/ParticipantApp'));
 const FacilitatorApp = lazy(() => import('./workshop/FacilitatorApp'));
 
 const initialJoin = workshopsEnabled ? takeJoinParam() : null;
+// Facilitators reach hosting from a private link (?host) or the emailed sign-in link.
+const emailLink = workshopsEnabled && looksLikeHostLink(window.location.href);
+const hostEntry = workshopsEnabled && (takeHostParam() || emailLink);
 
 function Loading() {
   return (
@@ -25,7 +36,7 @@ function Loading() {
 
 export default function App() {
   const [workshop, setWorkshop] = useState<ActiveWorkshop | null>(() => (workshopsEnabled ? loadWorkshop() : null));
-  const [dialogOpen, setDialogOpen] = useState(initialJoin !== null && !workshop);
+  const [dialogOpen, setDialogOpen] = useState((initialJoin !== null || hostEntry) && !workshop);
 
   const enter = (w: ActiveWorkshop) => {
     saveWorkshop(w);
@@ -72,6 +83,8 @@ export default function App() {
         <WorkshopDialog
           open={dialogOpen}
           initialCode={initialJoin ?? ''}
+          hostEntry={hostEntry}
+          emailLink={emailLink}
           onClose={() => setDialogOpen(false)}
           onEnter={enter}
         />

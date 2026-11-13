@@ -11,8 +11,9 @@ await env.clearDatabase();
 
 const TS = { '.sv': 'timestamp' };
 const DAY = 86_400_000;
-const db = (uid) => (uid ? env.authenticatedContext(uid) : env.unauthenticatedContext()).database();
-const fac = db('fac');
+const db = (uid, token) => (uid ? env.authenticatedContext(uid, token) : env.unauthenticatedContext()).database();
+const verified = (email) => ({ email, email_verified: true });
+const fac = db('fac', verified('host@womenfacilitating.com'));
 const alice = db('alice');
 const bob = db('bob');
 const eve = db('eve');
@@ -33,7 +34,18 @@ const S = 'ABC234';
 const meta = (extra = {}) => ({ title: 'Test', facilitator: 'fac', createdAt: TS, expiresAt: Date.now() + 29 * DAY, canView: false, step: 0, ...extra });
 const canvas = (text) => ({ state: JSON.stringify({ version: 1, text }), updatedAt: TS });
 
-await check('host creates a session with its expiry index', assertSucceeds(fac.ref().update({ [`sessions/${S}/meta`]: meta(), [`expiries/${S}`]: meta().expiresAt })));
+// Only approved hosts (verified email on the allowlist) can start workshops.
+const tryCreate = (ctx, uid, code) =>
+  ctx.ref().update({ [`sessions/${code}/meta`]: meta({ facilitator: uid }), [`expiries/${code}`]: meta().expiresAt });
+await check('anonymous users cannot host', assertFails(tryCreate(db('anon1'), 'anon1', 'HHH234')));
+await check('unlisted emails cannot host', assertFails(tryCreate(db('x1', verified('someone@example.com')), 'x1', 'HHH235')));
+await check('look-alike domains cannot host', assertFails(tryCreate(db('x2', verified('a@womenfacilitating.com.evil.io')), 'x2', 'HHH236')));
+await check('unverified emails cannot host', assertFails(tryCreate(db('x3', { email: 'a@womenfacilitating.com', email_verified: false }), 'x3', 'HHH237')));
+await check('listed outside emails can host', assertSucceeds(tryCreate(db('x4', verified('annie@theteamtogether.com')), 'x4', 'HHH238')));
+await check('host creates a session with its expiry index and host list entry', assertSucceeds(fac.ref().update({ [`sessions/${S}/meta`]: meta(), [`expiries/${S}`]: meta().expiresAt, [`hosts/fac/${S}`]: Date.now() })));
+await check('host reads their workshop list', assertSucceeds(fac.ref('hosts/fac').get()));
+await check("others cannot read a host's list", assertFails(eve.ref('hosts/fac').get()));
+await check("cannot add someone else's workshop to your list", assertFails(eve.ref(`hosts/eve/${S}`).set(1)));
 await check('signed-out users cannot create', assertFails(anon.ref(`sessions/ZZZ234/meta`).set({ ...meta(), facilitator: 'x' })));
 await check('nobody can take an existing code', assertFails(eve.ref(`sessions/${S}/meta`).set(meta({ facilitator: 'eve' }))));
 await check('codes must use the code alphabet', assertFails(fac.ref('sessions/abc10o/meta').set(meta())));

@@ -4,10 +4,10 @@ An interactive version of the "Designing Facilitated Experiences" canvas!
 
 - Fill in the Working Title, Client Name and Number of Participants at the top.
 - Every section collects sticky notes (change color, delete). Drag a sticky by its grip to reorder it or move it to another section, or use its Move button to pick a section and position. Text typed into sections in older versions becomes a sticky note automatically.
-- On wide screens the guide starts stacked and opens into the original two-column canvas when Time Blocks is revealed (the left column is complete by then). A Stacked / Canvas toggle in the toolbar lets each person choose; the choice is remembered on their device. Phones and tablets stay stacked.
-- Sections, in order: Session Brief, Participants at the Center, Participant Before, Participant After, Facilitator at the Center, Time Blocks, Flow, Function, and Form (each column has a title field), Activity Ideation, Session Outline.
+- The canvas is stacked by default. On wide screens a Stacked / Canvas toggle in the toolbar switches to the original two-column canvas; the choice is remembered on that device. Phones and tablets stay stacked.
+- Sections, in order: Session Brief, Participants at the Center, Participant Before, Participant After, Facilitator at the Center, Time Blocks, Flow, Function, and Form (type a name for each column where it says Name this function), Activity Ideation, Session Outline.
 - **Session Outline** is a run-of-show table built from a session draft: each time block becomes a row with its start and end time and length, plus Activities and Moves + Materials to fill in. Type the first start time to set when the session begins (all times, including the time blocks, follow it), or type any end time or length to resize that block; each row starts when the one above ends. It shows the Working Title, and with more than one draft you choose which draft it follows.
-- The **More** menu holds Download backup, Restore backup and Clear canvas. **Download backup** saves the canvas as a file; **Restore backup** loads it on any device (it replaces the current canvas after confirming).
+- The **More** menu holds Save as PDF, Download backup, Restore backup and Clear canvas. **Download backup** saves the canvas as a file; **Restore backup** loads it on any device (it replaces the current canvas after confirming).
 - A new canvas guides you step by step: it starts with Session Brief, Participants at the Center and Participant Before and After, and Next adds Facilitator at the Center, then Time Blocks, then Flow, Function, and Form with Activity Ideation, then Session Outline. Show full canvas skips ahead. Canvases saved before the guide existed open in full, Clear canvas starts the guide over, and printing always shows the full canvas.
 - Drag starter time blocks (15, 30, 60 min) from the Time Block Bank into Session Draft 1. Change a block's length by typing in the number on its side (arrow keys step by 5) or dragging its bottom edge; lengths go in 5-minute steps from 5 to 180 minutes, and the color follows the length. Use Add another draft for up to three drafts; only the last draft can be removed. With three drafts, a block's move button asks which draft to move it to. Name them, add bullet-point notes (Enter starts a new bullet; Enter on an empty bullet ends the list), reorder, move between drafts, or remove them. Drafts show running times and totals.
 - Everything autosaves in your browser. **Save as PDF** opens the print dialog. Print uses landscape pages in your chosen paper size (Letter or A4), keeps each section whole so pages never break mid-section, and leaves out the Time Block Bank.
@@ -16,7 +16,8 @@ An interactive version of the "Designing Facilitated Experiences" canvas!
 
 Facilitators can host a live workshop and see every participant's canvas as they work.
 
-- **Host:** Workshop > Host a workshop. You get a 6-character code and a join link. The host view shows a live card for each participant. Open one to see their canvas (view only), send private comments tied to a section, or spotlight it so everyone can open it. A toggle lets participants see each other's canvases.
+- **Facilitators only:** hosting is limited to approved emails (any @womenfacilitating.com address plus the list in `src/workshop/host-allowlist.json`; the database rules enforce the same list). Facilitators open the private link `https://dice.womenfacilitating.com/?host`, enter their email and click the sign-in link they receive. After that, Workshop shows Host a workshop on that device, with **Your workshops** to reopen any of them from any device. Participants never see the Host option. To change who can host, edit the allowlist, run `python3 scripts/build-rules.py`, and publish the new rules.
+- **Host:** You get a 6-character code and a join link. The host view shows a live card for each participant. Open one to see their canvas (view only), send private comments tied to a section, or spotlight it so everyone can open it. A toggle lets participants see each other's canvases.
 - **Join:** Workshop > Join a workshop, enter the code and your name. Your workshop canvas is saved separately from your personal one, and you can copy it to your personal canvas when you leave.
 - **Guided reveal:** by default participants start with the Session Brief group (Session Brief, Participants at the Center, Participant Before and After). The host reveals Facilitator at the Center, then Time Blocks, then Flow, Function, and Form together with Activity Ideation, then Session Outline, or everything at once, and can hide the last step again. Participants get a notice with a Go to it button. Uncheck the guided option when hosting to show the full canvas from the start.
 - **Rejoin codes:** every participant gets a personal 8-character rejoin code, shown in their workshop bar and on their card in the host view. On another device (or after clearing their browser) they choose Workshop > Return on a new device and enter the workshop code plus their rejoin code to get their canvas and comments back. A device opening the workshop loads the newest online copy, so an older device never overwrites newer work. Use one device at a time.
@@ -26,7 +27,7 @@ Facilitators can host a live workshop and see every participant's canvas as they
 ### Set up Firebase (one time)
 
 1. Create a project at console.firebase.google.com (the free Spark plan is enough).
-2. Build > Authentication > Get started > enable **Anonymous** sign-in.
+2. Build > Authentication > Get started > enable **Anonymous** sign-in, and **Email/Password** with **Email link (passwordless sign-in)** turned on.
 3. Build > Realtime Database > Create database (locked mode).
 4. Publish the rules in `database.rules.json` (generated by `python3 scripts/build-rules.py`; edit that script, not the JSON): paste them in the Rules tab, or run `firebase deploy --only database`.
 5. Project settings > Your apps > add a Web app and copy its config.
@@ -41,7 +42,7 @@ For local development put the same `VITE_FIREBASE_*` values in `.env.local`.
 Needs Java (for the database emulator) and `npm i -g firebase-tools`.
 
 ```bash
-npm run test:rules          # 74 security rule checks against the emulator
+npm run test:rules          # 82 security rule checks against the emulator
 npm run emulators           # terminal 1
 npm run dev:emulator        # terminal 2: app wired to the emulators
 ```

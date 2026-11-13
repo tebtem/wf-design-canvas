@@ -13,7 +13,7 @@ export function FlowFunction() {
               cellId={c.id}
               title={c.title}
               hideTitle
-              columnTitle={`Column ${i + 1} title`}
+              nameLabel={`Name of function ${i + 1}`}
               className={`flow-col flow-col--${i}`}
             />
           ))}

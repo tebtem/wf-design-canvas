@@ -3,9 +3,6 @@ import { useSyncExternalStore } from 'react';
 /** Canvas layout: one stacked column, or the original two-column canvas. */
 export type Layout = 'stacked' | 'canvas';
 
-/** Step at which the guide opens up into the two-column canvas (Time Blocks; the left column is complete). */
-export const CANVAS_LAYOUT_STEP = 2;
-
 const KEY = 'wf-design-canvas:layout';
 const listeners = new Set<() => void>();
 
@@ -42,6 +39,5 @@ export function useLayoutPref(): Layout | null {
   );
 }
 
-/** What to show: the viewer's choice, otherwise two columns once the guide reaches Time Blocks. */
-export const effectiveLayout = (pref: Layout | null, step: number): Layout =>
-  pref ?? (step >= CANVAS_LAYOUT_STEP ? 'canvas' : 'stacked');
+/** What to show: the viewer's choice; stacked unless they picked the two-column canvas. */
+export const effectiveLayout = (pref: Layout | null): Layout => pref ?? 'stacked';

@@ -248,29 +248,42 @@ button {
   gap: 12px 16px;
 }
 .details__field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  position: relative;
+  padding-top: 18px; /* room for the label once the field is filled */
   min-width: 0;
 }
-.details__field label {
-  font-weight: 600;
-  font-size: 0.95rem;
-}
+/* Like "Name this block": type straight into a title, with a light underline as the only edge. */
 .details__input {
-  min-height: 44px;
-  padding: 8px 12px;
-  border: 2px solid var(--line);
-  border-radius: 10px;
-  background: var(--white);
-  font-size: 1.05rem;
+  width: 100%;
+  min-height: 40px;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 2px dashed var(--line);
+  background: transparent;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.details__input:hover {
+  border-bottom-style: solid;
 }
 .details__input:focus-visible {
-  border-color: var(--navy);
-  outline-offset: 1px;
+  border-bottom: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+.details__label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+/* Empty fields show their name as the placeholder, so the small label is hidden (it still names the field). */
+.details__input:placeholder-shown + .details__label {
+  opacity: 0;
 }
 .canvas--readonly .details__input {
-  border-color: transparent;
+  border-bottom-color: transparent;
 }
 @media (max-width: 760px) {
   .details {
@@ -400,31 +413,20 @@ button {
   font-size: 1rem;
   font-weight: 600;
 }
-.note-cell__heading {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.note-cell__heading-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--accent-text);
-}
 .note-cell__heading-input {
-  min-height: 40px;
-  padding: 6px 10px;
-  border: 2px solid var(--line);
-  border-radius: 8px;
-  background: var(--white);
+  width: 100%;
+  min-height: 34px;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
   font-weight: 700;
 }
-.note-cell__heading-input:focus-visible {
-  border-color: var(--navy);
-  outline-offset: 1px;
+.note-cell__heading-input:hover {
+  border-bottom-color: #9aa3c7;
 }
-.canvas--readonly .note-cell__heading-input {
-  border-color: transparent;
-  background: transparent;
+.note-cell__heading-input:focus-visible {
+  outline-offset: 1px;
 }
 
 /* Solo guide */
@@ -476,6 +478,9 @@ button {
 .add-sticky > svg:first-child {
   width: 14px;
   height: 14px;
+}
+.card .add-sticky {
+  align-self: center;
 }
 .add-sticky__label {
   margin-left: 4px;

@@ -27,6 +27,9 @@ const updates = {};
 for (const code of codes) {
   updates[`sessions/${code}`] = null;
   updates[`expiries/${code}`] = null;
+  // Also drop it from the host's "Your workshops" list.
+  const host = (await db.ref(`sessions/${code}/meta/facilitator`).once('value')).val();
+  if (host) updates[`hosts/${host}/${code}`] = null;
 }
 if (codes.size) await db.ref().update(updates);
 console.log(`Deleted ${codes.size} expired workshop${codes.size === 1 ? '' : 's'}.`);

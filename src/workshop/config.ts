@@ -1,3 +1,5 @@
+import allowlist from './host-allowlist.json';
+
 /** Workshop mode only appears when the build has Firebase settings (see README). */
 const env = import.meta.env;
 
@@ -15,3 +17,10 @@ export const workshopsEnabled = Boolean(firebaseConfig.apiKey && firebaseConfig.
 
 /** Days a workshop stays online before it expires and is deleted. */
 export const RETENTION_DAYS = 30;
+
+/** Whether an email may host workshops. The database rules enforce the same list. */
+export function isAllowedHostEmail(email: string): boolean {
+  const e = email.trim().toLowerCase();
+  const domain = e.split('@')[1] ?? '';
+  return allowlist.emails.includes(e) || allowlist.domains.includes(domain);
+}

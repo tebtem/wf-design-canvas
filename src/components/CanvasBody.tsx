@@ -31,7 +31,7 @@ export function CanvasBody({ label, step: forcedStep, guided = false }: Props) {
   const { state, dispatch, readOnly } = useCanvas();
   const step = forcedStep ?? (guided ? state.step : LAST_STEP);
   const [message, setMessage] = useState('');
-  const layout = effectiveLayout(useLayoutPref(), step);
+  const layout = effectiveLayout(useLayoutPref());
 
   const next = () => {
     const to = Math.min(LAST_STEP, step + 1);

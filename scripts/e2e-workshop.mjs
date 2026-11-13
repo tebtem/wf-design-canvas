@@ -37,11 +37,37 @@ const until = async (fn, label, ms = 8000) => {
 };
 
 // Host starts a workshop.
+// Facilitator sign-in uses an emailed link; the auth emulator exposes the codes it would send.
+const AUTH_EMU = 'http://127.0.0.1:9099/emulator/v1/projects/demo-wf-canvas/oobCodes';
+async function hostSignIn(page, email) {
+  await page.goto(`${APP_URL}?host`);
+  await page.getByLabel('Facilitator email').fill(email);
+  await page.getByRole('button', { name: 'Email me a sign-in link' }).click();
+  await page.getByText('Check your inbox').waitFor();
+  const { oobCodes } = await (await fetch(AUTH_EMU)).json();
+  const latest = oobCodes.filter((c) => c.email === email && c.requestType === 'EMAIL_SIGNIN').pop();
+  await page.goto(`${APP_URL}?apiKey=demo-key&oobCode=${latest.oobCode}&mode=signIn&lang=en`);
+  await page.getByText(`Signed in as ${email}`).waitFor();
+}
+
+// Participants never see hosting.
+const visitor = await newPage();
+await visitor.goto(APP_URL);
+await visitor.getByRole('button', { name: 'Workshop' }).click();
+if (await visitor.getByRole('radio', { name: 'Host a workshop' }).count()) fail('participants should not see Host a workshop');
+await axe(visitor, 'workshop dialog');
+// Unapproved emails cannot get a sign-in link.
+await visitor.goto(`${APP_URL}?host`);
+await visitor.getByLabel('Facilitator email').fill('someone@example.com');
+await visitor.getByRole('button', { name: 'Email me a sign-in link' }).click();
+await until(async () => (await visitor.getByRole('alert').textContent())?.includes('not set up to host'), 'unapproved email error');
+await axe(visitor, 'facilitator sign-in');
+await visitor.close();
+
 const host = await newPage();
-await host.goto(APP_URL);
-await host.getByRole('button', { name: 'Workshop' }).click();
-await axe(host, 'workshop dialog');
-await host.getByRole('radio', { name: 'Host a workshop' }).check();
+await hostSignIn(host, 'host@womenfacilitating.com');
+if (new URL(host.url()).search) fail('sign-in link parameters should be removed from the address');
+await axe(host, 'signed-in host panel');
 await host.getByLabel('Workshop name').fill('Team offsite');
 await host.getByRole('button', { name: 'Start workshop' }).click();
 await host.getByRole('heading', { level: 1, name: 'Team offsite' }).waitFor();
@@ -160,6 +186,15 @@ step('spotlight works');
 // Reloads reconnect.
 await host.reload();
 await host.getByRole('heading', { level: 1, name: 'Team offsite' }).waitFor();
+
+// The facilitator reopens the host view on a second device by signing in there.
+const host2 = await newPage();
+await hostSignIn(host2, 'host@womenfacilitating.com');
+await host2.getByRole('button', { name: 'Open Team offsite' }).click();
+await host2.getByRole('heading', { level: 1, name: 'Team offsite' }).waitFor();
+await until(async () => (await host2.locator('.ws-card').count()) === 2, 'second device sees participants');
+await host2.close();
+step('host view works on a second device');
 await alice.reload();
 await until(async () => (await alice.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) === 'Alice purpose, edited', 'alice reload');
 
@@ -218,9 +253,7 @@ step('end workshop works');
 // Phone width.
 const phone = await newPage();
 await phone.setViewportSize({ width: 375, height: 800 });
-await phone.goto(APP_URL);
-await phone.getByRole('button', { name: 'Workshop' }).click();
-await phone.getByRole('radio', { name: 'Host a workshop' }).check();
+await hostSignIn(phone, 'taylor@taylorelyse.com');
 await phone.getByRole('button', { name: 'Start workshop' }).click();
 await phone.getByRole('heading', { level: 1, name: 'Workshop' }).waitFor();
 const w = await phone.evaluate(() => document.documentElement.scrollWidth);
