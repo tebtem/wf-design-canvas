@@ -13,6 +13,8 @@ export type Action =
   | { type: 'editBlock'; id: string; label?: string; notes?: string }
   | { type: 'removeBlock'; id: string }
   | { type: 'setBlockMinutes'; id: string; minutes: number }
+  | { type: 'addDay'; draftId: DraftId; id: string }
+  | { type: 'setDayStart'; id: string; start: number }
   | { type: 'setDetail'; key: keyof CanvasDetails; value: string }
   | { type: 'setCellTitle'; cellId: string; title: string }
   | { type: 'nextStep' }
@@ -68,6 +70,47 @@ const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(ma
 
 export function totalMinutes(blocks: TimeBlock[]): number {
   return blocks.reduce((sum, b) => sum + b.minutes, 0);
+}
+
+export { hhmm as hhmmOf } from './types';
+
+export interface Slot {
+  block: TimeBlock;
+  /** 1-based day number. */
+  day: number;
+  /** Clock time in minutes after midnight (may pass 24:00 on very long days). */
+  start: number;
+}
+
+export interface DayInfo {
+  day: number;
+  start: number;
+  total: number;
+  /** The divider that starts this day (none for Day 1). */
+  divider?: TimeBlock;
+}
+
+/**
+ * Works out each block's day and clock time. Day dividers start a new day whose clock begins at the
+ * divider's start time (or Day 1's start when none is set).
+ */
+export function schedule(blocks: TimeBlock[], day1Start: number): { slots: Slot[]; days: DayInfo[] } {
+  const days: DayInfo[] = [{ day: 1, start: day1Start, total: 0 }];
+  const slots: Slot[] = [];
+  let clock = day1Start;
+  for (const b of blocks) {
+    if (b.kind === 'day') {
+      const start = b.start ?? day1Start;
+      days.push({ day: days.length + 1, start, total: 0, divider: b });
+      clock = start;
+      slots.push({ block: b, day: days.length, start });
+      continue;
+    }
+    slots.push({ block: b, day: days.length, start: clock });
+    days[days.length - 1].total += b.minutes;
+    clock += b.minutes;
+  }
+  return { slots, days };
 }
 
 export function formatMinutes(total: number): string {
@@ -152,7 +195,20 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
       const loc = findBlock(state, action.id);
       if (!loc) return state;
       const minutes = clampMinutes(action.minutes);
-      const list = state.drafts[loc.draftId].map((b) => (b.id === action.id ? { ...b, minutes } : b));
+      const list = state.drafts[loc.draftId].map((b) => (b.id === action.id && b.kind !== 'day' ? { ...b, minutes } : b));
+      return { ...state, drafts: { ...state.drafts, [loc.draftId]: list } };
+    }
+
+    case 'addDay': {
+      const list = [...state.drafts[action.draftId], { id: action.id, kind: 'day' as const, minutes: 0, label: '', notes: '' }];
+      return { ...state, drafts: { ...state.drafts, [action.draftId]: list } };
+    }
+
+    case 'setDayStart': {
+      const loc = findBlock(state, action.id);
+      if (!loc) return state;
+      const start = ((Math.round(action.start) % 1440) + 1440) % 1440;
+      const list = state.drafts[loc.draftId].map((b) => (b.id === action.id ? { ...b, start } : b));
       return { ...state, drafts: { ...state.drafts, [loc.draftId]: list } };
     }
 

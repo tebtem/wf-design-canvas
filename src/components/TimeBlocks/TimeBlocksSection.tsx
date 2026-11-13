@@ -88,9 +88,11 @@ function resolveTarget(state: CanvasState, over: Over): { draftId: DraftId; inde
 }
 
 const describe = (data: DragData | undefined) =>
-  data && data.type !== 'draft'
-    ? `${data.minutes} minute block${data.type === 'block' && data.label ? ` "${data.label}"` : ''}`
-    : 'block';
+  data?.type === 'block' && data.isDay
+    ? `start of ${data.label}`
+    : data && data.type !== 'draft'
+      ? `${data.minutes} minute block${data.type === 'block' && data.label ? ` "${data.label}"` : ''}`
+      : 'block';
 
 /** Opens the "move to another draft" dialog for a block. */
 const BlockMoveContext = createContext<(blockId: string) => void>(() => {});
@@ -118,6 +120,13 @@ export function TimeBlocksSection() {
     dispatch({ type: 'removeDraft' });
     announce(`${DRAFT_NAMES[lastDraft]} removed.`);
     requestAnimationFrame(() => document.getElementById('add-draft')?.focus());
+  };
+
+  const addDay = (d: DraftId) => {
+    const id = newId();
+    const dayNumber = state.drafts[d].filter((b) => b.kind === 'day').length + 2;
+    dispatch({ type: 'addDay', draftId: d, id });
+    announce(`Day ${dayNumber} added to the end of ${DRAFT_NAMES[d]}. Blocks you add next go in Day ${dayNumber}.`);
   };
 
   // ---------- Move a block to another draft (button alternative to dragging) ----------
@@ -231,6 +240,7 @@ export function TimeBlocksSection() {
                     </button>
                   ) : null
                 }
+                onAddDay={!readOnly ? () => addDay(d) : undefined}
               />
             ))}
             {!readOnly && <BlockBank announce={announce} />}

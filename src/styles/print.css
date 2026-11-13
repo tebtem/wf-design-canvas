@@ -179,6 +179,17 @@
   .outline__table tr {
     break-inside: avoid;
   }
+  /* A multi-day outline may run over several pages, with each day starting a new page. */
+  .band--outline {
+    break-inside: auto;
+  }
+  .outline__daygroup + .outline__daygroup {
+    break-before: page;
+  }
+  .outline__day th {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   .card,
   .quadrant,
   .note-cell,

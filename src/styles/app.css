@@ -1061,6 +1061,49 @@ button {
   }
 }
 
+/* ---------- Days (multi-day sessions) ---------- */
+.day-divider {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-height: 36px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--navy);
+  color: var(--white);
+}
+.day-divider.is-dragging {
+  opacity: 0.4;
+}
+.day-divider .icon-btn {
+  color: var(--white);
+}
+.day-divider .icon-btn:hover {
+  background: rgb(255 255 255 / 0.15);
+}
+.day-divider :focus-visible {
+  outline-color: var(--brand-yellow);
+}
+.day-divider__handle {
+  cursor: grab;
+  touch-action: none;
+}
+.day-divider__name {
+  font-weight: 800;
+}
+.day-divider__meta {
+  font-size: 0.85rem;
+}
+.day-divider__actions {
+  margin-left: auto;
+  display: flex;
+}
+.draft__add-day {
+  align-self: flex-start;
+  margin-top: 10px;
+}
+
 /* ---------- Session Outline ---------- */
 .outline__head {
   display: flex;
@@ -1179,6 +1222,20 @@ button {
 .outline__len {
   width: 6.5em;
   white-space: nowrap;
+}
+.outline__day th {
+  background: var(--navy);
+  color: var(--white);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+.outline__day-meta {
+  font-weight: 400;
+  font-size: 0.95rem;
+}
+.outline__empty-day {
+  color: var(--navy-soft);
+  font-style: italic;
 }
 .outline__input {
   display: block;

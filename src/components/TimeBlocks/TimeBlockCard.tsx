@@ -221,10 +221,10 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
         </span>
         <span className="tblock__time">
           <span className="sr-only">Runs from </span>
-          {hhmm(state.outline.start + start)}
+          {hhmm(start)}
           <span aria-hidden="true"> – </span>
           <span className="sr-only"> to </span>
-          {hhmm(state.outline.start + start + block.minutes)}
+          {hhmm(start + block.minutes)}
         </span>
       </div>
       <div className="tblock__notes">

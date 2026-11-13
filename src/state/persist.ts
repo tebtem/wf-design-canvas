@@ -4,7 +4,11 @@ import { clampMinutes, DRAFT_IDS, STICKY_COLORS, type CanvasDetails, type Outlin
 
 /** Blocks saved before notes existed get an empty notes field. */
 const migrateBlocks = (blocks: TimeBlock[] = []) =>
-  blocks.map((b) => ({ ...b, minutes: clampMinutes(b.minutes), notes: b.notes ?? '' }));
+  blocks.map((b) =>
+    b.kind === 'day'
+      ? { id: b.id, kind: 'day' as const, minutes: 0, label: '', notes: '', ...(typeof b.start === 'number' ? { start: b.start } : {}) }
+      : { ...b, minutes: clampMinutes(b.minutes), notes: b.notes ?? '' },
+  );
 
 /**
  * Keep stickies saved with a color that no longer exists (e.g. the old "green") readable, and turn

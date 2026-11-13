@@ -2,7 +2,7 @@ import type { BlockMinutes, DraftId } from '../../state/types';
 
 export type DragData =
   | { type: 'bank'; minutes: BlockMinutes }
-  | { type: 'block'; draftId: DraftId; minutes: BlockMinutes; label: string }
+  | { type: 'block'; draftId: DraftId; minutes: BlockMinutes; label: string; isDay?: boolean }
   | { type: 'draft'; draftId: DraftId };
 
 export const draftDroppableId = (d: DraftId) => `draft-${d}`;

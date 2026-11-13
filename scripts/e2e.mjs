@@ -190,6 +190,19 @@ await page.getByLabel('Based on').selectOption('d2');
 if (!(await outline.getByText('Add time blocks to Session Draft 2').count())) fail('empty outline message');
 await page.getByLabel('Based on').selectOption('d1');
 if ((await page.getByLabel(/^Activities, 09:00 to 09:40/).inputValue()) !== 'Kickoff and goals') fail('outline text lost when switching drafts');
+// Multi-day: a Day 2 divider starts a fresh clock, in the time blocks and the outline.
+await page.getByRole('button', { name: 'Add next day' }).first().click();
+await page.getByRole('button', { name: 'Add 30 min block to Session Draft 1' }).click();
+if ((await outline.locator('.outline__day').count()) !== 2) fail('outline should group rows by day');
+const day2 = page.getByLabel('Day 2 start time');
+await day2.fill('8:30');
+await day2.press('Enter');
+if (!(await page.getByRole('group', { name: 'Session Draft 1' }).getByText('starts 08:30').count())) fail('day divider should show its start');
+if (!(await draft1.locator('.draft__total').textContent()).startsWith('2 days')) fail('draft total should count days');
+await axeCheck(page, 'multi-day');
+await page.getByRole('button', { name: 'Remove Day 2' }).click();
+if (await outline.locator('.outline__day').count()) fail('removing the day should merge it back');
+await page.getByRole('button', { name: /^Remove 30 minute block/ }).last().click();
 await axeCheck(page, 'session outline');
 await outline.screenshot({ path: out + 'outline.png' });
 

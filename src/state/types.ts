@@ -46,6 +46,10 @@ export interface TimeBlock {
   label: string;
   /** Free-form details, e.g. bullet points about what happens in this block. */
   notes: string;
+  /** A day divider ("Day 2"): the blocks after it are the next day and the clock starts again. */
+  kind?: 'day';
+  /** Day dividers only: when that day starts, in minutes after midnight. Defaults to Day 1's start. */
+  start?: number;
 }
 
 export interface CanvasDetails {
