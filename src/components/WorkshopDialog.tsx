@@ -191,7 +191,10 @@ export function WorkshopDialog({ open, initialCode, hostEntry = false, emailLink
 
           <p className="ws-privacy">
             Your name and canvas are shared live with the facilitator, and with other participants if the facilitator
-            allows it. Workshop data is deleted after {RETENTION_DAYS} days.
+            allows it. Workshop data is deleted after {RETENTION_DAYS} days.{' '}
+            <a href="./privacy.html" target="_blank" rel="noopener">
+              Privacy notice<span className="sr-only"> (opens in a new tab)</span>
+            </a>
           </p>
 
           <div className="dialog__actions">

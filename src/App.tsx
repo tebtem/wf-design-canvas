@@ -8,6 +8,7 @@ import { WorkshopDialog } from './components/WorkshopDialog';
 import { BackupReminder } from './components/BackupReminder';
 import { workshopsEnabled } from './workshop/config';
 import { LAST_STEP } from './state/cells';
+import { track } from './analytics';
 import {
   loadWorkshop,
   looksLikeHostLink,
@@ -40,6 +41,7 @@ export default function App() {
   const [dialogOpen, setDialogOpen] = useState((initialJoin !== null || hostEntry) && !workshop);
 
   const enter = (w: ActiveWorkshop) => {
+    track(w.role === 'facilitator' ? 'workshop-hosted' : 'workshop-joined');
     saveWorkshop(w);
     setWorkshop(w);
     setDialogOpen(false);

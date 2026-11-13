@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useCanvas } from '../state/CanvasContext';
 import { downloadBackup, markBackedUp, shouldRemindBackup, snoozeBackupReminder } from '../state/backup';
+import { track } from '../analytics';
 
 /**
  * A gentle corner card once someone has put real work into a canvas that lives only in this browser:
@@ -20,15 +21,14 @@ export function BackupReminder() {
   return (
     <>
       <p className="sr-only" role="status">
-        {show ? 'Tip: your canvas is saved only in this browser. You can download a backup.' : message}
+        {show ? 'Your canvas is only saved in this browser. Download a backup so you don’t lose your good work.' : message}
       </p>
       {show && (
         <section className="ws-toasts no-print" aria-label="Notifications">
           <div className="ws-toast ws-toast--backup">
             <p className="ws-toast__title">Keep your work safe</p>
             <p>
-              Your canvas is saved only in this browser. Download a backup so you don&apos;t lose it if your browser
-              data is cleared, or to open it on another device.
+              Your canvas is only saved in this browser. Download a backup so you don&apos;t lose your good work.
             </p>
             <div className="ws-toast__actions">
               <button
@@ -37,6 +37,7 @@ export function BackupReminder() {
                 onClick={() => {
                   downloadBackup(state);
                   markBackedUp();
+                  track('backup-downloaded', { from: 'reminder' });
                   setDismissed(true);
                   setMessage('Backup downloaded.');
                 }}

@@ -9,6 +9,7 @@ import { StickyDnd } from './StickyDnd';
 import { ActivityIdeation } from './ActivityIdeation';
 import { SessionOutline } from './SessionOutline';
 import { effectiveLayout, useLayoutPref } from '../state/layout';
+import { track } from '../analytics';
 
 interface Props {
   label?: string;
@@ -36,6 +37,7 @@ export function CanvasBody({ label, step: forcedStep, guided = false }: Props) {
   const next = () => {
     const to = Math.min(LAST_STEP, step + 1);
     dispatch({ type: 'nextStep' });
+    track('guide-next', { step: to + 1 });
     setMessage('');
     window.setTimeout(() => {
       setMessage(`${REVEAL_STEPS[to]} added. Step ${to + 1} of ${LAST_STEP + 1}.`);

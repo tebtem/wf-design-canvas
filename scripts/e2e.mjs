@@ -345,5 +345,18 @@ const printed = await page.locator('#canvas .band__title:visible').allTextConten
 if (printed.length !== 9) fail(`print should show the full canvas, got ${printed.length} sections`);
 await page.emulateMedia({ media: 'screen' });
 
+// Privacy notice and terms pages: linked from the footer, readable at phone width, accessible.
+for (const [file, heading] of [['privacy.html', 'Privacy Notice'], ['terms.html', 'Terms of Use']]) {
+  const legal = await context.newPage();
+  await legal.goto(new URL(file, APP_URL).toString());
+  await legal.getByRole('heading', { level: 1, name: heading }).waitFor();
+  await axeCheck(legal, file);
+  await legal.setViewportSize({ width: 375, height: 800 });
+  if ((await legal.evaluate(() => document.documentElement.scrollWidth)) > 375) fail(`${file} scrolls sideways at 375px`);
+  await legal.close();
+}
+const footerLinks = await page.locator('.site-footer a').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+if (!footerLinks.includes('./privacy.html') || !footerLinks.includes('./terms.html')) fail('footer should link privacy and terms');
+
 await browser.close();
 console.log(process.exitCode ? 'Done with failures' : 'All checks passed');

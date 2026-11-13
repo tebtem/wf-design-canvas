@@ -64,6 +64,11 @@ npx vite build --mode emulator --outDir dist-emu && npx vite preview --outDir di
 npm run e2e:workshop
 ```
 
+## Privacy, terms and analytics
+
+- `privacy.html` and `terms.html` are plain pages built alongside the canvas (see `vite.config.ts`), linked from the footer and the workshop join dialog. They are drafts written for Women Facilitating to review; they are not legal advice.
+- Analytics uses [Umami](https://umami.is): no cookies, no personal data, so no consent banner is needed. It is off until you add `VITE_UMAMI_WEBSITE_ID` (and `VITE_UMAMI_SRC` if you self-host Umami) in Vercel and redeploy. It counts page views plus a few actions: `guide-next`, `guide-skipped`, `pdf-saved`, `backup-downloaded`, `backup-restored`, `workshop-joined`, `workshop-hosted`. It never sends what people type, and query strings (like workshop codes) are excluded.
+
 ## Accessibility
 
 Built to WCAG 2.2 AA (workshop views included): full keyboard use (Space to pick up a block, arrow keys to move, Space to drop, Escape to cancel), button alternatives for every drag action, screen reader announcements, labeled fields, AA contrast, 24px minimum targets, reflow down to 320px, and reduced motion support.
