@@ -52,7 +52,7 @@ For local development put the same `VITE_FIREBASE_*` values in `.env.local`.
 Needs Java (for the database emulator) and `npm i -g firebase-tools`.
 
 ```bash
-npm run test:rules          # 100 security rule checks against the emulator
+npm run test:rules          # 99 security rule checks against the emulator
 npm run emulators           # terminal 1
 npm run dev:emulator        # terminal 2: app wired to the emulators
 ```
