@@ -261,7 +261,7 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
           {view.kind === 'signedOut' && (
             <label className="ws-check">
               <input type="checkbox" checked={optIn} onChange={(e) => setOptIn(e.target.checked)} />
-              Update me about upcoming facilitation courses and bootcamps
+              Email me about upcoming facilitation courses and bootcamps
             </label>
           )}
           <p className="ws-hint">

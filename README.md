@@ -19,7 +19,7 @@ An interactive version of the "Designing Facilitated Experiences" canvas!
 
 ## Free accounts
 
-Anyone can create a free account from **Create free account** in the toolbar (or the backup reminder): an email link signs them in, no password. Signed-in canvases save online automatically and open on any device; **My canvases** lists up to three, with Start a new canvas, Open and Delete, plus Sign out (clears that browser's copy) and Delete my account. A canvas made before signing up moves into the account. Participants who sign up keep their workshop access (their anonymous identity is upgraded). An unchecked "Update me about upcoming facilitation courses and bootcamps" box adds confirmed emails to the MailerLite **Canvas** group via `api/subscribe.js`. Facilitators are simply accounts on the host allowlist.
+Anyone can create a free account from **Create free account** in the toolbar (or the backup reminder): an email link signs them in, no password. Signed-in canvases save online automatically and open on any device; **My canvases** lists up to three, with Start a new canvas, Open and Delete, plus Sign out (clears that browser's copy) and Delete my account. A canvas made before signing up moves into the account. Participants who sign up keep their workshop access (their anonymous identity is upgraded). An unchecked "Email me about upcoming facilitation courses and bootcamps" box adds confirmed emails to the MailerLite **Canvas** group via `api/subscribe.js`. Facilitators are simply accounts on the host allowlist.
 
 ## Workshop mode
 
