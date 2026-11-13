@@ -16,7 +16,7 @@ An interactive version of the "Designing Facilitated Experiences" canvas!
 
 Facilitators can host a live workshop and see every participant's canvas as they work.
 
-- **Facilitators only:** hosting is limited to approved emails (any @womenfacilitating.com address plus the list in `src/workshop/host-allowlist.json`; the database rules enforce the same list). Facilitators open the private link `https://dice.womenfacilitating.com/?host`, enter their email and click the sign-in link they receive. After that, Workshop shows Host a workshop on that device, with **Your workshops** to reopen any of them from any device. Participants never see the Host option. To change who can host, edit the allowlist, run `python3 scripts/build-rules.py`, and publish the new rules.
+- **Facilitators only:** hosting is limited to approved emails (any @womenfacilitating.com address plus the list in `src/workshop/host-allowlist.json`; the database rules enforce the same list). Facilitators open the private link `https://canvas.womenfacilitating.com/?host`, enter their email and click the sign-in link they receive. After that, Workshop shows Host a workshop on that device, with **Your workshops** to reopen any of them from any device. Participants never see the Host option. To change who can host, edit the allowlist, run `python3 scripts/build-rules.py`, and publish the new rules.
 - **Host:** You get a 6-character code and a join link. The host view shows a live card for each participant. Open one to see their canvas (view only), send private comments tied to a section, or spotlight it so everyone can open it. A toggle lets participants see each other's canvases.
 - **Join:** Workshop > Join a workshop, enter the code and your name. Your workshop canvas is saved separately from your personal one, and you can copy it to your personal canvas when you leave.
 - **Guided reveal:** by default participants start with the Session Brief group (Session Brief, Participants at the Center, Participant Before and After). The host reveals Facilitator at the Center, then Time Blocks, then Flow, Function, and Form together with Activity Ideation, then Session Outline, or everything at once, and can hide the last step again. Participants get a notice with a Go to it button. Uncheck the guided option when hosting to show the full canvas from the start.
@@ -33,7 +33,7 @@ Facilitators can host a live workshop and see every participant's canvas as they
 5. Project settings > Your apps > add a Web app and copy its config.
 6. In Vercel, Project Settings > Environment Variables, add `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_DATABASE_URL`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID` for Production, then redeploy. These are safe to publish: access is controlled by the rules.
 7. For the 30-day cleanup: Project settings > Service accounts > Generate new private key, and save the whole JSON as the **secret** `FIREBASE_SERVICE_ACCOUNT`. `.github/workflows/cleanup.yml` runs daily.
-8. Add `dice.womenfacilitating.com` and `dice-mu-neon.vercel.app` under Authentication > Settings > Authorized domains, and turn on App Check to limit abuse.
+8. Add `canvas.womenfacilitating.com` and `dice-mu-neon.vercel.app` under Authentication > Settings > Authorized domains, and turn on App Check to limit abuse.
 
 For local development put the same `VITE_FIREBASE_*` values in `.env.local`.
 
