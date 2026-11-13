@@ -1,6 +1,6 @@
 import { LAST_STEP } from '../state/cells';
 import { useEffect, useRef, useState, type ChangeEvent, type FocusEvent } from 'react';
-import { downloadBackup, readBackup } from '../state/backup';
+import { downloadBackup, markBackedUp, readBackup } from '../state/backup';
 import { effectiveLayout, setLayoutPref, useLayoutPref, type Layout } from '../state/layout';
 import { useCanvas } from '../state/CanvasContext';
 import { ChevronIcon, DownloadIcon, ExternalIcon, PeopleIcon, PrintIcon, UploadIcon, XIcon } from './Icons';
@@ -140,6 +140,7 @@ export function Toolbar({ onWorkshop, guided = false }: ToolbarProps) {
               onClick={() => {
                 setMoreOpen(false);
                 downloadBackup(state);
+                markBackedUp();
                 setNotice({ text: 'Backup downloaded. Keep the file to restore this canvas on any device.' });
                 moreBtn.current?.focus();
               }}

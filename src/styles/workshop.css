@@ -614,6 +614,9 @@
 .ws-toast--comment {
   border-left-color: var(--brand-pink);
 }
+.ws-toast--backup {
+  border-left-color: var(--frame);
+}
 .ws-toast--spotlight {
   border-left-color: var(--brand-magenta);
 }

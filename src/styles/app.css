@@ -348,6 +348,11 @@ button {
   outline-offset: 3px;
 }
 
+/* Repeated at the bottom of each printed page (see print.css). */
+.print-footer {
+  display: none;
+}
+
 /* ---------- Footer ---------- */
 .site-footer {
   max-width: 1800px;

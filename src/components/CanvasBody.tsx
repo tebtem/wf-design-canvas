@@ -87,6 +87,10 @@ export function CanvasBody({ label, step: forcedStep, guided = false }: Props) {
           {message}
         </p>
       </main>
+      {/* Printed on every page: every shared PDF points back to the canvas. */}
+      <p className="print-footer" aria-hidden="true">
+        Made with the Facilitation Design Canvas™ · canvas.womenfacilitating.com · © Women Facilitating
+      </p>
     </div>
   );
 }

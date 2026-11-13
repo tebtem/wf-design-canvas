@@ -263,3 +263,21 @@ describe('rich text', () => {
     expect(richToText('<h3>Title</h3><ul><li><p>One</p></li></ul>')).toBe('Title\nOne');
   });
 });
+
+describe('backup reminder', () => {
+  it('waits for real work, then reminds weekly unless snoozed', async () => {
+    const { shouldRemindBackup, markBackedUp, snoozeBackupReminder, workAmount } = await import('./backup');
+    window.localStorage.clear();
+    let s = initialState();
+    expect(shouldRemindBackup(s)).toBe(false);
+    for (let i = 0; i < 8; i++) s = reducer(s, { type: 'addSticky', cellId: 'ideas', id: `s${i}` });
+    expect(workAmount(s)).toBe(8);
+    expect(shouldRemindBackup(s)).toBe(true);
+    markBackedUp();
+    expect(shouldRemindBackup(s)).toBe(false);
+    expect(shouldRemindBackup(s, Date.now() + 8 * 86_400_000)).toBe(true);
+    snoozeBackupReminder();
+    expect(shouldRemindBackup(s, Date.now() + 8 * 86_400_000)).toBe(true);
+    expect(shouldRemindBackup(s, Date.now() + 86_400_000)).toBe(false);
+  });
+});

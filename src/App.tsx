@@ -5,6 +5,7 @@ import { Toolbar } from './components/Toolbar';
 import { Footer } from './components/Footer';
 import { CanvasBody } from './components/CanvasBody';
 import { WorkshopDialog } from './components/WorkshopDialog';
+import { BackupReminder } from './components/BackupReminder';
 import { workshopsEnabled } from './workshop/config';
 import { LAST_STEP } from './state/cells';
 import {
@@ -79,6 +80,7 @@ export default function App() {
       <Toolbar guided onWorkshop={workshopsEnabled ? () => setDialogOpen(true) : undefined} />
       <CanvasBody guided />
       <Footer />
+      <BackupReminder />
       {workshopsEnabled && (
         <WorkshopDialog
           open={dialogOpen}

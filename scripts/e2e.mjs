@@ -26,6 +26,8 @@ const editing = () => page.locator('.ProseMirror:focus').waitFor();
 const noteText = async (name) => (await page.getByRole('textbox', { name }).innerText()).trim();
 
 await page.goto(APP_URL);
+// The backup reminder is checked on its own near the end; keep it out of the way until then.
+await page.evaluate(() => localStorage.setItem('wf-design-canvas:backup-snooze', String(Date.now() + 864e5)));
 
 // Details, stickies-only cells, and the new section order.
 // A new canvas starts guided: first group only, then Next adds sections below.
@@ -291,6 +293,18 @@ await page.screenshot({ path: out + 'mobile.png', fullPage: true });
 const axeMobile = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
 for (const v of axeMobile.violations) console.log('AXE mobile', v.id, v.impact, v.nodes.length, v.nodes[0]?.target);
 if (axeMobile.violations.length) fail(`${axeMobile.violations.length} axe violations at 375px`);
+
+// Backup reminder: after real work, a corner card suggests a backup; downloading quiets it.
+await page.evaluate(() => localStorage.removeItem('wf-design-canvas:backup-snooze'));
+await page.reload();
+const reminder = page.locator('.ws-toast--backup');
+await reminder.waitFor();
+await axeCheck(page, 'backup reminder');
+const [reminderDownload] = await Promise.all([page.waitForEvent('download'), reminder.getByRole('button', { name: 'Download backup' }).click()]);
+if (!reminderDownload.suggestedFilename().endsWith('.json')) fail('reminder should download a backup');
+await page.reload();
+await page.waitForTimeout(300);
+if (await reminder.count()) fail('reminder should stay quiet after a backup');
 
 // Backup: download, clear, restore.
 // More menu: opens, closes with Escape (focus back on More), and holds backup, restore and clear.
