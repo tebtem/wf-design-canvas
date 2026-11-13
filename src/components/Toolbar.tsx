@@ -1,11 +1,13 @@
 import { LAST_STEP } from '../state/cells';
 import { useEffect, useRef, useState, type ChangeEvent, type FocusEvent } from 'react';
-import { downloadBackup, readBackup } from '../state/backup';
+import { downloadBackup, markBackedUp, readBackup } from '../state/backup';
+import { track } from '../analytics';
+import { celebrateMilestone } from './WaitlistCard';
 import { effectiveLayout, setLayoutPref, useLayoutPref, type Layout } from '../state/layout';
 import { useCanvas } from '../state/CanvasContext';
 import { ChevronIcon, DownloadIcon, ExternalIcon, PeopleIcon, PrintIcon, UploadIcon, XIcon } from './Icons';
 
-const LEARN_URL = 'https://www.womenfacilitating.com/facilitation-design';
+import { LEARN_URL } from './Footer';
 
 interface ToolbarProps {
   onWorkshop?: () => void;
@@ -63,6 +65,7 @@ export function Toolbar({ onWorkshop, guided = false }: ToolbarProps) {
     const when = backup.savedAt ? ` from ${new Date(backup.savedAt).toLocaleString()}` : '';
     if (!window.confirm(`Replace everything on this canvas with the backup${when}? This cannot be undone.`)) return;
     dispatch({ type: 'load', state: backup.state });
+    track('backup-restored');
     setNotice({ text: `Backup${when} restored.` });
   };
 
@@ -95,7 +98,10 @@ export function Toolbar({ onWorkshop, guided = false }: ToolbarProps) {
           ))}
         </fieldset>
         {guided && state.step < LAST_STEP && (
-          <button type="button" className="btn" onClick={() => dispatch({ type: 'showAll' })}>
+          <button type="button" className="btn" onClick={() => {
+              dispatch({ type: 'showAll' });
+              track('guide-skipped');
+            }}>
             Show full canvas
           </button>
         )}
@@ -128,7 +134,9 @@ export function Toolbar({ onWorkshop, guided = false }: ToolbarProps) {
               onClick={() => {
                 setMoreOpen(false);
                 moreBtn.current?.focus();
+                track('pdf-saved');
                 window.print();
+                if (guided) celebrateMilestone();
               }}
             >
               <PrintIcon />
@@ -140,6 +148,8 @@ export function Toolbar({ onWorkshop, guided = false }: ToolbarProps) {
               onClick={() => {
                 setMoreOpen(false);
                 downloadBackup(state);
+                markBackedUp();
+                track('backup-downloaded');
                 setNotice({ text: 'Backup downloaded. Keep the file to restore this canvas on any device.' });
                 moreBtn.current?.focus();
               }}

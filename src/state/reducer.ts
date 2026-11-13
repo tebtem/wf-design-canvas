@@ -1,5 +1,5 @@
 import { clampMinutes, DRAFT_IDS, MAX_DRAFTS } from './types';
-import { LAST_STEP } from './cells';
+import { FLOW_MAX, FLOW_ROW, LAST_STEP } from './cells';
 import type { BlockMinutes, CanvasDetails, CanvasState, Cell, DraftId, OutlineRow, StickyColor, TimeBlock } from './types';
 
 export type Action =
@@ -24,6 +24,8 @@ export type Action =
   | { type: 'setOutlineStart'; start: number }
   | { type: 'setOutlineRow'; blockId: string; field: keyof OutlineRow; value: string }
   | { type: 'load'; state: CanvasState }
+  | { type: 'addFlowRow' }
+  | { type: 'removeFlowRow' }
   | { type: 'addDraft' }
   | { type: 'removeDraft' }
   | { type: 'reset' };
@@ -37,6 +39,7 @@ export const initialState = (): CanvasState => ({
   drafts: { d1: [], d2: [], d3: [] },
   draftCount: 1,
   outline: { draft: 'd1', start: 0, rows: {} },
+  flowColumns: FLOW_ROW,
   // A brand-new canvas starts guided; Clear canvas starts the guide over.
   step: 0,
 });
@@ -273,6 +276,19 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
 
     case 'load':
       return action.state;
+
+    case 'addFlowRow':
+      return { ...state, flowColumns: Math.min(FLOW_MAX, state.flowColumns + FLOW_ROW) };
+
+    case 'removeFlowRow': {
+      if (state.flowColumns <= FLOW_ROW) return state;
+      const next = state.flowColumns - FLOW_ROW;
+      // Clear the removed columns so they come back empty if added again.
+      const cells = Object.fromEntries(
+        Object.entries(state.cells).filter(([id]) => !(id.startsWith('flow.') && Number(id.slice(5)) >= next)),
+      );
+      return { ...state, flowColumns: next, cells };
+    }
 
     case 'addDraft':
       return { ...state, draftCount: Math.min(MAX_DRAFTS, state.draftCount + 1) };

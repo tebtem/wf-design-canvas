@@ -53,7 +53,7 @@ rules = {
           "title": {".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"},
           "facilitator": {".validate": "!data.exists() || newData.val() === data.val()"},
           "createdAt": {".validate": "data.exists() ? newData.val() === data.val() : newData.val() === now"},
-          "expiresAt": {".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : (newData.val() > now && newData.val() <= now + 2592000000))"},
+          "expiresAt": {".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : (newData.val() > now && newData.val() <= now + 7776000000))"},
           "canView": {".validate": "newData.isBoolean()"},
           "step": {".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4 && newData.val() % 1 === 0"},
           "spotlight": {

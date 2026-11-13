@@ -5,11 +5,13 @@ An interactive version of the "Designing Facilitated Experiences" canvas!
 - Fill in the Working Title, Client Name and Number of Participants at the top.
 - Every section collects sticky notes (change color, delete). Drag a sticky by its grip to reorder it or move it to another section, or use its Move button to pick a section and position. Text typed into sections in older versions becomes a sticky note automatically.
 - The canvas is stacked by default. On wide screens a Stacked / Canvas toggle in the toolbar switches to the original two-column canvas; the choice is remembered on that device. Phones and tablets stay stacked.
-- Sections, in order: Session Brief, Participants at the Center, Participant Before, Participant After, Facilitator at the Center, Time Blocks, Flow, Function, and Form (type a name for each column where it says Name this function), Activity Ideation, Session Outline.
+- Sections, in order: Session Brief, Participants at the Center, Participant Before, Participant After, Facilitator at the Center, Time Blocks, Flow, Function, and Form (six columns reading left to right; Add more columns adds another row of six, up to four rows, and Remove last row takes one away; type a name for each column where it says Name this function), Activity Ideation, Session Outline.
 - **Formatting:** sticky notes, Activities and Moves + Materials support bold (Ctrl/Cmd+B), italic (Ctrl/Cmd+I) and bullets (start a line with "- "). Activities also take a title (start a line with "# "). There is no toolbar. Notes show as formatted text and switch into the editor when clicked; the editor downloads the first time someone heads for a note. Only those styles are kept, so pasted or synced content cannot carry anything else. Block details keep their simple automatic bullets.
 - **Breaks:** add a Break from the bank (15 min, resizable) or mark any block as a break with its cup button. Breaks are striped with a cup icon in Time Blocks and the outline, where their two text columns merge into one notes cell. Totals show break time separately ("3 hr · 45 min of breaks").
 - **Multi-day sessions:** Add next day puts a Day 2 divider in a draft; blocks after it are the next day and the clock starts again. Each day has its own start time (typed on its first row in the outline) and total. Dividers move and remove like blocks. The outline groups rows by day, and each day prints on its own page.
 - **Session Outline** is a run-of-show table built from a session draft: each time block becomes a row with its start and end time and length, plus Activities and Moves + Materials to fill in. Type the first start time to set when the session begins (all times, including the time blocks, follow it), or type any end time or length to resize that block; each row starts when the one above ends. It shows the Working Title, and with more than one draft you choose which draft it follows.
+- A **backup reminder** appears in the corner once a solo canvas has real work in it (8+ notes, blocks or details) and no backup in the last week; Remind me later waits 3 days. Workshop canvases are saved online, so they do not show it.
+- **Sharing:** link previews (title, description, image in `public/og-image.png`) for LinkedIn, Slack and email, and every printout ends with "Made with the Facilitation Design Canvas™ · canvas.womenfacilitating.com".
 - The **More** menu holds Save as PDF, Download backup, Restore backup and Clear canvas. **Download backup** saves the canvas as a file; **Restore backup** loads it on any device (it replaces the current canvas after confirming).
 - A new canvas guides you step by step: it starts with Session Brief, Participants at the Center and Participant Before and After, and Next adds Facilitator at the Center, then Time Blocks, then Flow, Function, and Form with Activity Ideation, then Session Outline. Show full canvas skips ahead. Canvases saved before the guide existed open in full, Clear canvas starts the guide over, and printing always shows the full canvas.
 - Drag starter time blocks (15, 30, 60 min) from the Time Block Bank into Session Draft 1. Change a block's length by typing in the number on its side (arrow keys step by 5) or dragging its bottom edge; lengths go in 5-minute steps from 5 to 180 minutes, and the color follows the length. Use Add another draft for up to three drafts; only the last draft can be removed. With three drafts, a block's move button asks which draft to move it to. Name them, add bullet-point notes (Enter starts a new bullet; Enter on an empty bullet ends the list), reorder, move between drafts, or remove them. Drafts show running times and totals.
@@ -25,7 +27,7 @@ Facilitators can host a live workshop and see every participant's canvas as they
 - **Guided reveal:** by default participants start with the Session Brief group (Session Brief, Participants at the Center, Participant Before and After). The host reveals Facilitator at the Center, then Time Blocks, then Flow, Function, and Form together with Activity Ideation, then Session Outline, or everything at once, and can hide the last step again. Participants get a notice with a Go to it button. Uncheck the guided option when hosting to show the full canvas from the start.
 - **Notifications:** participants see newly revealed sections, new facilitator comments and spotlights as cards in the bottom-right corner, wherever they have scrolled. Comment cards show the text and a button to jump to that section; cards stay until dismissed.
 - **Rejoin codes:** every participant gets a personal 8-character rejoin code, shown in their workshop bar and on their card in the host view. On another device (or after clearing their browser) they choose Workshop > Return on a new device and enter the workshop code plus their rejoin code to get their canvas and comments back. A device opening the workshop loads the newest online copy, so an older device never overwrites newer work. Use one device at a time.
-- Ending a workshop deletes it online. Workshops expire after 30 days: they become unreadable straight away and are deleted by a daily cleanup job.
+- Ending a workshop deletes it online. Workshops expire after 90 days (long enough for an 8-week course): they become unreadable straight away and are deleted by a daily cleanup job.
 - The Workshop button only appears when the build has Firebase settings.
 
 ### Free plan usage
@@ -40,7 +42,7 @@ The free Firebase plan (Spark) allows about 10 GB of downloads a month and 100 p
 4. Publish the rules in `database.rules.json` (generated by `python3 scripts/build-rules.py`; edit that script, not the JSON): paste them in the Rules tab, or run `firebase deploy --only database`.
 5. Project settings > Your apps > add a Web app and copy its config.
 6. In Vercel, Project Settings > Environment Variables, add `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_DATABASE_URL`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID` for Production, then redeploy. These are safe to publish: access is controlled by the rules.
-7. For the 30-day cleanup: Project settings > Service accounts > Generate new private key, and save the whole JSON as the **secret** `FIREBASE_SERVICE_ACCOUNT`. `.github/workflows/cleanup.yml` runs daily.
+7. For the 90-day cleanup: Project settings > Service accounts > Generate new private key, and save the whole JSON as the **secret** `FIREBASE_SERVICE_ACCOUNT`. `.github/workflows/cleanup.yml` runs daily.
 8. Add `canvas.womenfacilitating.com` and `dice-mu-neon.vercel.app` under Authentication > Settings > Authorized domains, and turn on App Check to limit abuse.
 
 For local development put the same `VITE_FIREBASE_*` values in `.env.local`.
@@ -50,7 +52,7 @@ For local development put the same `VITE_FIREBASE_*` values in `.env.local`.
 Needs Java (for the database emulator) and `npm i -g firebase-tools`.
 
 ```bash
-npm run test:rules          # 98 security rule checks against the emulator
+npm run test:rules          # 99 security rule checks against the emulator
 npm run emulators           # terminal 1
 npm run dev:emulator        # terminal 2: app wired to the emulators
 ```
@@ -61,6 +63,15 @@ End to end with three browsers (host and two participants):
 npx vite build --mode emulator --outDir dist-emu && npx vite preview --outDir dist-emu --port 4174
 npm run e2e:workshop
 ```
+
+## Privacy, terms and analytics
+
+- `privacy.html` and `terms.html` are plain pages built alongside the canvas (see `vite.config.ts`), linked from the footer and the workshop join dialog. They are drafts written for Women Facilitating to review; they are not legal advice.
+- Analytics uses [Umami](https://umami.is) (Women Facilitating's site ID is built in): no cookies, no personal data, so no consent banner is needed. It never runs on localhost. Set `VITE_UMAMI_WEBSITE_ID=off` in Vercel to turn it off (for example on previews). It counts page views plus a few actions: `guide-next`, `guide-skipped`, `pdf-saved`, `backup-downloaded`, `backup-restored`, `workshop-joined`, `workshop-hosted`, `waitlist-shown`, `waitlist-joined`. It never sends what people type, and query strings (like workshop codes) are excluded.
+
+## Waitlist (MailerLite)
+
+After someone finishes the guided steps or saves a PDF, a corner card asks "Want to uplevel your facilitation design skills?" with an email field and Join the waitlist. It shows once per device. Sign-ups go through `api/subscribe.js` (a Vercel function) into the MailerLite group **Canvas**. In Vercel, add the secret `MAILERLITE_API_KEY` (MailerLite > Integrations > API). Optionally set `MAILERLITE_GROUP_ID`; otherwise the group is found by name. For EU visitors, turn on double opt-in for API sign-ups in MailerLite.
 
 ## Accessibility
 

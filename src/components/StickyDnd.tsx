@@ -17,7 +17,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useCanvas } from '../state/CanvasContext';
 import { richToText, toRichHtml } from './richText';
-import { CELL_GROUPS, cellTitle } from '../state/cells';
+import { CELL_GROUPS, cellTitle, isCellShown } from '../state/cells';
 import { findSticky } from '../state/reducer';
 import type { CanvasState, Sticky } from '../state/types';
 
@@ -174,7 +174,7 @@ export function StickyDnd({ children, step = Infinity }: { children: ReactNode; 
           >
             {CELL_GROUPS.filter((g) => g.step <= step).map((g) => (
               <optgroup key={g.section} label={g.section}>
-                {g.cells.map((c) => (
+                {g.cells.filter((c) => isCellShown(c.id, state.flowColumns)).map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.fullTitle}
                   </option>

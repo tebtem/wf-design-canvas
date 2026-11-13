@@ -614,6 +614,9 @@
 .ws-toast--comment {
   border-left-color: var(--brand-pink);
 }
+.ws-toast--backup {
+  border-left-color: var(--frame);
+}
 .ws-toast--spotlight {
   border-left-color: var(--brand-magenta);
 }
@@ -636,11 +639,53 @@
   margin-top: 10px;
 }
 /* Room at the bottom of the page so notifications never cover what you are working on. */
-body.has-toasts {
-  padding-bottom: 200px;
+body.has-toasts,
+body:has(.ws-toast) {
+  padding-bottom: 220px;
 }
-html:has(body.has-toasts) {
-  scroll-padding-bottom: 220px;
+html:has(body.has-toasts),
+html:has(.ws-toast) {
+  scroll-padding-bottom: 240px;
+}
+.ws-toasts:empty {
+  display: none;
+}
+.ws-toast {
+  position: relative;
+}
+.ws-toast--waitlist {
+  border-left-color: var(--brand-orange);
+  padding-right: 44px;
+}
+.ws-toast__heading {
+  font-weight: 800;
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+}
+.ws-toast__close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+.waitlist label {
+  font-weight: 600;
+}
+.waitlist__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 8px;
+}
+.waitlist__row .ws-input {
+  flex: 1 1 160px;
+  width: auto;
+}
+.waitlist__trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
 }
 @media (max-width: 600px) {
   .ws-toasts {

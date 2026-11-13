@@ -31,7 +31,7 @@ const check = async (name, p) => {
 };
 
 const S = 'ABC234';
-const meta = (extra = {}) => ({ title: 'Test', facilitator: 'fac', createdAt: TS, expiresAt: Date.now() + 29 * DAY, canView: false, step: 0, ...extra });
+const meta = (extra = {}) => ({ title: 'Test', facilitator: 'fac', createdAt: TS, expiresAt: Date.now() + 89 * DAY, canView: false, step: 0, ...extra });
 const canvas = (text) => ({ state: JSON.stringify({ version: 1, text }), updatedAt: TS });
 
 // Only approved hosts (verified email on the allowlist) can start workshops.
@@ -49,7 +49,9 @@ await check("cannot add someone else's workshop to your list", assertFails(eve.r
 await check('signed-out users cannot create', assertFails(anon.ref(`sessions/ZZZ234/meta`).set({ ...meta(), facilitator: 'x' })));
 await check('nobody can take an existing code', assertFails(eve.ref(`sessions/${S}/meta`).set(meta({ facilitator: 'eve' }))));
 await check('codes must use the code alphabet', assertFails(fac.ref('sessions/abc10o/meta').set(meta())));
-await check('expiry cannot exceed 30 days', assertFails(fac.ref('sessions/XYZ234/meta').set(meta({ expiresAt: Date.now() + 40 * DAY }))));
+await check('expiry cannot exceed 90 days', assertFails(fac.ref('sessions/XYZ234/meta').set(meta({ expiresAt: Date.now() + 100 * DAY }))));
+const eightWeeks = Date.now() + 85 * DAY;
+await check('an 8-week course fits', assertSucceeds(fac.ref().update({ 'sessions/KNG234/meta': meta({ expiresAt: eightWeeks }), 'expiries/KNG234': eightWeeks })));
 await check('cannot host as someone else', assertFails(eve.ref('sessions/XYZ235/meta').set(meta())));
 await check('expiry index must match the session', assertFails(fac.ref().update({ 'sessions/QRS234/meta': meta(), 'expiries/QRS234': 1 })));
 

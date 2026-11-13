@@ -6,7 +6,7 @@ import { CanvasBody } from '../components/CanvasBody';
 import { SpotlightIcon, XIcon } from '../components/Icons';
 import type { Comment, RemoteCanvas } from './api';
 import { formatRejoinCode, spellCode } from './code';
-import { summarize, timeAgo, TOTAL_CELLS } from './summary';
+import { summarize, timeAgo, totalCells } from './summary';
 
 /** Re-renders every so often so "3 minutes ago" stays true. */
 export function useNow(intervalMs = 30_000): number {
@@ -100,7 +100,7 @@ export function Gallery({ entries, onOpen, spotlightUid, empty, compact = false 
                 <div>
                   <dt>Sections filled</dt>
                   <dd>
-                    {sum.filled} of {TOTAL_CELLS}
+                    {sum.filled} of {state ? totalCells(state) : 0}
                   </dd>
                 </div>
                 <div>

@@ -15,8 +15,10 @@ const fail = (m) => {
   process.exitCode = 1;
 };
 
-const axeCheck = async (p, label) => {
-  const res = await new AxeBuilder({ page: p }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+const axeCheck = async (p, label, include) => {
+  const builder = new AxeBuilder({ page: p }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']);
+  if (include) builder.include(include);
+  const res = await builder.analyze();
   for (const v of res.violations) console.log('AXE', label, v.id, v.impact, v.nodes.length, v.nodes[0]?.target);
   if (res.violations.length) fail(`${res.violations.length} axe violations on ${label}`);
 };
@@ -26,6 +28,8 @@ const editing = () => page.locator('.ProseMirror:focus').waitFor();
 const noteText = async (name) => (await page.getByRole('textbox', { name }).innerText()).trim();
 
 await page.goto(APP_URL);
+// The backup reminder is checked on its own near the end; keep it out of the way until then.
+await page.evaluate(() => localStorage.setItem('wf-design-canvas:backup-snooze', String(Date.now() + 864e5)));
 
 // Details, stickies-only cells, and the new section order.
 // A new canvas starts guided: first group only, then Next adds sections below.
@@ -62,6 +66,15 @@ if (await page.locator('.note-cell__text').count()) fail('free-text boxes should
 const order = await visibleTitles();
 const expected = ['Session Brief', 'Participants at the Center', 'Participant Before', 'Participant After', 'Facilitator at the Center', 'Time Blocks', 'Flow, Function, and Form', 'Activity Ideation', 'Session Outline'];
 await page.getByLabel('Name of function 1').fill('Opening');
+// Flow, Function, and Form: six columns left to right; add or remove rows of six.
+if ((await page.locator('.flow-col').count()) !== 6) fail('flow should start with six columns');
+await page.getByRole('button', { name: 'Add more columns' }).click();
+await page.waitForTimeout(120);
+if ((await page.locator('.flow-col').count()) !== 12) fail('Add more columns should add a row');
+if ((await page.evaluate(() => document.activeElement?.id)) !== 'flow-name-6') fail('focus should move to the new row');
+await page.getByRole('button', { name: 'Remove last row' }).click();
+await page.waitForTimeout(120);
+if ((await page.locator('.flow-col').count()) !== 6) fail('Remove last row should remove six columns');
 if (order.join('|') !== expected.join('|')) fail(`section order: ${order.join(', ')}`);
 for (const name of ['Timing + Logistics', 'Space + Materials']) {
   if (!(await page.getByRole('group', { name, exact: true }).count())) fail(`missing cell ${name}`);
@@ -269,6 +282,7 @@ const blocks = await page.locator('.tblock').count();
 console.log('Blocks after reload:', blocks);
 if (blocks < 2) fail('expected blocks to persist');
 
+if ((await page.getByRole('link', { name: /^Designing Facilitated Experiences/ }).getAttribute('href')) !== 'https://www.womenfacilitating.com/facilitation-design') fail('wordmark should link to the facilitation design page');
 if ((await page.getByRole('link', { name: /^Learn about facilitation design/ }).getAttribute('href')) !== 'https://www.womenfacilitating.com/facilitation-design') fail('Learn link href wrong');
 for (const name of [/^Women Facilitating website/, /^Women Facilitating \(opens/]) {
   const href = await page.getByRole('link', { name }).getAttribute('href');
@@ -292,12 +306,49 @@ const axeMobile = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 
 for (const v of axeMobile.violations) console.log('AXE mobile', v.id, v.impact, v.nodes.length, v.nodes[0]?.target);
 if (axeMobile.violations.length) fail(`${axeMobile.violations.length} axe violations at 375px`);
 
+// Backup reminder: after real work, a corner card suggests a backup; downloading quiets it.
+await page.evaluate(() => localStorage.removeItem('wf-design-canvas:backup-snooze'));
+await page.reload();
+const reminder = page.locator('.ws-toast--backup');
+await reminder.waitFor();
+await axeCheck(page, 'backup reminder');
+const [reminderDownload] = await Promise.all([page.waitForEvent('download'), reminder.getByRole('button', { name: 'Download backup' }).click()]);
+if (!reminderDownload.suggestedFilename().endsWith('.json')) fail('reminder should download a backup');
+await page.reload();
+await page.waitForTimeout(300);
+if (await reminder.count()) fail('reminder should stay quiet after a backup');
+
+// Waitlist card: offered once after a milestone (here, Save as PDF); joining goes to /api/subscribe.
+let signedUp = null;
+await page.route('**/api/subscribe', async (route) => {
+  signedUp = JSON.parse(route.request().postData() || '{}').email;
+  await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+});
+await page.getByRole('button', { name: 'More', exact: true }).click();
+await page.getByRole('button', { name: 'Save as PDF' }).click();
+const waitlist = page.locator('.ws-toast--waitlist');
+await waitlist.waitFor();
+if (!(await waitlist.textContent()).includes('Want to uplevel your facilitation design skills?')) fail('waitlist heading');
+await axeCheck(page, 'waitlist card');
+await waitlist.getByRole('button', { name: 'Join the waitlist' }).click();
+await waitlist.getByRole('alert').waitFor();
+await waitlist.getByLabel('Email').fill('person@example.com');
+await waitlist.getByRole('button', { name: 'Join the waitlist' }).click();
+await waitlist.getByText("You're on the waitlist!").waitFor();
+if (signedUp !== 'person@example.com') fail(`waitlist sent ${signedUp}`);
+await waitlist.getByRole('button', { name: 'Close waitlist invitation' }).click();
+await page.getByRole('button', { name: 'More', exact: true }).click();
+await page.getByRole('button', { name: 'Save as PDF' }).click();
+await page.waitForTimeout(300);
+if (await waitlist.count()) fail('waitlist should not show again after joining');
+
 // Backup: download, clear, restore.
 // More menu: opens, closes with Escape (focus back on More), and holds backup, restore and clear.
-const more = page.getByRole('button', { name: 'More' });
+const more = page.getByRole('button', { name: 'More', exact: true });
 await more.click();
 if ((await more.getAttribute('aria-expanded')) !== 'true') fail('More should expand');
-await axeCheck(page, 'more menu open');
+// Scan the open menu itself; whatever sits underneath an open menu is covered until it closes.
+await axeCheck(page, 'more menu open', '.toolbar');
 await page.keyboard.press('Escape');
 if ((await more.getAttribute('aria-expanded')) !== 'false') fail('Escape should close More');
 if ((await page.evaluate(() => document.activeElement?.textContent?.trim())) !== 'More') fail('focus should return to More');
@@ -307,7 +358,7 @@ if (!download.suggestedFilename().startsWith('q3-planning-backup-')) fail(`backu
 const backupPath = out + 'backup.json';
 await download.saveAs(backupPath);
 await page.setViewportSize({ width: 1440, height: 1000 });
-await page.getByRole('button', { name: 'More' }).click();
+await page.getByRole('button', { name: 'More', exact: true }).click();
 await page.getByRole('button', { name: 'Clear canvas' }).click();
 await page.getByRole('button', { name: 'Clear everything' }).click();
 if ((await page.getByLabel('Client Name').inputValue()) !== '') fail('clear did not clear');
@@ -322,7 +373,7 @@ if (!(await page.getByText('That file is not a canvas backup').count())) fail('b
 
 // Clear canvas starts the guide over, and print still shows every section.
 await page.setViewportSize({ width: 1440, height: 1000 });
-await page.getByRole('button', { name: 'More' }).click();
+await page.getByRole('button', { name: 'More', exact: true }).click();
 await page.getByRole('button', { name: 'Clear canvas' }).click();
 await page.getByRole('button', { name: 'Clear everything' }).click();
 await page.getByRole('button', { name: 'Next: Facilitator at the Center' }).waitFor();
@@ -330,6 +381,19 @@ await page.emulateMedia({ media: 'print' });
 const printed = await page.locator('#canvas .band__title:visible').allTextContents();
 if (printed.length !== 9) fail(`print should show the full canvas, got ${printed.length} sections`);
 await page.emulateMedia({ media: 'screen' });
+
+// Privacy notice and terms pages: linked from the footer, readable at phone width, accessible.
+for (const [file, heading] of [['privacy.html', 'Privacy Notice'], ['terms.html', 'Terms of Use']]) {
+  const legal = await context.newPage();
+  await legal.goto(new URL(file, APP_URL).toString());
+  await legal.getByRole('heading', { level: 1, name: heading }).waitFor();
+  await axeCheck(legal, file);
+  await legal.setViewportSize({ width: 375, height: 800 });
+  if ((await legal.evaluate(() => document.documentElement.scrollWidth)) > 375) fail(`${file} scrolls sideways at 375px`);
+  await legal.close();
+}
+const footerLinks = await page.locator('.site-footer a').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+if (!footerLinks.includes('./privacy.html') || !footerLinks.includes('./terms.html')) fail('footer should link privacy and terms');
 
 await browser.close();
 console.log(process.exitCode ? 'Done with failures' : 'All checks passed');

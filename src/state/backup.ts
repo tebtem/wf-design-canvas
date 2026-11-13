@@ -41,3 +41,45 @@ export function downloadBackup(state: CanvasState) {
   a.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+// ---------- Backup reminder (solo canvas): remembered on this device only ----------
+const LAST_KEY = 'wf-design-canvas:last-backup';
+const SNOOZE_KEY = 'wf-design-canvas:backup-snooze';
+const DAY = 24 * 60 * 60 * 1000;
+/** Remind after this much work... */
+export const REMIND_AFTER_ITEMS = 8;
+/** ...and again when the last backup is older than this. */
+const REMIND_EVERY_DAYS = 7;
+const SNOOZE_DAYS = 3;
+
+const readNum = (key: string) => {
+  try {
+    return Number(window.localStorage.getItem(key)) || 0;
+  } catch {
+    return 0;
+  }
+};
+const writeNum = (key: string, n: number) => {
+  try {
+    window.localStorage.setItem(key, String(n));
+  } catch {
+    // Storage blocked: the reminder simply shows again next time.
+  }
+};
+
+export const markBackedUp = () => writeNum(LAST_KEY, Date.now());
+export const snoozeBackupReminder = () => writeNum(SNOOZE_KEY, Date.now() + SNOOZE_DAYS * DAY);
+
+/** How much someone has put into the canvas: sticky notes, time blocks and filled-in details. */
+export function workAmount(state: CanvasState): number {
+  const stickies = Object.values(state.cells).reduce((n, c) => n + c.stickies.length, 0);
+  const blocks = Object.values(state.drafts).reduce((n, list) => n + list.filter((b) => b.kind !== 'day').length, 0);
+  const details = Object.values(state.details).filter((v) => v.trim()).length;
+  return stickies + blocks + details;
+}
+
+export function shouldRemindBackup(state: CanvasState, now = Date.now()): boolean {
+  if (workAmount(state) < REMIND_AFTER_ITEMS) return false;
+  if (readNum(SNOOZE_KEY) > now) return false;
+  return now - readNum(LAST_KEY) > REMIND_EVERY_DAYS * DAY;
+}

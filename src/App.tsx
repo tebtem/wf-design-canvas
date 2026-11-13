@@ -5,8 +5,11 @@ import { Toolbar } from './components/Toolbar';
 import { Footer } from './components/Footer';
 import { CanvasBody } from './components/CanvasBody';
 import { WorkshopDialog } from './components/WorkshopDialog';
+import { BackupReminder } from './components/BackupReminder';
+import { WaitlistCard } from './components/WaitlistCard';
 import { workshopsEnabled } from './workshop/config';
 import { LAST_STEP } from './state/cells';
+import { track } from './analytics';
 import {
   loadWorkshop,
   looksLikeHostLink,
@@ -39,6 +42,7 @@ export default function App() {
   const [dialogOpen, setDialogOpen] = useState((initialJoin !== null || hostEntry) && !workshop);
 
   const enter = (w: ActiveWorkshop) => {
+    track(w.role === 'facilitator' ? 'workshop-hosted' : 'workshop-joined');
     saveWorkshop(w);
     setWorkshop(w);
     setDialogOpen(false);
@@ -79,6 +83,10 @@ export default function App() {
       <Toolbar guided onWorkshop={workshopsEnabled ? () => setDialogOpen(true) : undefined} />
       <CanvasBody guided />
       <Footer />
+      <section className="ws-toasts no-print" aria-label="Notifications">
+        <BackupReminder />
+        <WaitlistCard />
+      </section>
       {workshopsEnabled && (
         <WorkshopDialog
           open={dialogOpen}
