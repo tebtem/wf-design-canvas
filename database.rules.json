@@ -21,7 +21,7 @@
             ".validate": "data.exists() ? newData.val() === data.val() : newData.val() === now"
           },
           "expiresAt": {
-            ".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : (newData.val() > now && newData.val() <= now + 2592000000))"
+            ".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : (newData.val() > now && newData.val() <= now + 7776000000))"
           },
           "canView": {
             ".validate": "newData.isBoolean()"

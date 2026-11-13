@@ -16,7 +16,7 @@ export const useEmulator = env.VITE_FIREBASE_EMULATOR === 'true';
 export const workshopsEnabled = Boolean(firebaseConfig.apiKey && firebaseConfig.databaseURL);
 
 /** Days a workshop stays online before it expires and is deleted. */
-export const RETENTION_DAYS = 30;
+export const RETENTION_DAYS = 90; // long enough for an 8-week course, with room to spare
 
 /** Whether an email may host workshops. The database rules enforce the same list. */
 export function isAllowedHostEmail(email: string): boolean {
