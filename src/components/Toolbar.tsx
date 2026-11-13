@@ -2,6 +2,7 @@ import { LAST_STEP } from '../state/cells';
 import { useEffect, useRef, useState, type ChangeEvent, type FocusEvent } from 'react';
 import { downloadBackup, markBackedUp, readBackup } from '../state/backup';
 import { track } from '../analytics';
+import { celebrateMilestone } from './WaitlistCard';
 import { effectiveLayout, setLayoutPref, useLayoutPref, type Layout } from '../state/layout';
 import { useCanvas } from '../state/CanvasContext';
 import { ChevronIcon, DownloadIcon, ExternalIcon, PeopleIcon, PrintIcon, UploadIcon, XIcon } from './Icons';
@@ -135,6 +136,7 @@ export function Toolbar({ onWorkshop, guided = false }: ToolbarProps) {
                 moreBtn.current?.focus();
                 track('pdf-saved');
                 window.print();
+                if (guided) celebrateMilestone();
               }}
             >
               <PrintIcon />

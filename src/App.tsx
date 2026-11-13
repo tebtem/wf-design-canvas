@@ -6,6 +6,7 @@ import { Footer } from './components/Footer';
 import { CanvasBody } from './components/CanvasBody';
 import { WorkshopDialog } from './components/WorkshopDialog';
 import { BackupReminder } from './components/BackupReminder';
+import { WaitlistCard } from './components/WaitlistCard';
 import { workshopsEnabled } from './workshop/config';
 import { LAST_STEP } from './state/cells';
 import { track } from './analytics';
@@ -82,7 +83,10 @@ export default function App() {
       <Toolbar guided onWorkshop={workshopsEnabled ? () => setDialogOpen(true) : undefined} />
       <CanvasBody guided />
       <Footer />
-      <BackupReminder />
+      <section className="ws-toasts no-print" aria-label="Notifications">
+        <BackupReminder />
+        <WaitlistCard />
+      </section>
       {workshopsEnabled && (
         <WorkshopDialog
           open={dialogOpen}

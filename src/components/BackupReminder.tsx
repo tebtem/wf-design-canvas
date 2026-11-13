@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useCanvas } from '../state/CanvasContext';
 import { downloadBackup, markBackedUp, shouldRemindBackup, snoozeBackupReminder } from '../state/backup';
 import { track } from '../analytics';
@@ -13,18 +13,12 @@ export function BackupReminder() {
   const [message, setMessage] = useState('');
   const show = !dismissed && shouldRemindBackup(state);
 
-  useEffect(() => {
-    document.body.classList.toggle('has-toasts', show);
-    return () => document.body.classList.remove('has-toasts');
-  }, [show]);
-
   return (
     <>
       <p className="sr-only" role="status">
         {show ? 'Your canvas is only saved in this browser. Download a backup so you don’t lose your good work.' : message}
       </p>
       {show && (
-        <section className="ws-toasts no-print" aria-label="Notifications">
           <div className="ws-toast ws-toast--backup">
             <p className="ws-toast__title">Keep your work safe</p>
             <p>
@@ -56,7 +50,6 @@ export function BackupReminder() {
               </button>
             </div>
           </div>
-        </section>
       )}
     </>
   );

@@ -10,6 +10,7 @@ import { ActivityIdeation } from './ActivityIdeation';
 import { SessionOutline } from './SessionOutline';
 import { effectiveLayout, useLayoutPref } from '../state/layout';
 import { track } from '../analytics';
+import { celebrateMilestone } from './WaitlistCard';
 
 interface Props {
   label?: string;
@@ -38,6 +39,7 @@ export function CanvasBody({ label, step: forcedStep, guided = false }: Props) {
     const to = Math.min(LAST_STEP, step + 1);
     dispatch({ type: 'nextStep' });
     track('guide-next', { step: to + 1 });
+    if (to === LAST_STEP) celebrateMilestone();
     setMessage('');
     window.setTimeout(() => {
       setMessage(`${REVEAL_STEPS[to]} added. Step ${to + 1} of ${LAST_STEP + 1}.`);

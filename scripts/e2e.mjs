@@ -306,6 +306,30 @@ await page.reload();
 await page.waitForTimeout(300);
 if (await reminder.count()) fail('reminder should stay quiet after a backup');
 
+// Waitlist card: offered once after a milestone (here, Save as PDF); joining goes to /api/subscribe.
+let signedUp = null;
+await page.route('**/api/subscribe', async (route) => {
+  signedUp = JSON.parse(route.request().postData() || '{}').email;
+  await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+});
+await page.getByRole('button', { name: 'More' }).click();
+await page.getByRole('button', { name: 'Save as PDF' }).click();
+const waitlist = page.locator('.ws-toast--waitlist');
+await waitlist.waitFor();
+if (!(await waitlist.textContent()).includes('Want to uplevel your facilitation design skills?')) fail('waitlist heading');
+await axeCheck(page, 'waitlist card');
+await waitlist.getByRole('button', { name: 'Join the waitlist' }).click();
+await waitlist.getByRole('alert').waitFor();
+await waitlist.getByLabel('Email').fill('person@example.com');
+await waitlist.getByRole('button', { name: 'Join the waitlist' }).click();
+await waitlist.getByText("You're on the waitlist!").waitFor();
+if (signedUp !== 'person@example.com') fail(`waitlist sent ${signedUp}`);
+await waitlist.getByRole('button', { name: 'Close waitlist invitation' }).click();
+await page.getByRole('button', { name: 'More' }).click();
+await page.getByRole('button', { name: 'Save as PDF' }).click();
+await page.waitForTimeout(300);
+if (await waitlist.count()) fail('waitlist should not show again after joining');
+
 // Backup: download, clear, restore.
 // More menu: opens, closes with Escape (focus back on More), and holds backup, restore and clear.
 const more = page.getByRole('button', { name: 'More' });

@@ -67,7 +67,11 @@ npm run e2e:workshop
 ## Privacy, terms and analytics
 
 - `privacy.html` and `terms.html` are plain pages built alongside the canvas (see `vite.config.ts`), linked from the footer and the workshop join dialog. They are drafts written for Women Facilitating to review; they are not legal advice.
-- Analytics uses [Umami](https://umami.is): no cookies, no personal data, so no consent banner is needed. It is off until you add `VITE_UMAMI_WEBSITE_ID` (and `VITE_UMAMI_SRC` if you self-host Umami) in Vercel and redeploy. It counts page views plus a few actions: `guide-next`, `guide-skipped`, `pdf-saved`, `backup-downloaded`, `backup-restored`, `workshop-joined`, `workshop-hosted`. It never sends what people type, and query strings (like workshop codes) are excluded.
+- Analytics uses [Umami](https://umami.is) (Women Facilitating's site ID is built in): no cookies, no personal data, so no consent banner is needed. It never runs on localhost. Set `VITE_UMAMI_WEBSITE_ID=off` in Vercel to turn it off (for example on previews). It counts page views plus a few actions: `guide-next`, `guide-skipped`, `pdf-saved`, `backup-downloaded`, `backup-restored`, `workshop-joined`, `workshop-hosted`, `waitlist-shown`, `waitlist-joined`. It never sends what people type, and query strings (like workshop codes) are excluded.
+
+## Waitlist (MailerLite)
+
+After someone finishes the guided steps or saves a PDF, a corner card asks "Want to uplevel your facilitation design skills?" with an email field and Join the waitlist. It shows once per device. Sign-ups go through `api/subscribe.js` (a Vercel function) into the MailerLite group **Canvas**. In Vercel, add the secret `MAILERLITE_API_KEY` (MailerLite > Integrations > API). Optionally set `MAILERLITE_GROUP_ID`; otherwise the group is found by name. For EU visitors, turn on double opt-in for API sign-ups in MailerLite.
 
 ## Accessibility
 

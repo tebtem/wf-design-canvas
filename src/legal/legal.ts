@@ -2,3 +2,6 @@
 import '../styles/fonts.css';
 import '../styles/tokens.css';
 import './legal.css';
+import { startAnalytics } from '../analytics';
+
+startAnalytics();

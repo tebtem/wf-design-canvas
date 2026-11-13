@@ -6,7 +6,7 @@ export function Footer() {
   return (
     <footer className="site-footer">
       <p>
-        Made with intention by{' '}
+        The Facilitation Design Canvas™ was developed by{' '}
         <a href={SITE_URL} target="_blank" rel="noopener noreferrer">
           Women Facilitating{newTab}
         </a>
