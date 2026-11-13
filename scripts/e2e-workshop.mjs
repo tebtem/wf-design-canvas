@@ -114,7 +114,7 @@ if ((await headings(alice)).join('|') !== startSections.join('|')) fail(`alice s
 await axe(host, 'host dashboard with reveal controls');
 await host.getByRole('button', { name: 'Reveal next: Facilitator at the Center' }).click();
 await until(async () => (await headings(alice)).includes('Facilitator at the Center'), 'alice sees facilitator section');
-await until(async () => (await alice.getByText('Newly revealed').count()) === 1, 'alice reveal notice');
+await until(async () => (await alice.locator('.ws-toast__title').getByText('Newly revealed', { exact: true }).count()) === 1, 'alice reveal notice');
 await alice.getByRole('button', { name: 'Go to it' }).click();
 await until(async () => alice.evaluate(() => document.activeElement?.textContent === 'Facilitator at the Center'), 'focus moves to new section');
 await host.getByRole('button', { name: 'Reveal next: Time Blocks' }).click();
@@ -148,7 +148,19 @@ await host.locator('.ws-comment').first().waitFor();
 await axe(host, 'host canvas view');
 await host.screenshot({ path: out + 'ws-host-detail.png', fullPage: true });
 
-// Alice gets the comment.
+// Alice gets the comment as a notification in the corner, even while scrolled down.
+await alice.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+const toast = alice.locator('.ws-toast--comment');
+await toast.waitFor();
+if (!(await toast.textContent()).includes('Try naming the decision')) fail('comment notification should show the text');
+const tb = await toast.boundingBox();
+const vp = alice.viewportSize();
+if (!(tb && tb.y + tb.height <= vp.height && tb.x + tb.width <= vp.width && tb.x > vp.width / 2)) fail(`comment notification should sit bottom-right: ${JSON.stringify(tb)}`);
+await axe(alice, 'comment notification');
+await alice.screenshot({ path: out + 'ws-toast.png' });
+await alice.getByRole('button', { name: 'Go to Purpose' }).click();
+await until(async () => alice.evaluate(() => !!document.activeElement?.closest('[data-cell-id="brief.0"]')), 'Go to Purpose moves focus to Purpose');
+if (await toast.count()) fail('going to the comment should clear its notification');
 await until(async () => (await alice.getByRole('button', { name: /Facilitator comments \(1\)/ }).count()) === 1, 'alice comment count');
 await alice.getByRole('button', { name: /Facilitator comments/ }).click();
 if (!(await alice.locator('#ws-comments').textContent()).includes('Try naming the decision')) fail('alice cannot read comment');
@@ -214,6 +226,8 @@ await cohost.close();
 step('co-facilitating works');
 await alice.reload();
 await until(async () => (await alice.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) === 'Alice purpose, edited', 'alice reload');
+await alice.waitForTimeout(800);
+if (await alice.locator('.ws-toast--comment').count()) fail('comments already seen should not pop up again after a reload');
 
 // Day 2 on a different device: Alice returns with her rejoin code.
 const rejoinCode = (await alice.locator('.ws-bar__meta strong').textContent()).trim();
