@@ -269,7 +269,10 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
                 <span aria-hidden="true">{formatCode(code)}</span>
                 <span className="sr-only">{spellCode(code)}</span>
               </p>
-              <p>Participants open the canvas, choose Workshop, and enter this code. Or send them this link:</p>
+              <p>
+                Participants open the canvas, choose More, then Workshop, and enter this code. Or send them this link
+                (it opens the join form):
+              </p>
               <p className="ws-link">
                 <a href={joinUrl(code)}>{joinUrl(code)}</a>
               </p>
@@ -361,8 +364,8 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
       <dialog ref={exitRef} className="dialog" aria-labelledby="ws-exit-title" aria-describedby="ws-exit-desc">
         <h2 id="ws-exit-title">Exit the host view?</h2>
         <p id="ws-exit-desc">
-          The workshop keeps running. To come back on any device, sign in with your facilitator email (Workshop, then
-          Host a workshop) and open it from Your workshops. Its code is {formatCode(code)}.
+          The workshop keeps running. To come back on any device, sign in with your facilitator email (More, then
+          Workshop, then Host a workshop) and open it from Your workshops. Its code is {formatCode(code)}.
         </p>
         <form method="dialog" className="dialog__actions">
           <button type="submit" className="btn" value="cancel">
