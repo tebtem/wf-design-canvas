@@ -1,6 +1,7 @@
 import { useCanvas } from '../state/CanvasContext';
 import { DETAIL_FIELDS } from '../state/types';
 import { LEARN_URL, SITE_URL } from './Footer';
+import { track } from '../analytics';
 import wordmark from '../assets/designing-facilitated-experiences.png';
 
 export function Logo() {
@@ -19,7 +20,13 @@ export function Header({ asHeading = true }: { asHeading?: boolean }) {
   return (
     <header className="canvas-header">
       <Title className="title">
-        <a className="title__link" href={LEARN_URL} target="_blank" rel="noopener noreferrer">
+        <a
+          className="title__link"
+          href={LEARN_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track('learn-clicked', { from: 'wordmark' })}
+        >
           <img
             className="title__img"
             src={wordmark}

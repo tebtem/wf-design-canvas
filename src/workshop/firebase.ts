@@ -3,6 +3,7 @@ import {
   connectAuthEmulator,
   deleteUser,
   EmailAuthProvider,
+  getAdditionalUserInfo,
   getAuth,
   linkWithCredential,
   isSignInWithEmailLink,
@@ -14,6 +15,7 @@ import {
 } from 'firebase/auth';
 import { connectDatabaseEmulator, getDatabase, type Database } from 'firebase/database';
 import { firebaseConfig, isAllowedHostEmail, useEmulator } from './config';
+import { track } from '../analytics';
 import {
   accountLinkUrl,
   clearAccountSignedIn,
@@ -82,23 +84,29 @@ export async function completeHostSignIn(url: string, email = pendingHostEmail()
   const e = email.trim().toLowerCase();
   const { auth } = fb();
   await auth.authStateReady();
+  // New account (counted as account-created) or a returning sign-in (account-signed-in).
+  let isNew = false;
   try {
     const anon = auth.currentUser?.isAnonymous ? auth.currentUser : null;
     if (anon) {
       try {
         await linkWithCredential(anon, EmailAuthProvider.credentialWithLink(e, url));
+        isNew = true; // an email was added to someone who had none: a brand-new account
       } catch (err) {
         const code = (err as { code?: string }).code ?? '';
         if (!code.includes('already-in-use')) throw err;
-        await signInWithEmailLink(auth, e, url);
+        const cred = await signInWithEmailLink(auth, e, url);
+        isNew = getAdditionalUserInfo(cred)?.isNewUser ?? false;
       }
     } else {
-      await signInWithEmailLink(auth, e, url);
+      const cred = await signInWithEmailLink(auth, e, url);
+      isNew = getAdditionalUserInfo(cred)?.isNewUser ?? false;
     }
   } catch {
     throw new HostSignInError('That sign-in link has expired or was already used. Request a new one.');
   }
   setPendingHostEmail(null);
+  track(isNew ? 'account-created' : 'account-signed-in');
   markAccountSignedIn(e);
   if (isAllowedHostEmail(e)) markHostSignedIn(e);
   return e;

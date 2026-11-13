@@ -122,7 +122,13 @@ export function Toolbar({ onWorkshop, guided = false, accounts = false }: Toolba
             Workshop
           </button>
         )}
-        <a className="btn btn--pink" href={LEARN_URL} target="_blank" rel="noopener noreferrer">
+        <a
+          className="btn btn--pink"
+          href={LEARN_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track('learn-clicked', { from: 'learn-button' })}
+        >
           Learn<span className="sr-only"> about facilitation design (opens in a new tab)</span>
           <ExternalIcon />
         </a>
