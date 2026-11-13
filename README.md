@@ -17,6 +17,10 @@ An interactive version of the "Designing Facilitated Experiences" canvas!
 - Drag starter time blocks (15, 30, 60 min) from the Time Block Bank into Session Draft 1. Change a block's length by typing in the number on its side (arrow keys step by 5) or dragging its bottom edge; lengths go in 5-minute steps from 5 to 180 minutes, and the color follows the length. Use Add another draft for up to three drafts; only the last draft can be removed. With three drafts, a block's move button asks which draft to move it to. Name them, add bullet-point notes (Enter starts a new bullet; Enter on an empty bullet ends the list), reorder, move between drafts, or remove them. Drafts show running times and totals.
 - Everything autosaves in your browser. **Save as PDF** opens the print dialog. Print uses landscape pages in your chosen paper size (Letter or A4), keeps each section whole so pages never break mid-section, and leaves out the Time Block Bank.
 
+## Free accounts
+
+Anyone can create a free account from **Create free account** in the toolbar (or the backup reminder): an email link signs them in, no password. Signed-in canvases save online automatically and open on any device; **My canvases** lists up to three, with Start a new canvas, Open and Delete, plus Sign out (clears that browser's copy) and Delete my account. A canvas made before signing up moves into the account. Participants who sign up keep their workshop access (their anonymous identity is upgraded). An unchecked "Email me about upcoming facilitation courses and bootcamps" box adds confirmed emails to the MailerLite **Canvas** group via `api/subscribe.js`. Facilitators are simply accounts on the host allowlist.
+
 ## Workshop mode
 
 Facilitators can host a live workshop and see every participant's canvas as they work.
@@ -52,7 +56,7 @@ For local development put the same `VITE_FIREBASE_*` values in `.env.local`.
 Needs Java (for the database emulator) and `npm i -g firebase-tools`.
 
 ```bash
-npm run test:rules          # 99 security rule checks against the emulator
+npm run test:rules          # 108 security rule checks against the emulator
 npm run emulators           # terminal 1
 npm run dev:emulator        # terminal 2: app wired to the emulators
 ```

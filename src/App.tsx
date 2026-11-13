@@ -7,6 +7,8 @@ import { CanvasBody } from './components/CanvasBody';
 import { WorkshopDialog } from './components/WorkshopDialog';
 import { BackupReminder } from './components/BackupReminder';
 import { WaitlistCard } from './components/WaitlistCard';
+import { AccountSync } from './account/AccountSync';
+import { AccountDialog } from './account/AccountDialog';
 import { workshopsEnabled } from './workshop/config';
 import { LAST_STEP } from './state/cells';
 import { track } from './analytics';
@@ -14,6 +16,7 @@ import {
   loadWorkshop,
   looksLikeHostLink,
   saveWorkshop,
+  takeAccountParam,
   takeHostParam,
   takeJoinParam,
   workshopCanvasKey,
@@ -25,9 +28,10 @@ const ParticipantApp = lazy(() => import('./workshop/ParticipantApp'));
 const FacilitatorApp = lazy(() => import('./workshop/FacilitatorApp'));
 
 const initialJoin = workshopsEnabled ? takeJoinParam() : null;
-// Facilitators reach hosting from a private link (?host) or the emailed sign-in link.
+// Sign-in links come back with ?host (facilitators) or ?account (free accounts).
 const emailLink = workshopsEnabled && looksLikeHostLink(window.location.href);
-const hostEntry = workshopsEnabled && (takeHostParam() || emailLink);
+const accountEntry = workshopsEnabled && takeAccountParam();
+const hostEntry = workshopsEnabled && (takeHostParam() || (emailLink && !accountEntry));
 
 function Loading() {
   return (
@@ -80,11 +84,21 @@ export default function App() {
       <a className="skip-link" href="#canvas">
         Skip to canvas
       </a>
-      <Toolbar guided onWorkshop={workshopsEnabled ? () => setDialogOpen(true) : undefined} />
+      <Toolbar
+        guided
+        accounts={workshopsEnabled}
+        onWorkshop={workshopsEnabled ? () => setDialogOpen(true) : undefined}
+      />
+      {workshopsEnabled && (
+        <>
+          <AccountSync />
+          <AccountDialog emailLink={accountEntry && emailLink} />
+        </>
+      )}
       <CanvasBody guided />
       <Footer />
       <section className="ws-toasts no-print" aria-label="Notifications">
-        <BackupReminder />
+        <BackupReminder accounts={workshopsEnabled} />
         <WaitlistCard />
       </section>
       {workshopsEnabled && (

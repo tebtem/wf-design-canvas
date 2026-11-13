@@ -129,23 +129,30 @@ export function TimeBlocksSection() {
     announce(`Day ${dayNumber} added to the end of ${DRAFT_NAMES[d]}. Blocks you add next go in Day ${dayNumber}.`);
   };
 
-  // ---------- Move a block to another draft (button alternative to dragging) ----------
+  // ---------- Move dialog: clicking a block's grip (instead of dragging) picks a draft and position ----------
   const moveDialog = useRef<HTMLDialogElement>(null);
+  const lastDragEnd = useRef(0);
   const [moving, setMoving] = useState<{ id: string; from: DraftId } | null>(null);
   const [moveTo, setMoveTo] = useState<DraftId>('d1');
+  const [moveIndex, setMoveIndex] = useState(0);
   const openMove = (blockId: string) => {
+    // A click that ends a drag is not a request for the dialog.
+    if (Date.now() - lastDragEnd.current < 400) return;
     const loc = findBlock(state, blockId);
     if (!loc) return;
     setMoving({ id: blockId, from: loc.draftId });
-    setMoveTo(drafts.find((d) => d !== loc.draftId) ?? 'd1');
+    setMoveTo(loc.draftId);
+    setMoveIndex(loc.index);
     moveDialog.current?.showModal();
   };
+  const targetCount = state.drafts[moveTo].length;
+  const positions = moving && moveTo === moving.from ? targetCount : targetCount + 1;
   const confirmMove = () => {
     if (!moving) return;
     const block = state.drafts[moving.from].find((b) => b.id === moving.id);
-    dispatch({ type: 'moveBlock', id: moving.id, toDraft: moveTo, toIndex: Number.MAX_SAFE_INTEGER });
+    dispatch({ type: 'moveBlock', id: moving.id, toDraft: moveTo, toIndex: moveIndex });
     announce(
-      `${describe(block && { type: 'block', draftId: moving.from, minutes: block.minutes, label: block.label })} moved to the end of ${DRAFT_NAMES[moveTo]}.`,
+      `${describe(block && { type: 'block', draftId: moving.from, minutes: block.minutes, label: block.label, isBreak: block.isBreak })} moved to position ${moveIndex + 1} in ${DRAFT_NAMES[moveTo]}.`,
     );
   };
 
@@ -157,7 +164,11 @@ export function TimeBlocksSection() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: keyboardCoordinates }),
+    // Space picks a block up to move with the arrow keys; Enter on the grip opens the Move dialog instead.
+    useSensor(KeyboardSensor, {
+      coordinateGetter: keyboardCoordinates,
+      keyboardCodes: { start: [KeyboardCode.Space], cancel: [KeyboardCode.Esc], end: [KeyboardCode.Space, KeyboardCode.Enter] },
+    }),
   );
 
   const whereText = (over: Over) => {
@@ -195,6 +206,7 @@ export function TimeBlocksSection() {
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
+    lastDragEnd.current = Date.now();
     setActive(null);
     const data = active.data.current as DragData | undefined;
     const to = resolveTarget(state, over);
@@ -227,7 +239,7 @@ export function TimeBlocksSection() {
             announcements,
             screenReaderInstructions: {
               draggable:
-                'To pick up a time block, press Space or Enter. Use the arrow keys to move it over a session draft. Press Space or Enter again to drop it, or Escape to cancel. Buttons are also available to add, move and remove blocks.',
+                'To pick up a time block, press Space, use the arrow keys to move it, then press Space again to drop it, or Escape to cancel. Press Enter (or click) instead to choose a draft and position from a list.',
             },
           }}
         >
@@ -265,21 +277,35 @@ export function TimeBlocksSection() {
           onClose={() =>
             moving &&
             requestAnimationFrame(() =>
-              document.querySelector<HTMLElement>(`[data-block-id="${moving.id}"] .js-move-other`)?.focus(),
+              document.querySelector<HTMLElement>(`[data-block-id="${moving.id}"] .tblock__handle`)?.focus(),
             )
           }
         >
           <h2 id="block-move-title">Move time block</h2>
           <form method="dialog" className="move-form" onSubmit={confirmMove}>
-            <label htmlFor="block-move-to">Move to the end of</label>
-            <select id="block-move-to" value={moveTo} onChange={(e) => setMoveTo(e.target.value as DraftId)}>
-              {drafts
-                .filter((d) => d !== moving?.from)
-                .map((d) => (
-                  <option key={d} value={d}>
-                    {DRAFT_NAMES[d]}
-                  </option>
-                ))}
+            <label htmlFor="block-move-to">Draft</label>
+            <select
+              id="block-move-to"
+              value={moveTo}
+              onChange={(e) => {
+                const d = e.target.value as DraftId;
+                setMoveTo(d);
+                setMoveIndex(moving && d === moving.from ? state.drafts[d].length - 1 : state.drafts[d].length);
+              }}
+            >
+              {drafts.map((d) => (
+                <option key={d} value={d}>
+                  {DRAFT_NAMES[d]}
+                </option>
+              ))}
+            </select>
+            <label htmlFor="block-move-pos">Position</label>
+            <select id="block-move-pos" value={moveIndex} onChange={(e) => setMoveIndex(Number(e.target.value))}>
+              {Array.from({ length: Math.max(positions, 1) }, (_, i) => (
+                <option key={i} value={i}>
+                  {i === 0 ? '1 (first)' : i === positions - 1 ? `${i + 1} (last)` : i + 1}
+                </option>
+              ))}
             </select>
             <div className="dialog__actions">
               <button type="button" className="btn" onClick={() => moveDialog.current?.close()}>

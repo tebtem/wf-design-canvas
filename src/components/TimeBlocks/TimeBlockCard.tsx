@@ -15,10 +15,9 @@ import {
   type DraftId,
   type TimeBlock,
 } from '../../state/types';
-import { CupIcon, DownIcon, GripIcon, SwapIcon, UpIcon, XIcon } from '../Icons';
+import { CupIcon, DownIcon, GripIcon, UpIcon, XIcon } from '../Icons';
 import { type DragData } from './dnd';
 import { useOpenBlockMove } from './TimeBlocksSection';
-import { visibleDrafts } from '../../state/reducer';
 
 const BULLET = '• ';
 
@@ -48,7 +47,7 @@ interface Props {
 }
 
 export function TimeBlockCard({ block, draftId, index, count, start, announce }: Props) {
-  const { state, dispatch, readOnly } = useCanvas();
+  const { dispatch, readOnly } = useCanvas();
   const isBreak = block.isBreak === true;
   const data: DragData = { type: 'block', draftId, minutes: block.minutes, label: block.label, isBreak };
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
@@ -58,9 +57,6 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
   });
 
   const openMove = useOpenBlockMove();
-  const others = visibleDrafts(state).filter((d) => d !== draftId);
-  // With two drafts the button moves straight to the other one; with three it asks which.
-  const other: DraftId | null = others.length === 1 ? others[0] : null;
   const name = `${block.minutes} minute ${isBreak ? 'break' : 'block'}${block.label ? ` "${block.label}"` : ''}`;
   const where = `position ${index + 1} of ${count} in ${DRAFT_NAMES[draftId]}`;
   const inputId = `label-${block.id}`;
@@ -132,14 +128,6 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
     announce(`${name} moved to position ${toIndex + 1} of ${count} in ${DRAFT_NAMES[draftId]}.`);
   };
 
-  const moveToOther = () => {
-    if (!other) return openMove(block.id);
-    dispatch({ type: 'moveBlock', id: block.id, toDraft: other, toIndex: Number.MAX_SAFE_INTEGER });
-    announce(`${name} moved to the end of ${DRAFT_NAMES[other]}.`);
-    requestAnimationFrame(() =>
-      document.querySelector<HTMLElement>(`[data-block-id="${block.id}"] .js-move-other`)?.focus(),
-    );
-  };
 
   const remove = () => {
     dispatch({ type: 'removeBlock', id: block.id });
@@ -194,8 +182,10 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
               {...attributes}
               {...listeners}
               aria-roledescription="draggable time block"
-              aria-label={`Drag ${name}, ${where}, to reorder.`}
-              title="Drag to reorder"
+              aria-label={`Move ${name}, ${where}`}
+              aria-haspopup="dialog"
+              title="Drag to move, or click to choose where it goes"
+              onClick={() => openMove(block.id)}
             >
               <GripIcon />
             </button>
@@ -280,18 +270,6 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
           >
             <DownIcon />
           </button>
-          {others.length > 0 && (
-            <button
-              type="button"
-              className="icon-btn js-move-other"
-              aria-label={other ? `Move ${name} to ${DRAFT_NAMES[other]}` : `Move ${name} to another draft`}
-              aria-haspopup={other ? undefined : 'dialog'}
-              title={other ? `Move to ${DRAFT_NAMES[other]}` : 'Move to another draft'}
-              onClick={moveToOther}
-            >
-              <SwapIcon />
-            </button>
-          )}
           <button
             type="button"
             className="icon-btn js-break-toggle"

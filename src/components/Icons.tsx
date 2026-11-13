@@ -124,3 +124,14 @@ export const CupIcon = () => (
     <path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9zM16 10h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M12 3v3" />
   </svg>
 );
+export const UserIcon = () => (
+  <svg {...base}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+  </svg>
+);
+export const CommentIcon = () => (
+  <svg {...base}>
+    <path d="M4 5h16v11H9l-5 4V5z" />
+  </svg>
+);

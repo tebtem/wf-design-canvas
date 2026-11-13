@@ -105,6 +105,8 @@ await until(async () => (await bob.getByRole('alert').textContent())?.includes('
 await bob.getByLabel('Workshop code').fill(`${code.slice(0, 3).toLowerCase()}-${code.slice(3).toLowerCase()}`);
 await bob.getByRole('button', { name: 'Join' }).click();
 await bob.getByRole('heading', { name: 'Team offsite' }).waitFor();
+await bob.waitForTimeout(500);
+if (await bob.locator('.ws-toast').getByText('Newly revealed').count()) fail('joining should not count as a reveal');
 if ((await bob.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) !== '') fail('bob should start blank');
 await bob.getByRole('textbox', { name: 'Client Name', exact: true }).fill('Bob outcome');
 step('bob joined');
@@ -164,6 +166,13 @@ await alice.screenshot({ path: out + 'ws-toast.png' });
 await alice.getByRole('button', { name: 'Go to Purpose' }).click();
 await until(async () => alice.evaluate(() => !!document.activeElement?.closest('[data-cell-id="brief.0"]')), 'Go to Purpose moves focus to Purpose');
 if (await toast.count()) fail('going to the comment should clear its notification');
+// The comment also shows as a marker in the Purpose section; dismissing it hides the marker.
+const marker = alice.getByRole('button', { name: '1 facilitator comment on Purpose' });
+await marker.click();
+await alice.locator('.cell-comments__text', { hasText: 'Try naming the decision you need.' }).waitFor();
+await axe(alice, 'comment marker');
+await alice.locator('.cell-comments').getByRole('button', { name: /^Dismiss/ }).click();
+if (await marker.count()) fail('dismissed marker should disappear');
 await until(async () => (await alice.getByRole('button', { name: /Facilitator comments \(1\)/ }).count()) === 1, 'alice comment count');
 await alice.getByRole('button', { name: /Facilitator comments/ }).click();
 if (!(await alice.locator('#ws-comments').textContent()).includes('Try naming the decision')) fail('alice cannot read comment');
@@ -236,6 +245,7 @@ await alice.reload();
 await until(async () => (await alice.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) === 'Alice purpose, edited', 'alice reload');
 await alice.waitForTimeout(800);
 if (await alice.locator('.ws-toast--comment').count()) fail('comments already seen should not pop up again after a reload');
+if (await alice.locator('.cell-comments').count()) fail('dismissed marker should stay dismissed after a reload');
 
 // Day 2 on a different device: Alice returns with her rejoin code.
 const rejoinCode = (await alice.locator('.ws-bar__meta strong').textContent()).trim();
@@ -288,6 +298,79 @@ await bob.getByRole('button', { name: 'Leave workshop' }).click();
 await bob.getByRole('button', { name: 'Leave', exact: true }).click();
 await until(async () => (await bob.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) === 'Personal canvas text', 'bob personal canvas intact');
 step('end workshop works');
+
+// Free accounts: sign up from a canvas (opting in to updates), then open it on another device.
+async function accountSignIn(page, email, optIn = false) {
+  await page.getByRole('button', { name: /^(Create free account|My canvases)$/ }).click();
+  await page.getByRole('dialog').getByLabel('Email', { exact: true }).fill(email);
+  if (optIn) await page.getByLabel('Email me about upcoming facilitation courses and bootcamps').check();
+  await page.getByRole('button', { name: 'Email me a sign-in link' }).click();
+  await page.getByText('Check your inbox').waitFor();
+  const { oobCodes } = await (await fetch(AUTH_EMU)).json();
+  const latest = oobCodes.filter((c) => c.email === email && c.requestType === 'EMAIL_SIGNIN').pop();
+  await page.goto(`${APP_URL}?account&apiKey=demo-key&oobCode=${latest.oobCode}&mode=signIn&lang=en`);
+  await page.getByRole('heading', { name: 'My canvases' }).waitFor();
+}
+const subscribed = [];
+const device1 = await newPage();
+await device1.route('**/api/subscribe', async (route) => {
+  subscribed.push(JSON.parse(route.request().postData() || '{}').email);
+  await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+});
+await device1.goto(APP_URL);
+await device1.evaluate(() => localStorage.setItem('wf-design-canvas:backup-snooze', String(Date.now() + 864e5)));
+await device1.getByLabel('Working Title').fill('Offsite plan');
+await device1.getByRole('button', { name: 'Add sticky note in Purpose' }).click();
+await device1.locator('.ProseMirror:focus').waitFor();
+await device1.keyboard.type('Align the team');
+await device1.keyboard.press('Escape');
+await device1.getByRole('button', { name: 'Create free account' }).click();
+await axe(device1, 'account sign-up');
+await device1.keyboard.press('Escape');
+await accountSignIn(device1, 'pat@example.com', true);
+await until(async () => (await device1.locator('.ws-host__list li').count()) === 1, 'canvas moved into the account');
+if (!(await device1.locator('.ws-host__list').textContent()).includes('Offsite plan')) fail('saved canvas should be named after the working title');
+if (subscribed[0] !== 'pat@example.com') fail(`opt-in should subscribe once confirmed: ${subscribed}`);
+await axe(device1, 'my canvases');
+await device1.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
+if (!(await device1.getByRole('button', { name: 'My canvases' }).count())) fail('toolbar should say My canvases when signed in');
+
+const device2 = await newPage();
+await device2.goto(APP_URL);
+await accountSignIn(device2, 'pat@example.com');
+await device2.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
+await until(async () => (await device2.getByLabel('Working Title').inputValue()) === 'Offsite plan', 'canvas opens on a second device');
+if (!(await device2.getByRole('textbox', { name: 'Sticky note 1 in Purpose' }).innerText()).includes('Align the team')) fail('sticky should come across');
+await device2.getByLabel('Client Name').fill('From device 2');
+await device2.waitForTimeout(2500);
+await device1.reload();
+await until(async () => (await device1.getByLabel('Client Name').inputValue()) === 'From device 2', 'changes come back to the first device');
+
+// Three canvases: start a new one, switch back, delete it.
+await device1.getByRole('button', { name: 'My canvases' }).click();
+await device1.getByRole('button', { name: 'Start a new canvas' }).click();
+await until(async () => (await device1.getByLabel('Working Title').inputValue()) === '', 'new canvas is blank');
+await device1.getByLabel('Working Title').fill('Second canvas');
+await device1.waitForTimeout(2000);
+await device1.getByRole('button', { name: 'My canvases' }).click();
+await until(async () => (await device1.locator('.ws-host__list li').count()) === 2, 'two canvases listed');
+await device1.getByRole('button', { name: 'Open Offsite plan' }).click();
+await until(async () => (await device1.getByLabel('Working Title').inputValue()) === 'Offsite plan', 'opens a saved canvas');
+await device1.getByRole('button', { name: 'My canvases' }).click();
+device1.once('dialog', (d) => d.accept());
+await device1.getByRole('button', { name: 'Delete Second canvas' }).click();
+await until(async () => (await device1.locator('.ws-host__list li').count()) === 1, 'deleting removes a canvas');
+
+// Sign out clears this browser; delete account removes everything.
+await device1.getByRole('button', { name: 'Sign out' }).click();
+await until(async () => (await device1.getByLabel('Working Title').inputValue()) === '', 'sign out clears the canvas from this browser');
+await device1.keyboard.press('Escape');
+if (!(await device1.getByRole('button', { name: 'Create free account' }).count())) fail('toolbar should offer an account again after signing out');
+await device2.getByRole('button', { name: 'My canvases' }).click();
+device2.once('dialog', (d) => d.accept());
+await device2.getByRole('button', { name: 'Delete my account' }).click();
+await device2.getByText('Your account and saved canvases were deleted.').waitFor();
+step('free accounts work');
 
 // Phone width.
 const phone = await newPage();

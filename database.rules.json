@@ -144,6 +144,33 @@
         }
       }
     },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid && auth.token.email_verified === true",
+        ".write": "auth != null && auth.uid === $uid && !newData.exists()",
+        "canvases": {
+          "$slot": {
+            ".write": "auth != null && auth.uid === $uid && auth.token.email_verified === true",
+            ".validate": "$slot.matches(/^c[123]$/) && newData.hasChildren(['state', 'updatedAt'])",
+            "state": {
+              ".validate": "newData.isString() && newData.val().length <= 300000"
+            },
+            "name": {
+              ".validate": "newData.isString() && newData.val().length <= 120"
+            },
+            "updatedAt": {
+              ".validate": "newData.val() === now"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
     "hosts": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
