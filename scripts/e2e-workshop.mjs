@@ -188,12 +188,17 @@ await until(async () => (await bob.getByRole('textbox', { name: 'Client Name', e
 // Spotlight Bob for everyone.
 await host.getByRole('button', { name: 'Open canvas of Bob' }).click();
 await host.getByRole('button', { name: 'Spotlight for everyone' }).click();
-await until(async () => (await alice.getByText("spotlighting Bob's canvas").count()) === 1, 'alice sees spotlight');
-await alice.getByRole('button', { name: 'View it' }).click();
+await alice.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+const spotToast = alice.locator('.ws-toast--spotlight');
+await until(async () => (await spotToast.count()) === 1 && (await spotToast.textContent()).includes("Bob's canvas"), 'alice gets a spotlight notification');
+await until(async () => (await bob.locator('.ws-toast--spotlight').textContent()).includes('your canvas'), 'bob is told his canvas is spotlighted');
+await axe(alice, 'spotlight notification');
+await spotToast.getByRole('button', { name: /^View it/ }).click();
 await until(async () => (await alice.getByRole('textbox', { name: 'Client Name', exact: true }).inputValue()) === 'Bob outcome', 'alice sees bob via spotlight');
 await alice.screenshot({ path: out + 'ws-spotlight.png' });
 await host.getByRole('button', { name: 'Spotlight for everyone' }).click();
 await until(async () => (await alice.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) === 'Alice purpose, edited', 'alice back after spotlight ends');
+await until(async () => (await bob.locator('.ws-toast--spotlight').count()) === 0, 'spotlight notification clears when the spotlight ends');
 step('spotlight works');
 
 // Reloads reconnect.
