@@ -15,8 +15,10 @@ const fail = (m) => {
   process.exitCode = 1;
 };
 
-const axeCheck = async (p, label) => {
-  const res = await new AxeBuilder({ page: p }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+const axeCheck = async (p, label, include) => {
+  const builder = new AxeBuilder({ page: p }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']);
+  if (include) builder.include(include);
+  const res = await builder.analyze();
   for (const v of res.violations) console.log('AXE', label, v.id, v.impact, v.nodes.length, v.nodes[0]?.target);
   if (res.violations.length) fail(`${res.violations.length} axe violations on ${label}`);
 };
@@ -271,6 +273,7 @@ const blocks = await page.locator('.tblock').count();
 console.log('Blocks after reload:', blocks);
 if (blocks < 2) fail('expected blocks to persist');
 
+if ((await page.getByRole('link', { name: /^Designing Facilitated Experiences/ }).getAttribute('href')) !== 'https://www.womenfacilitating.com/facilitation-design') fail('wordmark should link to the facilitation design page');
 if ((await page.getByRole('link', { name: /^Learn about facilitation design/ }).getAttribute('href')) !== 'https://www.womenfacilitating.com/facilitation-design') fail('Learn link href wrong');
 for (const name of [/^Women Facilitating website/, /^Women Facilitating \(opens/]) {
   const href = await page.getByRole('link', { name }).getAttribute('href');
@@ -335,7 +338,8 @@ if (await waitlist.count()) fail('waitlist should not show again after joining')
 const more = page.getByRole('button', { name: 'More' });
 await more.click();
 if ((await more.getAttribute('aria-expanded')) !== 'true') fail('More should expand');
-await axeCheck(page, 'more menu open');
+// Scan the open menu itself; whatever sits underneath an open menu is covered until it closes.
+await axeCheck(page, 'more menu open', '.toolbar');
 await page.keyboard.press('Escape');
 if ((await more.getAttribute('aria-expanded')) !== 'false') fail('Escape should close More');
 if ((await page.evaluate(() => document.activeElement?.textContent?.trim())) !== 'More') fail('focus should return to More');

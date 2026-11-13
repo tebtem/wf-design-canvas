@@ -1,4 +1,6 @@
 export const SITE_URL = 'https://womenfacilitating.com';
+/** Women Facilitating's page about facilitation design (Learn button and the wordmark link). */
+export const LEARN_URL = 'https://www.womenfacilitating.com/facilitation-design';
 
 const newTab = <span className="sr-only"> (opens in a new tab)</span>;
 

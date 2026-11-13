@@ -1,6 +1,6 @@
 import { useCanvas } from '../state/CanvasContext';
 import { DETAIL_FIELDS } from '../state/types';
-import { SITE_URL } from './Footer';
+import { LEARN_URL, SITE_URL } from './Footer';
 import wordmark from '../assets/designing-facilitated-experiences.png';
 
 export function Logo() {
@@ -19,13 +19,16 @@ export function Header({ asHeading = true }: { asHeading?: boolean }) {
   return (
     <header className="canvas-header">
       <Title className="title">
-        <img
-          className="title__img"
-          src={wordmark}
-          alt="Designing Facilitated Experiences"
-          width={1886}
-          height={368}
-        />
+        <a className="title__link" href={LEARN_URL} target="_blank" rel="noopener noreferrer">
+          <img
+            className="title__img"
+            src={wordmark}
+            alt="Designing Facilitated Experiences"
+            width={1886}
+            height={368}
+          />
+          <span className="sr-only"> (opens in a new tab)</span>
+        </a>
       </Title>
       <div className="canvas-header__right">
         <p className="canvas-name">

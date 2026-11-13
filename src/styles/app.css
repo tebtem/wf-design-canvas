@@ -309,6 +309,18 @@ button {
   margin: 0;
   line-height: 0;
 }
+.title__link {
+  display: inline-block;
+  border-radius: 6px;
+  transition: opacity 0.15s;
+}
+.title__link:hover {
+  opacity: 0.85;
+}
+.title__link:focus-visible {
+  outline: var(--focus);
+  outline-offset: 4px;
+}
 .title__img {
   display: block;
   width: clamp(220px, 30vw, 380px);

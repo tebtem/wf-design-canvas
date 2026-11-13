@@ -7,7 +7,7 @@ import { effectiveLayout, setLayoutPref, useLayoutPref, type Layout } from '../s
 import { useCanvas } from '../state/CanvasContext';
 import { ChevronIcon, DownloadIcon, ExternalIcon, PeopleIcon, PrintIcon, UploadIcon, XIcon } from './Icons';
 
-const LEARN_URL = 'https://www.womenfacilitating.com/facilitation-design';
+import { LEARN_URL } from './Footer';
 
 interface ToolbarProps {
   onWorkshop?: () => void;
