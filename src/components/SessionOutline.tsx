@@ -1,5 +1,6 @@
 import { useCanvas } from '../state/CanvasContext';
-import { formatMinutes, schedule, totalMinutes, visibleDrafts } from '../state/reducer';
+import { breakMinutes, schedule, totalMinutes, totalWithBreaks, visibleDrafts } from '../state/reducer';
+import { CupIcon } from './Icons';
 import { useState } from 'react';
 import {
   BLOCK_STEP,
@@ -82,7 +83,7 @@ export function SessionOutline() {
           )}
           {blocks.length > 0 && (
             <p className="outline__total">
-              {multiDay && `${days.length} days · `}Total {formatMinutes(totalMinutes(blocks))}
+              {multiDay && `${days.length} days · `}Total {totalWithBreaks(totalMinutes(blocks), breakMinutes(blocks))}
             </p>
           )}
         </div>
@@ -126,7 +127,7 @@ export function SessionOutline() {
                           <span className="outline__day-meta">
                             {' '}
                             · starts {hhmm(d.start)}
-                            {d.total > 0 && ` · ${formatMinutes(d.total)}`}
+                            {d.total > 0 && ` · ${totalWithBreaks(d.total, d.breaks)}`}
                           </span>
                         </th>
                       </tr>
@@ -140,11 +141,13 @@ export function SessionOutline() {
                     )}
                     {rows.map(({ block: b, start }, i) => {
                       const end = start + b.minutes;
-                      const spoken = `${dayLabel}${hhmm(start)} to ${hhmm(end)}${b.label ? `, ${b.label}` : ''}`;
-                      const rowName = `${dayLabel}row ${i + 1}${b.label ? `, ${b.label}` : ''}`;
+                      const brk = b.isBreak === true;
+                      const name = b.label || (brk ? 'Break' : '');
+                      const spoken = `${dayLabel}${hhmm(start)} to ${hhmm(end)}${name ? `, ${name}` : ''}`;
+                      const rowName = `${dayLabel}row ${i + 1}${name ? `, ${name}` : ''}`;
                       const row = state.outline.rows[b.id] ?? EMPTY;
                       return (
-                        <tr key={b.id}>
+                        <tr key={b.id} className={brk ? 'outline__break' : undefined}>
                           <td className="outline__time">
                             <span className="outline__range">
                               {i === 0 ? (
@@ -173,7 +176,13 @@ export function SessionOutline() {
                                 onInvalid={announce}
                               />
                             </span>
-                            {b.label && <span className="outline__block">{b.label}</span>}
+                            {brk ? (
+                              <span className="outline__block outline__block--break">
+                                <CupIcon /> {name}
+                              </span>
+                            ) : (
+                              b.label && <span className="outline__block">{b.label}</span>
+                            )}
                           </td>
                           <td className="outline__len">
                             <TimeField
@@ -186,8 +195,15 @@ export function SessionOutline() {
                             />{' '}
                             min
                           </td>
-                          <td>{field(b.id, 'activities', `Activities, ${spoken}`, row.activities)}</td>
-                          <td>{field(b.id, 'moves', `Moves and materials, ${spoken}`, row.moves)}</td>
+                          {brk ? (
+                            // Breaks rarely need both columns: one quiet notes cell.
+                            <td colSpan={2}>{field(b.id, 'activities', `Notes for break, ${spoken}`, row.activities)}</td>
+                          ) : (
+                            <>
+                              <td>{field(b.id, 'activities', `Activities, ${spoken}`, row.activities)}</td>
+                              <td>{field(b.id, 'moves', `Moves and materials, ${spoken}`, row.moves)}</td>
+                            </>
+                          )}
                         </tr>
                       );
                     })}

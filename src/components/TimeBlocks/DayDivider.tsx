@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useCanvas } from '../../state/CanvasContext';
-import { formatMinutes, hhmmOf } from '../../state/reducer';
+import { hhmmOf, totalWithBreaks } from '../../state/reducer';
 import { DRAFT_NAMES, type DraftId, type TimeBlock } from '../../state/types';
 import { DownIcon, GripIcon, UpIcon, XIcon } from '../Icons';
 import type { DragData } from './dnd';
@@ -12,13 +12,14 @@ interface Props {
   day: number;
   start: number;
   total: number;
+  breaks: number;
   index: number;
   count: number;
   announce: (msg: string) => void;
 }
 
 /** "Day 2" divider in a draft: blocks after it are the next day. Moves like a block. */
-export function DayDivider({ divider, draftId, day, start, total, index, count, announce }: Props) {
+export function DayDivider({ divider, draftId, day, start, total, breaks, index, count, announce }: Props) {
   const { dispatch, readOnly } = useCanvas();
   const name = `Day ${day}`;
   const data: DragData = { type: 'block', draftId, minutes: 0, label: name, isDay: true };
@@ -63,7 +64,7 @@ export function DayDivider({ divider, draftId, day, start, total, index, count, 
       <span className="day-divider__name">{name}</span>
       <span className="day-divider__meta">
         starts {hhmmOf(start)}
-        {total > 0 && ` · ${formatMinutes(total)}`}
+        {total > 0 && ` · ${totalWithBreaks(total, breaks)}`}
       </span>
       {!readOnly && (
         <span className="day-divider__actions no-print">

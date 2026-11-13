@@ -111,7 +111,7 @@ if (total1 !== 'Total 45 min') fail('expected Draft 1 to total 45 min');
 
 // Starter bank of 15, 30 and 60. Lengths change by typing (5-minute steps) or dragging the bottom edge.
 if (await page.getByRole('group', { name: 'Session Draft 2' }).count()) fail('draft 2 should start hidden');
-if ((await page.locator('.bank-item').count()) !== 3) fail('bank should have 3 starter blocks');
+if ((await page.locator('.bank-item').count()) !== 4) fail('bank should have 3 starter blocks plus a break');
 const len15 = page.getByLabel(/^Length in minutes of 15 minute block/);
 await len15.fill('20');
 await len15.press('Enter');
@@ -203,6 +203,17 @@ await axeCheck(page, 'multi-day');
 await page.getByRole('button', { name: 'Remove Day 2' }).click();
 if (await outline.locator('.outline__day').count()) fail('removing the day should merge it back');
 await page.getByRole('button', { name: /^Remove 30 minute block/ }).last().click();
+// Breaks: from the bank or the cup toggle; striped, totaled separately, one notes cell in the outline.
+await page.getByRole('button', { name: 'Add a break to Session Draft 1' }).click();
+if (!(await draft1.locator('.tblock--break').count())) fail('break block should look different');
+if (!(await draft1.locator('.draft__total').textContent()).includes('15 min of breaks')) fail('draft total should show break time');
+const breakRow = outline.locator('tr.outline__break');
+if ((await breakRow.count()) !== 1 || (await breakRow.locator('td').count()) !== 3) fail('break row should merge its notes cells');
+await page.getByRole('button', { name: /^Break: 15 minute break/ }).click();
+if (await draft1.locator('.tblock--break').count()) fail('cup toggle should turn a break back into an activity');
+await page.getByRole('button', { name: /^Break: 15 minute block/ }).click();
+await axeCheck(page, 'breaks');
+await page.getByRole('button', { name: /^Remove 15 minute break/ }).click();
 await axeCheck(page, 'session outline');
 await outline.screenshot({ path: out + 'outline.png' });
 

@@ -7,7 +7,12 @@ const migrateBlocks = (blocks: TimeBlock[] = []) =>
   blocks.map((b) =>
     b.kind === 'day'
       ? { id: b.id, kind: 'day' as const, minutes: 0, label: '', notes: '', ...(typeof b.start === 'number' ? { start: b.start } : {}) }
-      : { ...b, minutes: clampMinutes(b.minutes), notes: b.notes ?? '' },
+      : (({ isBreak, ...rest }) => ({
+          ...rest,
+          minutes: clampMinutes(b.minutes),
+          notes: b.notes ?? '',
+          ...(isBreak === true ? { isBreak: true } : {}),
+        }))(b),
   );
 
 /**

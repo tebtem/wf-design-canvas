@@ -1061,6 +1061,52 @@ button {
   }
 }
 
+/* ---------- Breaks: quieter than activities, striped, with a cup icon ---------- */
+.tblock--break {
+  background: repeating-linear-gradient(-45deg, #f4f5fa 0 8px, #e6e9f3 8px 16px);
+  border-style: dashed;
+}
+.tblock--break .tblock__label {
+  font-style: italic;
+  font-weight: 600;
+}
+.tblock__break-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--navy-soft);
+}
+.tblock__break-tag svg {
+  width: 14px;
+  height: 14px;
+}
+.js-break-toggle[aria-pressed='true'] {
+  background: var(--navy);
+  color: var(--white);
+}
+.js-break-toggle[aria-pressed='true']:hover {
+  background: #343d7a;
+}
+.bank-item.tblock--break .tblock__minutes svg {
+  width: 16px;
+  height: 16px;
+}
+.outline__break td {
+  background: repeating-linear-gradient(-45deg, #f8f9fc 0 8px, #eceef6 8px 16px);
+}
+.outline__block--break {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-style: italic;
+}
+.outline__block--break svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* ---------- Days (multi-day sessions) ---------- */
 .day-divider {
   display: flex;

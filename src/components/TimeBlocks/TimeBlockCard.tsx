@@ -15,7 +15,7 @@ import {
   type DraftId,
   type TimeBlock,
 } from '../../state/types';
-import { DownIcon, GripIcon, SwapIcon, UpIcon, XIcon } from '../Icons';
+import { CupIcon, DownIcon, GripIcon, SwapIcon, UpIcon, XIcon } from '../Icons';
 import { type DragData } from './dnd';
 import { useOpenBlockMove } from './TimeBlocksSection';
 import { visibleDrafts } from '../../state/reducer';
@@ -49,7 +49,8 @@ interface Props {
 
 export function TimeBlockCard({ block, draftId, index, count, start, announce }: Props) {
   const { state, dispatch, readOnly } = useCanvas();
-  const data: DragData = { type: 'block', draftId, minutes: block.minutes, label: block.label };
+  const isBreak = block.isBreak === true;
+  const data: DragData = { type: 'block', draftId, minutes: block.minutes, label: block.label, isBreak };
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: block.id,
     data,
@@ -60,7 +61,7 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
   const others = visibleDrafts(state).filter((d) => d !== draftId);
   // With two drafts the button moves straight to the other one; with three it asks which.
   const other: DraftId | null = others.length === 1 ? others[0] : null;
-  const name = `${block.minutes} minute block${block.label ? ` "${block.label}"` : ''}`;
+  const name = `${block.minutes} minute ${isBreak ? 'break' : 'block'}${block.label ? ` "${block.label}"` : ''}`;
   const where = `position ${index + 1} of ${count} in ${DRAFT_NAMES[draftId]}`;
   const inputId = `label-${block.id}`;
   const notesId = `notes-${block.id}`;
@@ -150,7 +151,7 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
     <li
       ref={setNodeRef}
       data-block-id={block.id}
-      className={`tblock tblock--m${blockTone(block.minutes)}${isDragging ? ' is-dragging' : ''}`}
+      className={`tblock ${isBreak ? 'tblock--break' : `tblock--m${blockTone(block.minutes)}`}${isDragging ? ' is-dragging' : ''}`}
       style={
         {
           transform: CSS.Translate.toString(transform),
@@ -213,12 +214,17 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
           className="tblock__label"
           value={block.label}
           readOnly={readOnly}
-          placeholder={readOnly ? 'Untitled' : 'Name this block'}
+          placeholder={isBreak ? 'Break' : readOnly ? 'Untitled' : 'Name this block'}
           onChange={(e) => dispatch({ type: 'editBlock', id: block.id, label: e.target.value })}
         />
         <span className="print-text" aria-hidden="true">
           {block.label}
         </span>
+        {isBreak && (
+          <span className="tblock__break-tag" aria-hidden="true">
+            <CupIcon /> Break
+          </span>
+        )}
         <span className="tblock__time">
           <span className="sr-only">Runs from </span>
           {hhmm(start)}
@@ -286,6 +292,19 @@ export function TimeBlockCard({ block, draftId, index, count, start, announce }:
               <SwapIcon />
             </button>
           )}
+          <button
+            type="button"
+            className="icon-btn js-break-toggle"
+            aria-pressed={isBreak}
+            aria-label={`Break: ${name}`}
+            title={isBreak ? 'Marked as a break. Click to make it an activity.' : 'Mark as a break'}
+            onClick={() => {
+              dispatch({ type: 'setBreak', id: block.id, isBreak: !isBreak });
+              announce(isBreak ? `${name} is now an activity.` : `${name} is now a break.`);
+            }}
+          >
+            <CupIcon />
+          </button>
           <button type="button" className="icon-btn" aria-label={`Remove ${name}`} title="Remove" onClick={remove}>
             <XIcon />
           </button>

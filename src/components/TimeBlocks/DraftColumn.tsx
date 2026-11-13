@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { formatMinutes, schedule, totalMinutes } from '../../state/reducer';
+import { breakMinutes, schedule, totalMinutes, totalWithBreaks } from '../../state/reducer';
 import { useCanvas } from '../../state/CanvasContext';
 import { DayDivider } from './DayDivider';
 import { PlusIcon } from '../Icons';
@@ -38,7 +38,7 @@ export function DraftColumn({ draftId, blocks, announce, onRemove, footer, onAdd
         </h3>
         <p className="draft__total" aria-live="polite">
           {blocks.length
-            ? `${multiDay ? `${days.length} days · ` : ''}Total ${formatMinutes(total)}`
+            ? `${multiDay ? `${days.length} days · ` : ''}Total ${totalWithBreaks(total, breakMinutes(blocks))}`
             : 'No blocks yet'}
         </p>
         {onRemove && (
@@ -60,7 +60,7 @@ export function DraftColumn({ draftId, blocks, announce, onRemove, footer, onAdd
               <span className="day-divider__name">Day 1</span>
               <span className="day-divider__meta">
                 starts {hhmm(days[0].start)}
-                {days[0].total > 0 && ` · ${formatMinutes(days[0].total)}`}
+                {days[0].total > 0 && ` · ${totalWithBreaks(days[0].total, days[0].breaks)}`}
               </span>
             </li>
           )}
@@ -73,6 +73,7 @@ export function DraftColumn({ draftId, blocks, announce, onRemove, footer, onAdd
                 day={day}
                 start={start}
                 total={days[day - 1].total}
+                breaks={days[day - 1].breaks}
                 index={i}
                 count={blocks.length}
                 announce={announce}

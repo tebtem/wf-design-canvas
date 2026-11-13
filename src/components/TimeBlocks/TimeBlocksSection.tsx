@@ -91,7 +91,7 @@ const describe = (data: DragData | undefined) =>
   data?.type === 'block' && data.isDay
     ? `start of ${data.label}`
     : data && data.type !== 'draft'
-      ? `${data.minutes} minute block${data.type === 'block' && data.label ? ` "${data.label}"` : ''}`
+      ? `${data.minutes} minute ${data.isBreak ? 'break' : 'block'}${data.type === 'block' && data.label ? ` "${data.label}"` : ''}`
       : 'block';
 
 /** Opens the "move to another draft" dialog for a block. */
@@ -200,7 +200,14 @@ export function TimeBlocksSection() {
     const to = resolveTarget(state, over);
     if (!data || !to) return;
     if (data.type === 'bank') {
-      dispatch({ type: 'addBlock', draftId: to.draftId, id: newId(), minutes: data.minutes, index: to.index });
+      dispatch({
+        type: 'addBlock',
+        draftId: to.draftId,
+        id: newId(),
+        minutes: data.minutes,
+        index: to.index,
+        isBreak: data.isBreak,
+      });
     } else if (data.type === 'block' && over && over.id !== active.id) {
       dispatch({ type: 'moveBlock', id: String(active.id), toDraft: to.draftId, toIndex: to.index });
     }
