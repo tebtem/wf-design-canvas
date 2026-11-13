@@ -12,7 +12,6 @@ ALLOW = json.loads((ROOT / "src/workshop/host-allowlist.json").read_text())
 
 S = "root.child('sessions/' + $code + '"
 LIVE = f"{S}/meta/expiresAt').val() > now"
-HOST = f"{S}/meta/facilitator').val() === auth.uid"
 CAN_VIEW = f"{S}/meta/canView').val() === true"
 # Someone who returned on a new device acts as their original participant id (pid).
 ALIAS = f"{S}/aliases/' + auth.uid + '/pid').val()"
@@ -33,6 +32,9 @@ HOST_ALLOWED = (
     f"(auth.token.email.matches(/^[^@]+@({_domains})$/) || {_emails}))"
 )
 
+# Co-facilitating: the workshop's creator or any approved facilitator has the host view.
+HOST = f"({S}/meta/facilitator').val() === auth.uid || {HOST_ALLOWED})"
+
 def all_of(*parts):
     return " && ".join(parts)
 
@@ -42,11 +44,11 @@ rules = {
       ".indexOn": ["meta/expiresAt"],
       "$code": {
         ".validate": "$code.matches(/^[A-HJKMNP-Z2-9]{6}$/)",
-        ".write": "auth != null && !newData.exists() && (data.child('meta/facilitator').val() === auth.uid || data.child('meta/expiresAt').val() < now)",
+        ".write": f"auth != null && !newData.exists() && (data.child('meta/facilitator').val() === auth.uid || {HOST_ALLOWED} || data.child('meta/expiresAt').val() < now)",
 
         "meta": {
           ".read": "auth != null && data.child('expiresAt').val() > now",
-          ".write": f"auth != null && newData.exists() && ((!data.exists() && newData.child('facilitator').val() === auth.uid && {HOST_ALLOWED}) || (data.child('facilitator').val() === auth.uid && data.child('expiresAt').val() > now))",
+          ".write": f"auth != null && newData.exists() && ((!data.exists() && newData.child('facilitator').val() === auth.uid && {HOST_ALLOWED}) || ((data.child('facilitator').val() === auth.uid || {HOST_ALLOWED}) && data.child('expiresAt').val() > now))",
           ".validate": "newData.hasChildren(['title', 'facilitator', 'createdAt', 'expiresAt', 'canView'])",
           "title": {".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"},
           "facilitator": {".validate": "!data.exists() || newData.val() === data.val()"},
@@ -148,7 +150,7 @@ rules = {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         "$code": {
-          ".write": "auth != null && auth.uid === $uid && (!newData.exists() || newData.parent().parent().parent().child('sessions/' + $code + '/meta/facilitator').val() === auth.uid)",
+          ".write": f"auth != null && auth.uid === $uid && (!newData.exists() || newData.parent().parent().parent().child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (newData.parent().parent().parent().child('sessions/' + $code + '/meta').exists() && {HOST_ALLOWED}))",
           ".validate": "newData.isNumber()",
         },
       },
@@ -158,7 +160,7 @@ rules = {
       ".read": False,
       ".indexOn": ".value",
       "$code": {
-        ".write": "auth != null && (newData.exists() ? (!data.exists() && newData.parent().parent().child('sessions/' + $code + '/meta/facilitator').val() === auth.uid && newData.val() === newData.parent().parent().child('sessions/' + $code + '/meta/expiresAt').val()) : (data.val() < now || root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid))",
+        ".write": f"auth != null && (newData.exists() ? (!data.exists() && newData.parent().parent().child('sessions/' + $code + '/meta/facilitator').val() === auth.uid && newData.val() === newData.parent().parent().child('sessions/' + $code + '/meta/expiresAt').val()) : (data.val() < now || root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || {HOST_ALLOWED}))",
         ".validate": "newData.isNumber()",
       },
     },

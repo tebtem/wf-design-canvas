@@ -48,14 +48,29 @@ interface GalleryProps {
   onOpen: (uid: string) => void;
   spotlightUid?: string;
   empty: string;
+  /** Participants' view: just each name and an Open button (no progress stats). */
+  compact?: boolean;
 }
 
-export function Gallery({ entries, onOpen, spotlightUid, empty }: GalleryProps) {
+export function Gallery({ entries, onOpen, spotlightUid, empty, compact = false }: GalleryProps) {
   const now = useNow();
   if (!entries.length) return <p className="ws-empty">{empty}</p>;
   return (
     <ul className="ws-gallery">
       {entries.map((e) => {
+        if (compact) {
+          return (
+            <li key={e.uid} className="ws-card ws-card--compact" data-uid={e.uid}>
+              <h3 className="ws-card__name">
+                {e.name}
+                {e.isYou && <span className="ws-card__you"> (you)</span>}
+              </h3>
+              <button type="button" className="btn btn--primary ws-card__open" onClick={() => onOpen(e.uid)}>
+                Open canvas<span className="sr-only"> of {e.name}</span>
+              </button>
+            </li>
+          );
+        }
         const state = parseState(e.canvas?.state);
         const sum = state ? summarize(state) : null;
         const spot = e.uid === spotlightUid;

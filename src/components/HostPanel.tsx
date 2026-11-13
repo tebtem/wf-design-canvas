@@ -1,6 +1,6 @@
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { LAST_STEP } from '../state/cells';
-import { formatCode, spellCode } from '../workshop/code';
+import { formatCode, normalizeCode, spellCode } from '../workshop/code';
 import { clearLinkParams, hostSignedInEmail, type ActiveWorkshop } from '../workshop/session';
 import type { HostedWorkshop } from '../workshop/api';
 
@@ -55,6 +55,7 @@ export function HostPanel({ emailLink, onEnter }: Props) {
   const [view, setView] = useState<View>({ kind: 'checking' });
   const [email, setEmail] = useState(hostSignedInEmail() ?? '');
   const [title, setTitle] = useState('');
+  const [joinCode, setJoinCode] = useState('');
   const [guided, setGuided] = useState(true);
   const [workshops, setWorkshops] = useState<HostedWorkshop[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -121,6 +122,17 @@ export function HostPanel({ emailLink, onEnter }: Props) {
       clearLinkParams();
       const host = await a.currentHost();
       if (host) await showSignedIn(host);
+    });
+  };
+
+  /** Co-facilitating: open someone else's workshop in the host view by its code. */
+  const openByCode = (e: FormEvent) => {
+    e.preventDefault();
+    const c = normalizeCode(joinCode);
+    if (!c) return setError('Enter the 6-character workshop code, like ABC-234.');
+    void run(async () => {
+      const res = await (await api()).joinSession(c, '');
+      onEnter({ code: c, role: 'facilitator', uid: res.uid });
     });
   };
 
@@ -239,6 +251,26 @@ export function HostPanel({ emailLink, onEnter }: Props) {
           </ul>
         )}
       </section>
+
+      <form className="ws-form" onSubmit={openByCode} noValidate>
+        <h3 className="ws-host__h">Co-facilitating?</h3>
+        <label htmlFor={`${uid}-code`}>Workshop code</label>
+        <div className="ws-inline">
+          <input
+            id={`${uid}-code`}
+            className="ws-input ws-input--code"
+            value={joinCode}
+            onChange={(e) => setJoinCode(e.target.value)}
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            maxLength={9}
+          />
+          <button type="submit" className="btn" aria-disabled={busy}>
+            Open host view
+          </button>
+        </div>
+      </form>
 
       <form className="ws-form" onSubmit={start} noValidate>
         <h3 className="ws-host__h">Start a new workshop</h3>

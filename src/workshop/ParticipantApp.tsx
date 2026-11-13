@@ -336,6 +336,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
               </h1>
               <p className="ws-hint">View only. These update live.</p>
               <Gallery
+                compact
                 entries={others}
                 spotlightUid={spotlight?.uid}
                 empty="Nobody else has joined yet."

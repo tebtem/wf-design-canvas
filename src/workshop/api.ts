@@ -104,6 +104,11 @@ export async function joinSession(code: string, name: string): Promise<JoinResul
   if (!meta) throw new WorkshopError('No active workshop uses that code. Check the code with your facilitator.');
   // The host re-entering their own code gets the host view back.
   if (meta.facilitator === uid) return { uid, meta, role: 'facilitator' };
+  // Co-facilitating: any approved facilitator signed in here gets the host view, and the workshop joins their list.
+  if (await currentHost()) {
+    await set(r(`hosts/${uid}/${code}`), Date.now()).catch(() => {});
+    return { uid, meta, role: 'facilitator' };
+  }
   if (!name) throw new WorkshopError('Enter your name so your facilitator knows whose canvas is whose.', 'name');
   const existing = await get(r(p(code, 'rejoinKeys', uid))).catch(() => null);
   if (existing?.exists()) {
@@ -255,7 +260,7 @@ export interface HostedWorkshop {
   expiresAt: number;
 }
 
-/** The signed-in facilitator's live workshops, newest first. Ended or expired ones are tidied away. */
+/** Workshops the signed-in facilitator started or co-facilitates, newest first. Ended or expired ones are tidied away. */
 export async function listMyWorkshops(): Promise<HostedWorkshop[]> {
   const host = await currentHost();
   if (!host) return [];
@@ -264,7 +269,7 @@ export async function listMyWorkshops(): Promise<HostedWorkshop[]> {
   const found = await Promise.all(
     codes.map(async (code) => {
       const m = (await get(r(p(code, 'meta'))).catch(() => null))?.val() as SessionMeta | null;
-      if (!m || m.facilitator !== host.uid) {
+      if (!m) {
         await remove(r(`hosts/${host.uid}/${code}`)).catch(() => {});
         return null;
       }

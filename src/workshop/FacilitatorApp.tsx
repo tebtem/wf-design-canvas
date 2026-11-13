@@ -57,7 +57,8 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
     currentHost().then(
       (host) => {
         if (!live) return;
-        if (host?.uid === workshop.uid) setReady(true);
+        // Any approved facilitator can open the host view (co-facilitating).
+        if (host) setReady(true);
         else setSignedOut(true);
       },
       () => live && setMeta(null),
@@ -65,7 +66,7 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
     return () => {
       live = false;
     };
-  }, [workshop.uid]);
+  }, []);
 
   useEffect(() => {
     if (!ready) return;
@@ -137,8 +138,8 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
       <main className="ws-page ws-ended">
         <h1 className="ws-h1">Sign in to open the host view</h1>
         <p>
-          This device is no longer signed in as the facilitator for this workshop. Choose Workshop, then Host a
-          workshop, and sign in with your facilitator email to reopen it.
+          This device is not signed in as a facilitator. Open the facilitator link (canvas.womenfacilitating.com/?host),
+          sign in with your email, and reopen the workshop from Your workshops.
         </p>
         <button type="button" className="btn btn--primary" onClick={onExit}>
           Back to my canvas

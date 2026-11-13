@@ -568,3 +568,23 @@
 .ws-host__list .btn {
   grid-area: open;
 }
+
+.ws-card--compact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+.ws-card--compact .ws-card__open {
+  margin-top: 0;
+}
+
+.ws-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ws-inline .ws-input {
+  flex: 1 1 160px;
+  width: auto;
+}

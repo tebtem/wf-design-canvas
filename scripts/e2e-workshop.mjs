@@ -162,6 +162,7 @@ await host.getByLabel("Participants can see each other's canvases").check();
 await until(async () => (await bob.getByRole('button', { name: /See everyone/ }).count()) === 1, 'bob gets browse button');
 await bob.getByRole('button', { name: /See everyone/ }).click();
 await bob.getByRole('heading', { level: 1, name: "Everyone's canvases" }).waitFor();
+if (await bob.locator('.ws-stats').count()) fail("participants' gallery should show names only");
 await axe(bob, 'participant gallery');
 await bob.getByRole('button', { name: 'Open canvas of Alice' }).click();
 await until(async () => (await bob.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) === 'Alice purpose, edited', 'bob sees alice');
@@ -195,6 +196,22 @@ await host2.getByRole('heading', { level: 1, name: 'Team offsite' }).waitFor();
 await until(async () => (await host2.locator('.ws-card').count()) === 2, 'second device sees participants');
 await host2.close();
 step('host view works on a second device');
+
+// A co-founder co-facilitates by entering the code in their facilitator panel.
+const cohost = await newPage();
+await hostSignIn(cohost, 'taylor@taylorelyse.com');
+await cohost.getByLabel('Workshop code').fill(code.toLowerCase());
+await cohost.getByRole('button', { name: 'Open host view' }).click();
+await cohost.getByRole('heading', { level: 1, name: 'Team offsite' }).waitFor();
+await until(async () => (await cohost.locator('.ws-card').count()) === 2, 'co-facilitator sees participants');
+await cohost.reload();
+await cohost.getByRole('heading', { level: 1, name: 'Team offsite' }).waitFor();
+await cohost.getByRole('button', { name: 'Exit host view' }).click();
+await cohost.getByRole('dialog').getByRole('button', { name: 'Exit host view' }).click();
+await cohost.goto(`${APP_URL}?host`);
+await cohost.getByRole('button', { name: 'Open Team offsite' }).waitFor();
+await cohost.close();
+step('co-facilitating works');
 await alice.reload();
 await until(async () => (await alice.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) === 'Alice purpose, edited', 'alice reload');
 
