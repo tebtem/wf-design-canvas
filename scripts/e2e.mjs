@@ -207,6 +207,9 @@ await startField.fill('abc');
 await startField.press('Enter');
 if ((await startField.inputValue()) !== '09:00') fail('invalid time should be ignored');
 if (!(await page.locator('.tblock__time').first().textContent()).includes('09:00')) fail('time blocks should use the session start');
+// The block name shows (and can be edited) at the top of Activities, in sync with Time Blocks.
+await page.getByLabel(/^Block name, row 1/).fill('Opening circle');
+if (!(await page.getByLabel(/^Activity for 40 minute block/).inputValue()).includes('Opening circle')) fail('outline block name should update the time block');
 // Activities are rich text: a title, bullets, bold and italic.
 const acts = page.getByLabel(/^Activities, 09:00 to 09:40/);
 await acts.click();

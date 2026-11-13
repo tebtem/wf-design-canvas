@@ -7,6 +7,7 @@ import { StickyNote } from './StickyNote';
 import { PlusIcon, StickyIcon } from './Icons';
 import { cellDroppableId, type StickyDragData } from './StickyDnd';
 import { loadEditor } from './RichNote';
+import { CellComments } from './CommentMarkers';
 
 interface Props {
   cellId: string;
@@ -58,6 +59,7 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           </>
         )}
       </h3>
+      <CellComments cellId={cellId} cellTitle={fullTitle} />
       {nameLabel && (
         <div className="note-cell__heading">
           <label htmlFor={nameId ?? `${uid}-title`} className="sr-only">

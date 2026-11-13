@@ -26,6 +26,7 @@ import { hasUnsent, setUnsent, workshopCanvasKey, type ActiveWorkshop } from './
 import { parseState, saveState } from '../state/persist';
 import { CanvasView, CommentList, Gallery, useAnnouncer } from './ui';
 import { cellTitle, clampStep, LAST_STEP, REVEAL_STEPS, STEP_ANCHORS } from '../state/cells';
+import { CommentMarkersProvider } from '../components/CommentMarkers';
 
 type View = { kind: 'mine' } | { kind: 'gallery' } | { kind: 'other'; uid: string; name: string };
 type Sync = 'ok' | 'offline' | 'error';
@@ -93,11 +94,13 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
   // Show only the first step until the workshop settings load; an ended workshop shows everything.
   const step = meta === undefined ? 0 : meta === null ? LAST_STEP : clampStep(meta.step);
   const [revealed, setRevealed] = useState<number | null>(null);
-  const [lastStep, setLastStep] = useState(step);
-  if (step !== lastStep) {
+  // The step when the workshop settings first arrive is where this person starts, not a reveal.
+  const [lastStep, setLastStep] = useState<number | null>(null);
+  if (meta && lastStep === null) setLastStep(step);
+  else if (meta && lastStep !== null && step !== lastStep) {
     setLastStep(step);
-    if (meta !== undefined && meta !== null && step > lastStep) setRevealed(step);
-    if (step < lastStep) setRevealed(null);
+    if (step > lastStep) setRevealed(step);
+    else setRevealed(null);
   }
 
   // Restore the anonymous sign-in before reading anything.
@@ -404,7 +407,11 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
           <CanvasProvider storageKey={workshopCanvasKey(code)}>
             <Toolbar />
             <CanvasSync code={code} uid={uid} active={ready && !ended} onResult={setPushOk} />
-            {view.kind === 'mine' && <CanvasBody step={step} />}
+            {view.kind === 'mine' && (
+              <CommentMarkersProvider comments={comments} storageKey={`${workshopCanvasKey(code)}:dismissed-comments`}>
+                <CanvasBody step={step} />
+              </CommentMarkersProvider>
+            )}
           </CanvasProvider>
         ) : (
           <p className="ws-loading" role="status">

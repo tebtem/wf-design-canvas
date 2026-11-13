@@ -105,6 +105,8 @@ await until(async () => (await bob.getByRole('alert').textContent())?.includes('
 await bob.getByLabel('Workshop code').fill(`${code.slice(0, 3).toLowerCase()}-${code.slice(3).toLowerCase()}`);
 await bob.getByRole('button', { name: 'Join' }).click();
 await bob.getByRole('heading', { name: 'Team offsite' }).waitFor();
+await bob.waitForTimeout(500);
+if (await bob.locator('.ws-toast').getByText('Newly revealed').count()) fail('joining should not count as a reveal');
 if ((await bob.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) !== '') fail('bob should start blank');
 await bob.getByRole('textbox', { name: 'Client Name', exact: true }).fill('Bob outcome');
 step('bob joined');
@@ -164,6 +166,13 @@ await alice.screenshot({ path: out + 'ws-toast.png' });
 await alice.getByRole('button', { name: 'Go to Purpose' }).click();
 await until(async () => alice.evaluate(() => !!document.activeElement?.closest('[data-cell-id="brief.0"]')), 'Go to Purpose moves focus to Purpose');
 if (await toast.count()) fail('going to the comment should clear its notification');
+// The comment also shows as a marker in the Purpose section; dismissing it hides the marker.
+const marker = alice.getByRole('button', { name: '1 facilitator comment on Purpose' });
+await marker.click();
+await alice.locator('.cell-comments__text', { hasText: 'Try naming the decision you need.' }).waitFor();
+await axe(alice, 'comment marker');
+await alice.locator('.cell-comments').getByRole('button', { name: /^Dismiss/ }).click();
+if (await marker.count()) fail('dismissed marker should disappear');
 await until(async () => (await alice.getByRole('button', { name: /Facilitator comments \(1\)/ }).count()) === 1, 'alice comment count');
 await alice.getByRole('button', { name: /Facilitator comments/ }).click();
 if (!(await alice.locator('#ws-comments').textContent()).includes('Try naming the decision')) fail('alice cannot read comment');
@@ -236,6 +245,7 @@ await alice.reload();
 await until(async () => (await alice.getByRole('textbox', { name: 'Working Title', exact: true }).inputValue()) === 'Alice purpose, edited', 'alice reload');
 await alice.waitForTimeout(800);
 if (await alice.locator('.ws-toast--comment').count()) fail('comments already seen should not pop up again after a reload');
+if (await alice.locator('.cell-comments').count()) fail('dismissed marker should stay dismissed after a reload');
 
 // Day 2 on a different device: Alice returns with her rejoin code.
 const rejoinCode = (await alice.locator('.ws-bar__meta strong').textContent()).trim();

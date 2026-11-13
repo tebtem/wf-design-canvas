@@ -174,12 +174,10 @@ export function SessionOutline() {
                                 onInvalid={announce}
                               />
                             </span>
-                            {brk ? (
+                            {brk && (
                               <span className="outline__block outline__block--break">
                                 <CupIcon /> {name}
                               </span>
-                            ) : (
-                              b.label && <span className="outline__block">{b.label}</span>
                             )}
                           </td>
                           <td className="outline__len">
@@ -200,7 +198,23 @@ export function SessionOutline() {
                             </td>
                           ) : (
                             <>
-                              <td>{field(b.id, 'activities', `Activities, ${spoken}`, row.activities, true)}</td>
+                              <td>
+                                {/* The block's name from Time Blocks, editable here too (they stay in sync). */}
+                                {readOnly ? (
+                                  b.label && <p className="outline__name">{b.label}</p>
+                                ) : (
+                                  <input
+                                    className="outline__name"
+                                    aria-label={`Block name, ${rowName}`}
+                                    value={b.label}
+                                    placeholder="Name this block"
+                                    maxLength={120}
+                                    autoComplete="off"
+                                    onChange={(e) => dispatch({ type: 'editBlock', id: b.id, label: e.target.value })}
+                                  />
+                                )}
+                                {field(b.id, 'activities', `Activities, ${spoken}`, row.activities, true)}
+                              </td>
                               <td>{field(b.id, 'moves', `Moves and materials, ${spoken}`, row.moves)}</td>
                             </>
                           )}
