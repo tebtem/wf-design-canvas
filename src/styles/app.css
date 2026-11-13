@@ -1283,6 +1283,79 @@ button {
   color: var(--navy-soft);
   font-style: italic;
 }
+/* Rich text (Activities): title, bold, italic, bullets */
+.rich {
+  position: relative;
+}
+.rich__toolbar {
+  display: none;
+  gap: 2px;
+  margin-bottom: 4px;
+  padding: 2px;
+  border: 1px solid #9aa3c7;
+  border-radius: 8px;
+  background: var(--white);
+  width: max-content;
+}
+.rich:focus-within .rich__toolbar,
+.rich:hover .rich__toolbar {
+  display: flex;
+}
+.rich__tool {
+  min-width: 30px;
+  min-height: 28px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-weight: 700;
+}
+.rich__tool:hover {
+  background: var(--divider);
+}
+.rich__tool[aria-pressed='true'] {
+  background: var(--navy);
+  color: var(--white);
+}
+.rich__content {
+  min-height: 2.8em;
+  padding: 4px 6px;
+  border: 1px dashed transparent;
+  border-radius: 4px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.rich:not(.rich--readonly) .rich__content:hover {
+  border-color: #9aa3c7;
+}
+.rich__content:focus-visible {
+  outline: var(--focus);
+  outline-offset: 0;
+  background: var(--white);
+}
+.rich__content > * + * {
+  margin-top: 4px;
+}
+.rich__content p,
+.rich__content h3 {
+  margin: 0;
+}
+.rich__content h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+.rich__content ul {
+  margin: 0;
+  padding-left: 1.3em;
+}
+.rich__content li p {
+  margin: 0;
+}
+.rich__loading {
+  min-height: 2.8em;
+  padding: 4px 6px;
+  white-space: pre-wrap;
+}
 .outline__input {
   display: block;
   width: 100%;

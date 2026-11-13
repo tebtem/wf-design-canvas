@@ -1,7 +1,22 @@
 import { useCanvas } from '../state/CanvasContext';
 import { breakMinutes, schedule, totalMinutes, totalWithBreaks, visibleDrafts } from '../state/reducer';
 import { CupIcon } from './Icons';
-import { useState } from 'react';
+import { Component, lazy, Suspense, useState, type ReactNode } from 'react';
+import { richToText, toRichHtml } from './richText';
+
+// The rich text editor downloads only when the outline has rows to show.
+const RichText = lazy(() => import('./RichText'));
+
+/** If the rich text editor ever fails, that cell falls back to a plain text box instead of breaking the page. */
+class RichFallback extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
 import {
   BLOCK_STEP,
   clampMinutes,
@@ -55,6 +70,20 @@ export function SessionOutline() {
         {value}
       </div>
     </>
+  );
+
+  /** Activities: title, bold, italic and bullets. */
+  const richField = (blockId: string, label: string, value: string) => (
+    <RichFallback fallback={field(blockId, 'activities', label, richToText(toRichHtml(value)))}>
+      <Suspense fallback={<div className="rich__loading">{richToText(toRichHtml(value))}</div>}>
+        <RichText
+          value={value}
+          label={label}
+          readOnly={readOnly}
+          onChange={(html) => dispatch({ type: 'setOutlineRow', blockId, field: 'activities', value: html })}
+        />
+      </Suspense>
+    </RichFallback>
   );
 
   return (
@@ -197,10 +226,10 @@ export function SessionOutline() {
                           </td>
                           {brk ? (
                             // Breaks rarely need both columns: one quiet notes cell.
-                            <td colSpan={2}>{field(b.id, 'activities', `Notes for break, ${spoken}`, row.activities)}</td>
+                            <td colSpan={2}>{richField(b.id, `Notes for break, ${spoken}`, row.activities)}</td>
                           ) : (
                             <>
-                              <td>{field(b.id, 'activities', `Activities, ${spoken}`, row.activities)}</td>
+                              <td>{richField(b.id, `Activities, ${spoken}`, row.activities)}</td>
                               <td>{field(b.id, 'moves', `Moves and materials, ${spoken}`, row.moves)}</td>
                             </>
                           )}

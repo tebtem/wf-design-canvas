@@ -184,12 +184,25 @@ await startField.fill('abc');
 await startField.press('Enter');
 if ((await startField.inputValue()) !== '09:00') fail('invalid time should be ignored');
 if (!(await page.locator('.tblock__time').first().textContent()).includes('09:00')) fail('time blocks should use the session start');
-await page.getByLabel(/^Activities, 09:00 to 09:40/).fill('Kickoff and goals');
+// Activities are rich text: a title, bullets, bold and italic.
+const acts = page.getByLabel(/^Activities, 09:00 to 09:40/);
+await acts.click();
+await page.keyboard.type('# Kickoff and goals');
+await page.keyboard.press('Enter');
+await page.keyboard.type('- Pairs share ');
+await page.keyboard.press('ControlOrMeta+b');
+await page.keyboard.type('hopes');
+await page.keyboard.press('ControlOrMeta+b');
+if ((await acts.locator('h3').textContent()) !== 'Kickoff and goals') fail('"# " should make a title');
+if ((await acts.locator('li strong').textContent()) !== 'hopes') fail('bullets and bold should work');
+await page.getByRole('toolbar', { name: /^Formatting for Activities, 09:00/ }).getByRole('button', { name: 'Italic' }).click();
+await page.keyboard.type(' now');
+if ((await acts.locator('li em').textContent()) !== ' now') fail('italic button should work');
 await page.getByLabel(/^Moves and materials, 09:00 to 09:40/).fill('Slides, timer');
 await page.getByLabel('Based on').selectOption('d2');
 if (!(await outline.getByText('Add time blocks to Session Draft 2').count())) fail('empty outline message');
 await page.getByLabel('Based on').selectOption('d1');
-if ((await page.getByLabel(/^Activities, 09:00 to 09:40/).inputValue()) !== 'Kickoff and goals') fail('outline text lost when switching drafts');
+if ((await page.getByLabel(/^Activities, 09:00 to 09:40/).locator('h3').textContent()) !== 'Kickoff and goals') fail('outline text lost when switching drafts');
 // Multi-day: a Day 2 divider starts a fresh clock, in the time blocks and the outline.
 await page.getByRole('button', { name: 'Add next day' }).first().click();
 await page.getByRole('button', { name: 'Add 30 min block to Session Draft 1' }).click();

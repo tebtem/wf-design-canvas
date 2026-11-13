@@ -251,3 +251,15 @@ describe('multi-day schedules', () => {
     expect(back[1]).toEqual({ id: 'day2', kind: 'day', minutes: 0, label: '', notes: '', start: 510 });
   });
 });
+
+describe('rich text', () => {
+  it('turns old plain text into paragraphs and bullets, safely', async () => {
+    const { toRichHtml, richToText } = await import('../components/richText');
+    expect(toRichHtml('Kickoff\n• Pairs <talk>\n• Share out')).toBe(
+      '<p>Kickoff</p><ul><li><p>Pairs &lt;talk&gt;</p></li><li><p>Share out</p></li></ul>',
+    );
+    expect(toRichHtml('<h3>Title</h3>')).toBe('<h3>Title</h3>');
+    expect(toRichHtml('  ')).toBe('');
+    expect(richToText('<h3>Title</h3><ul><li><p>One</p></li></ul>')).toBe('Title\nOne');
+  });
+});
