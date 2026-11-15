@@ -283,6 +283,20 @@ describe('backup reminder', () => {
 });
 
 describe('flow columns', () => {
+  it('moves a column by swapping names and stickies', () => {
+    let s = reducer(initialState(), { type: 'setCellTitle', cellId: 'flow.0', title: 'Open' });
+    s = reducer(s, { type: 'addSticky', cellId: 'flow.0', id: 'a' });
+    s = reducer(s, { type: 'setCellTitle', cellId: 'flow.1', title: 'Explore' });
+    s = reducer(s, { type: 'moveFlowColumn', from: 0, to: 1 });
+    expect(s.cells['flow.0'].title).toBe('Explore');
+    expect(s.cells['flow.1'].title).toBe('Open');
+    expect(s.cells['flow.1'].stickies[0].id).toBe('a');
+    s = reducer(s, { type: 'moveFlowColumn', from: 1, to: 2 });
+    expect(s.cells['flow.1']).toBeUndefined();
+    expect(s.cells['flow.2'].title).toBe('Open');
+    expect(reducer(s, { type: 'moveFlowColumn', from: 5, to: 6 })).toBe(s);
+  });
+
   it('start at six, add and remove rows of six, and keep older canvases whole', () => {
     let s = initialState();
     expect(s.flowColumns).toBe(6);

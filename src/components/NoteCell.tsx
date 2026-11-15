@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { newId, useCanvas } from '../state/CanvasContext';
@@ -20,11 +20,13 @@ interface Props {
   nameLabel?: string;
   /** id for the name field, so focus can move to it. */
   nameId?: string;
+  /** Extra controls shown under the name field, e.g. the Flow column move buttons. */
+  headingControls?: ReactNode;
 }
 
 const EMPTY: Cell = { text: '', stickies: [] };
 
-export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', nameLabel, nameId }: Props) {
+export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', nameLabel, nameId, headingControls }: Props) {
   const { state, dispatch, readOnly } = useCanvas();
   const cell = state.cells[cellId] ?? EMPTY;
   const uid = useId();
@@ -88,6 +90,7 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           </span>
         </div>
       )}
+      {headingControls}
       <SortableContext items={cell.stickies.map((s) => s.id)} strategy={rectSortingStrategy}>
         {cell.stickies.length > 0 && (
           <ul className="sticky-list" aria-label={`Sticky notes in ${fullTitle}`}>

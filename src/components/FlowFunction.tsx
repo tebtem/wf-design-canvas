@@ -3,7 +3,7 @@ import { useCanvas } from '../state/CanvasContext';
 import { cellsIn, FLOW_MAX, FLOW_ROW, FLOW_SECTION } from '../state/cells';
 import { NoteCell } from './NoteCell';
 import { Section } from './Section';
-import { PlusIcon, XIcon } from './Icons';
+import { LeftIcon, PlusIcon, RightIcon, XIcon } from './Icons';
 
 /** Columns read left to right, six to a row. "Add more columns" adds a row of six, up to four rows. */
 export function FlowFunction() {
@@ -16,6 +16,21 @@ export function FlowFunction() {
   const say = (msg: string) => {
     setMessage('');
     window.setTimeout(() => setMessage(msg), 50);
+  };
+
+  /** A column's name for buttons and announcements: its typed name, or "function 3". */
+  const nameOf = (n: number) => (state.cells[`flow.${n}`]?.title ?? '').trim() || `function ${n + 1}`;
+
+  const move = (n: number, dir: -1 | 1) => {
+    const to = n + dir;
+    if (to < 0 || to >= state.flowColumns) return;
+    const name = nameOf(n);
+    dispatch({ type: 'moveFlowColumn', from: n, to });
+    say(`Moved ${name} to position ${to + 1} of ${state.flowColumns}.`);
+    // Keep focus with the column that moved; at an end, switch to its other button.
+    const atEnd = dir === -1 ? to === 0 : to === state.flowColumns - 1;
+    const side = atEnd ? (dir === -1 ? 'right' : 'left') : dir === -1 ? 'left' : 'right';
+    window.setTimeout(() => document.getElementById(`flow-move-${to}-${side}`)?.focus(), 30);
   };
 
   const addRow = () => {
@@ -53,6 +68,34 @@ export function FlowFunction() {
                   nameLabel={`Name of function ${n + 1}`}
                   nameId={`flow-name-${n}`}
                   className={`flow-col flow-col--${i}`}
+                  headingControls={
+                    !readOnly && (
+                      <div className="flow-move no-print">
+                        <button
+                          id={`flow-move-${n}-left`}
+                          type="button"
+                          className="flow-move__btn"
+                          onClick={() => move(n, -1)}
+                          disabled={n === 0}
+                          aria-label={`Move ${nameOf(n)} left`}
+                          title="Move left"
+                        >
+                          <LeftIcon />
+                        </button>
+                        <button
+                          id={`flow-move-${n}-right`}
+                          type="button"
+                          className="flow-move__btn"
+                          onClick={() => move(n, 1)}
+                          disabled={n === state.flowColumns - 1}
+                          aria-label={`Move ${nameOf(n)} right`}
+                          title="Move right"
+                        >
+                          <RightIcon />
+                        </button>
+                      </div>
+                    )
+                  }
                 />
               );
             })}

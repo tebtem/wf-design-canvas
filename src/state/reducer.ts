@@ -26,6 +26,7 @@ export type Action =
   | { type: 'load'; state: CanvasState }
   | { type: 'addFlowRow' }
   | { type: 'removeFlowRow' }
+  | { type: 'moveFlowColumn'; from: number; to: number }
   | { type: 'addDraft' }
   | { type: 'removeDraft' }
   | { type: 'reset' };
@@ -288,6 +289,21 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
         Object.entries(state.cells).filter(([id]) => !(id.startsWith('flow.') && Number(id.slice(5)) >= next)),
       );
       return { ...state, flowColumns: next, cells };
+    }
+
+    case 'moveFlowColumn': {
+      // Swaps two columns' names and stickies, so a function can step left or right.
+      const { from, to } = action;
+      const ok = (n: number) => Number.isInteger(n) && n >= 0 && n < state.flowColumns;
+      if (from === to || !ok(from) || !ok(to)) return state;
+      const cells = { ...state.cells };
+      const a = cells[`flow.${from}`];
+      const b = cells[`flow.${to}`];
+      delete cells[`flow.${from}`];
+      delete cells[`flow.${to}`];
+      if (b) cells[`flow.${from}`] = b;
+      if (a) cells[`flow.${to}`] = a;
+      return { ...state, cells };
     }
 
     case 'addDraft':

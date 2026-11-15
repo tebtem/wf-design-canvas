@@ -1034,6 +1034,30 @@ button {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+.flow-move {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  margin: 2px 0 6px;
+}
+.flow-move__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  border: 1px solid var(--navy-soft);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--navy-deep);
+  cursor: pointer;
+}
+.flow-move__btn:hover:not(:disabled) {
+  background: var(--divider);
+}
+.flow-move__btn:disabled {
+  visibility: hidden; /* keeps both buttons in place; disabled buttons are also skipped by Tab */
+}
 .flow-actions {
   display: flex;
   flex-wrap: wrap;

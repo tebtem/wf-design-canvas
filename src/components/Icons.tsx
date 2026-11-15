@@ -31,6 +31,16 @@ export const DownIcon = () => (
     <path d="M12 5v14M6 13l6 6 6-6" />
   </svg>
 );
+export const LeftIcon = () => (
+  <svg {...base}>
+    <path d="M15 6l-6 6 6 6" />
+  </svg>
+);
+export const RightIcon = () => (
+  <svg {...base}>
+    <path d="M9 6l6 6-6 6" />
+  </svg>
+);
 export const SwapIcon = () => (
   <svg {...base}>
     <path d="M7 7h12l-4-4M17 17H5l4 4" />
