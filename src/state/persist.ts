@@ -22,10 +22,13 @@ const migrateBlocks = (blocks: TimeBlock[] = []) =>
 function migrateCells(cells: Record<string, Cell>): Record<string, Cell> {
   return Object.fromEntries(
     Object.entries(cells).map(([id, c]) => {
-      const stickies = (c.stickies ?? []).map((st) => (STICKY_COLORS.includes(st.color) ? st : { ...st, color: 'orange' as const }));
-      const text = (c.text ?? '').trim();
+      // Saved data can come from another browser (a backup file or a workshop participant): keep only well-formed notes.
+      const stickies = (Array.isArray(c?.stickies) ? c.stickies : [])
+        .filter((st) => st && typeof st.id === 'string' && typeof st.text === 'string')
+        .map((st) => ({ id: st.id, text: st.text, color: STICKY_COLORS.includes(st.color) ? st.color : ('orange' as const) }));
+      const text = str(c?.text).trim();
       if (text) stickies.unshift({ id: `text-${id}`, text, color: 'yellow' });
-      return [id, c.title ? { text: '', stickies, title: str(c.title) } : { text: '', stickies }];
+      return [id, c?.title ? { text: '', stickies, title: str(c.title) } : { text: '', stickies }];
     }),
   );
 }

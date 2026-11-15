@@ -10,7 +10,9 @@ const allowedOrigin = (origin) => {
   if (!origin) return false;
   try {
     const host = new URL(origin).hostname;
-    return host === 'womenfacilitating.com' || host.endsWith('.womenfacilitating.com') || host.endsWith('.vercel.app');
+    if (host === 'womenfacilitating.com' || host.endsWith('.womenfacilitating.com')) return true;
+    // This deployment's own preview addresses only, not every site on vercel.app.
+    return [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL].filter(Boolean).includes(host);
   } catch {
     return false;
   }
@@ -33,7 +35,12 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST.' });
   if (!allowedOrigin(req.headers.origin)) return res.status(403).json({ error: 'Not allowed.' });
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body ?? {};
+  let body;
+  try {
+    body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body ?? {};
+  } catch {
+    return res.status(400).json({ error: 'Enter a valid email address.' });
+  }
   // Bots fill in the hidden "company" field; people never see it.
   if (body.company) return res.status(200).json({ ok: true });
   const email = String(body.email ?? '').trim().toLowerCase();
