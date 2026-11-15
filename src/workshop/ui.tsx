@@ -1,9 +1,10 @@
 import { useEffect, useId, useMemo, useState, type FormEvent } from 'react';
 import { ReadOnlyCanvasProvider } from '../state/CanvasContext';
-import { CELL_GROUPS, cellTitle } from '../state/cells';
+import { CELL_GROUPS, cellLabel, cellsInOrder, isCellShown } from '../state/cells';
 import { parseState } from '../state/persist';
 import { CanvasBody } from '../components/CanvasBody';
 import { SpotlightIcon, XIcon } from '../components/Icons';
+import type { CanvasState } from '../state/types';
 import type { Comment, RemoteCanvas } from './api';
 import { formatRejoinCode, spellCode } from './code';
 import { summarize, timeAgo, totalCells } from './summary';
@@ -143,10 +144,10 @@ export function CanvasView({ canvas, name, step }: { canvas: RemoteCanvas | null
   );
 }
 
-function CommentItem({ c, onDelete }: { c: Comment; onDelete?: () => void }) {
+function CommentItem({ c, canvas, onDelete }: { c: Comment; canvas?: CanvasState | null; onDelete?: () => void }) {
   return (
     <li className="ws-comment">
-      <p className="ws-comment__where">{c.cellId ? cellTitle(c.cellId) : 'Whole canvas'}</p>
+      <p className="ws-comment__where">{c.cellId ? cellLabel(c.cellId, canvas) : 'Whole canvas'}</p>
       <p className="ws-comment__text">{c.text}</p>
       {onDelete && (
         <button
@@ -164,12 +165,12 @@ function CommentItem({ c, onDelete }: { c: Comment; onDelete?: () => void }) {
 }
 
 /** Comments a participant receives. */
-export function CommentList({ comments }: { comments: Comment[] }) {
+export function CommentList({ comments, canvas }: { comments: Comment[]; canvas?: CanvasState | null }) {
   if (!comments.length) return <p className="ws-empty">No comments from your facilitator yet.</p>;
   return (
     <ul className="ws-comments">
       {comments.map((c) => (
-        <CommentItem key={c.id} c={c} />
+        <CommentItem key={c.id} c={c} canvas={canvas} />
       ))}
     </ul>
   );
@@ -180,10 +181,13 @@ interface PanelProps {
   comments: Comment[];
   onAdd: (text: string, cellId?: string) => Promise<unknown>;
   onDelete: (id: string) => Promise<unknown>;
+  /** The participant's saved canvas, so Flow columns are listed and labelled as they are arranged. */
+  canvasJson?: string;
 }
 
 /** Facilitator's comment box beside a participant's canvas. Only that participant sees these. */
-export function CommentsPanel({ name, comments, onAdd, onDelete }: PanelProps) {
+export function CommentsPanel({ name, comments, onAdd, onDelete, canvasJson }: PanelProps) {
+  const canvas = useMemo(() => parseState(canvasJson), [canvasJson]);
   const uid = useId();
   const [text, setText] = useState('');
   const [cellId, setCellId] = useState('');
@@ -219,9 +223,9 @@ export function CommentsPanel({ name, comments, onAdd, onDelete }: PanelProps) {
           <option value="">Whole canvas</option>
           {CELL_GROUPS.map((g) => (
             <optgroup key={g.section} label={g.section}>
-              {g.cells.map((c) => (
+              {cellsInOrder(g.cells, canvas).filter((c) => !canvas || isCellShown(c.id, canvas)).map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.fullTitle}
+                  {cellLabel(c.id, canvas)}
                 </option>
               ))}
             </optgroup>
@@ -256,6 +260,7 @@ export function CommentsPanel({ name, comments, onAdd, onDelete }: PanelProps) {
             <CommentItem
               key={c.id}
               c={c}
+              canvas={canvas}
               onDelete={() =>
                 onDelete(c.id).then(() => {
                   document.getElementById(`${uid}-sent`)?.focus();

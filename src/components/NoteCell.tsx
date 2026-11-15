@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { rectSortingStrategy, SortableContext } from '@dnd-kit/sortable';
 import { newId, useCanvas } from '../state/CanvasContext';
@@ -20,11 +20,13 @@ interface Props {
   nameLabel?: string;
   /** id for the name field, so focus can move to it. */
   nameId?: string;
+  /** Controls shown at the top of the cell, e.g. the Flow column drag grip. */
+  headingControls?: ReactNode;
 }
 
 const EMPTY: Cell = { text: '', stickies: [] };
 
-export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', nameLabel, nameId }: Props) {
+export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className = '', nameLabel, nameId, headingControls }: Props) {
   const { state, dispatch, readOnly } = useCanvas();
   const cell = state.cells[cellId] ?? EMPTY;
   const uid = useId();
@@ -59,6 +61,7 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           </>
         )}
       </h3>
+      {headingControls}
       <CellComments cellId={cellId} cellTitle={fullTitle} />
       {nameLabel && (
         <div className="note-cell__heading">

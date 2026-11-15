@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { formatMinutes, initialState, reducer, totalMinutes } from './reducer';
-import { loadState, saveState, STORAGE_KEY } from './persist';
+import { loadState, parseState, saveState, STORAGE_KEY } from './persist';
+import { cellLabel, flowOrder, isCellShown } from './cells';
 
 const withBlocks = () => {
   let s = initialState();
@@ -283,6 +284,36 @@ describe('backup reminder', () => {
 });
 
 describe('flow columns', () => {
+  it('reorders columns without moving their contents between cells', () => {
+    let s = reducer(initialState(), { type: 'setCellTitle', cellId: 'flow.0', title: 'Open' });
+    s = reducer(s, { type: 'addSticky', cellId: 'flow.0', id: 'a' });
+    s = reducer(s, { type: 'moveFlowColumn', from: 0, to: 2 });
+    expect(flowOrder(s)).toEqual([1, 2, 0, 3, 4, 5]);
+    expect(s.cells['flow.0'].title).toBe('Open'); // same cell, so comments on it follow
+    expect(cellLabel('flow.0', s)).toBe('Function 3: Open');
+    expect(reducer(s, { type: 'moveFlowColumn', from: 5, to: 6 })).toBe(s);
+  });
+
+  it('adds and removes rows by position after reordering, and saves the order', () => {
+    let s = reducer(initialState(), { type: 'addFlowRow' });
+    s = reducer(s, { type: 'moveFlowColumn', from: 0, to: 11 }); // flow.0 is now last
+    s = reducer(s, { type: 'addSticky', cellId: 'flow.0', id: 'a' });
+    s = reducer(s, { type: 'addSticky', cellId: 'flow.1', id: 'b' });
+    const saved = parseState(JSON.stringify(s))!;
+    expect(flowOrder(saved)).toEqual(flowOrder(s));
+    expect(saved.flowColumns).toBe(12);
+    s = reducer(s, { type: 'removeFlowRow' });
+    expect(flowOrder(s)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(s.cells['flow.0']).toBeUndefined();
+    expect(s.cells['flow.1'].stickies).toHaveLength(1);
+    expect(isCellShown('flow.0', s)).toBe(false);
+    s = reducer(s, { type: 'addFlowRow' });
+    expect(flowOrder(s)).toEqual([1, 2, 3, 4, 5, 6, 0, 7, 8, 9, 10, 11]);
+    // A reordered canvas reloads with the same columns even when a used cell number is past the count.
+    s = reducer(reducer(s, { type: 'removeFlowRow' }), { type: 'addSticky', cellId: 'flow.6', id: 'c' });
+    expect(parseState(JSON.stringify(s))!.flowColumns).toBe(6);
+  });
+
   it('start at six, add and remove rows of six, and keep older canvases whole', () => {
     let s = initialState();
     expect(s.flowColumns).toBe(6);

@@ -1,5 +1,6 @@
 import { createContext, useContext, useRef, useState, type ReactNode } from 'react';
 import {
+  closestCenter,
   closestCorners,
   DndContext,
   DragOverlay,
@@ -14,22 +15,60 @@ import {
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
+  type KeyboardCoordinateGetter,
+  type UniqueIdentifier,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useCanvas } from '../state/CanvasContext';
 import { richToText, toRichHtml } from './richText';
-import { CELL_GROUPS, cellTitle, isCellShown } from '../state/cells';
+import { CELL_GROUPS, cellLabel, cellsInOrder, flowColumnLabel, flowOrder, isCellShown } from '../state/cells';
 import { findSticky } from '../state/reducer';
 import type { CanvasState, Sticky } from '../state/types';
 
-export type StickyDragData = { type: 'sticky'; cellId: string } | { type: 'cell'; cellId: string };
+export type StickyDragData =
+  | { type: 'sticky'; cellId: string }
+  | { type: 'cell'; cellId: string }
+  /** A whole Flow, Function, and Form column, dragged by its grip to reorder. */
+  | { type: 'column'; cellId: string };
 
 export const cellDroppableId = (cellId: string) => `cell:${cellId}`;
+export const columnDragId = (cellId: string) => `column:${cellId}`;
+
+const dragType = (x: { data: { current?: unknown } } | null | undefined) =>
+  (x?.data.current as StickyDragData | undefined)?.type;
+/** Columns only land on columns; stickies only on sections and other stickies. */
+const sameKind = (active: { data: { current?: unknown } } | null | undefined) => {
+  const isColumn = dragType(active) === 'column';
+  return (c: { data: { current?: unknown } }) => (dragType(c) === 'column') === isColumn;
+};
 
 const collision: CollisionDetection = (args) => {
-  const hits = pointerWithin(args);
-  return hits.length ? hits : closestCorners(args);
+  const scoped = { ...args, droppableContainers: args.droppableContainers.filter(sameKind(args.active)) };
+  if (dragType(args.active) === 'column') return closestCenter(scoped);
+  const hits = pointerWithin(scoped);
+  return hits.length ? hits : closestCorners(scoped);
 };
+
+const keyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
+  const all = args.context.droppableContainers;
+  const keep = sameKind(args.context.active);
+  // Only getEnabled() and get() are read, so a light wrapper is enough to scope the targets.
+  const droppableContainers = { getEnabled: () => all.getEnabled().filter(keep), get: (id: UniqueIdentifier) => all.get(id) };
+  return sortableKeyboardCoordinates(event, {
+    ...args,
+    context: { ...args.context, droppableContainers: droppableContainers as unknown as typeof all },
+  });
+};
+
+/** Position a column drag is over, from any droppable in that column. */
+function columnTarget(state: CanvasState, over: Over): number | null {
+  const data = over?.data.current as StickyDragData | undefined;
+  if (!data) return null;
+  const n = flowOrder(state).indexOf(Number(data.cellId.replace('flow.', '')));
+  return data.cellId.startsWith('flow.') && n !== -1 ? n : null;
+}
+const columnName = (state: CanvasState, position: number) =>
+  flowColumnLabel(position, state.cells[`flow.${flowOrder(state)[position]}`]?.title);
 
 type Over = { id: string | number; data: { current?: unknown } } | null;
 
@@ -62,27 +101,41 @@ export function StickyDnd({ children, step = Infinity }: { children: ReactNode; 
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     // Space picks a note up to move with the arrow keys; Enter on the grip opens the Move dialog instead.
     useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
+      coordinateGetter: keyboardCoordinates,
       keyboardCodes: { start: [KeyboardCode.Space], cancel: [KeyboardCode.Esc], end: [KeyboardCode.Space, KeyboardCode.Enter] },
     }),
   );
 
   const where = (over: Over) => {
     const t = resolveTarget(state, over);
-    return t ? `${cellTitle(t.cellId)}, position ${t.index + 1}` : null;
+    return t ? `${cellLabel(t.cellId, state)}, position ${t.index + 1}` : null;
   };
 
+  const columnFrom = (active: { id: string | number }) =>
+    flowOrder(state).indexOf(Number(String(active.id).replace('column:flow.', '')));
+
   const announcements: Announcements = {
-    onDragStart: () => 'Picked up sticky note.',
-    onDragOver: ({ over }) => {
+    onDragStart: ({ active }) =>
+      dragType(active) === 'column' ? `Picked up ${columnName(state, columnFrom(active))}.` : 'Picked up sticky note.',
+    onDragOver: ({ active, over }) => {
+      if (dragType(active) === 'column') {
+        const to = columnTarget(state, over);
+        return to === null ? '' : `Over position ${to + 1} of ${state.flowColumns}.`;
+      }
       const w = where(over);
       return w ? `Sticky note is over ${w}.` : 'Sticky note is not over a section.';
     },
-    onDragEnd: ({ over }) => {
+    onDragEnd: ({ active, over }) => {
+      if (dragType(active) === 'column') {
+        const to = columnTarget(state, over);
+        const name = columnName(state, columnFrom(active));
+        return to === null ? `Dropped ${name}. It was not moved.` : `Moved ${name} to position ${to + 1} of ${state.flowColumns}.`;
+      }
       const w = where(over);
       return w ? `Dropped sticky note in ${w}.` : 'Dropped sticky note. It was not moved.';
     },
-    onDragCancel: () => 'Cancelled. Sticky note was not moved.',
+    onDragCancel: ({ active }) =>
+      dragType(active) === 'column' ? 'Cancelled. Column was not moved.' : 'Cancelled. Sticky note was not moved.',
   };
 
   const onDragStart = ({ active }: DragStartEvent) => {
@@ -101,6 +154,15 @@ export function StickyDnd({ children, step = Infinity }: { children: ReactNode; 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     lastDragEnd.current = Date.now();
     setActive(null);
+    if (dragType(active) === 'column') {
+      const from = columnFrom(active);
+      const to = columnTarget(state, over);
+      if (from !== -1 && to !== null && to !== from) dispatch({ type: 'moveFlowColumn', from, to });
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>(`[data-cell-id="${String(active.id).slice(7)}"] .flow-grip`)?.focus(),
+      );
+      return;
+    }
     const id = String(active.id);
     const from = findSticky(state, id);
     const to = resolveTarget(state, over);
@@ -134,7 +196,7 @@ export function StickyDnd({ children, step = Infinity }: { children: ReactNode; 
   const confirmMove = () => {
     if (!moving) return;
     dispatch({ type: 'moveSticky', id: moving.id, toCell, toIndex });
-    announce(`Sticky note moved to ${cellTitle(toCell)}, position ${toIndex + 1}.`);
+    announce(`Sticky note moved to ${cellLabel(toCell, state)}, position ${toIndex + 1}.`);
   };
 
   return (
@@ -150,7 +212,7 @@ export function StickyDnd({ children, step = Infinity }: { children: ReactNode; 
           announcements,
           screenReaderInstructions: {
             draggable:
-              'To pick up a sticky note, press Space, use the arrow keys to move it, then press Space again to drop it, or Escape to cancel. Press Enter (or click) instead to choose a section and position from a list.',
+              'To pick up a sticky note or column, press Space, use the arrow keys to move it, then press Space again to drop it, or Escape to cancel. For a sticky note, press Enter (or click) instead to choose a section and position from a list.',
           },
         }}
       >
@@ -183,9 +245,9 @@ export function StickyDnd({ children, step = Infinity }: { children: ReactNode; 
           >
             {CELL_GROUPS.filter((g) => g.step <= step).map((g) => (
               <optgroup key={g.section} label={g.section}>
-                {g.cells.filter((c) => isCellShown(c.id, state.flowColumns)).map((c) => (
+                {cellsInOrder(g.cells, state).filter((c) => isCellShown(c.id, state)).map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.fullTitle}
+                    {cellLabel(c.id, state)}
                   </option>
                 ))}
               </optgroup>

@@ -91,6 +91,8 @@ export interface CanvasState {
   outline: Outline;
   /** How many Flow, Function, and Form columns are shown: rows of six (6, 12, 18 or 24). */
   flowColumns: number;
+  /** Which Flow cell (flow.N) sits in each position, left to right. Missing means flow.0, flow.1, ... in order. */
+  flowOrder?: number[];
   /** How many drafts are on screen (1 to 3). Drafts are added with Add another draft. */
   draftCount: number;
 }

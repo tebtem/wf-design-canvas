@@ -6,7 +6,7 @@ import { isCellShown } from '../state/cells';
 
 /** Note sections on a canvas (Flow, Function, and Form counts only the columns it shows). */
 export const totalCells = (state: CanvasState) =>
-  CELL_GROUPS.reduce((n, g) => n + g.cells.filter((c) => isCellShown(c.id, state.flowColumns)).length, 0);
+  CELL_GROUPS.reduce((n, g) => n + g.cells.filter((c) => isCellShown(c.id, state)).length, 0);
 
 export interface CanvasSummary {
   filled: number;

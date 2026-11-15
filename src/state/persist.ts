@@ -1,5 +1,5 @@
 import { emptyDetails, initialState } from './reducer';
-import { clampStep, FLOW_MAX, FLOW_ROW } from './cells';
+import { clampStep, FLOW_MAX, FLOW_ROW, isValidFlowOrder } from './cells';
 import { clampMinutes, DRAFT_IDS, STICKY_COLORS, type CanvasDetails, type Outline, type CanvasState, type Cell, type TimeBlock } from './types';
 
 /** Blocks saved before notes existed get an empty notes field. */
@@ -39,6 +39,12 @@ function migrateOutline(o: Partial<Outline> | undefined, draftCount: number): Ou
   return { draft, start, rows };
 }
 
+/** A saved column order, with the column count it implies; null for canvases saved before reordering. */
+function migrateFlowOrder(parsed: Partial<CanvasState>): number[] | null {
+  const saved = parsed.flowOrder;
+  return Array.isArray(saved) && saved.length >= FLOW_ROW && saved.length % FLOW_ROW === 0 && isValidFlowOrder(saved, saved.length) ? saved : null;
+}
+
 /** Rows of six; never hide a column that has something in it (older canvases had nine columns). */
 function migrateFlowColumns(parsed: Partial<CanvasState>): number {
   const used = Object.entries(parsed.cells ?? {})
@@ -66,6 +72,7 @@ export function parseState(raw: string | null | undefined): CanvasState | null {
     const old = parsed as { showDraft2?: boolean };
     const saved = typeof parsed.draftCount === 'number' ? parsed.draftCount : old.showDraft2 ? 2 : 1;
     // Never hide a draft that has blocks in it.
+    const order = migrateFlowOrder(parsed);
     const draftCount = Math.max(1, Math.min(3, Math.floor(saved)), d3.length ? 3 : d2.length ? 2 : 1);
     return {
       version: 1,
@@ -74,7 +81,7 @@ export function parseState(raw: string | null | undefined): CanvasState | null {
       drafts: { d1: migrateBlocks(parsed.drafts.d1), d2, d3 },
       draftCount,
       outline: migrateOutline(parsed.outline, draftCount),
-      flowColumns: migrateFlowColumns(parsed),
+      ...(order ? { flowColumns: order.length, flowOrder: order } : { flowColumns: migrateFlowColumns(parsed) }),
       // Canvases saved before the guide existed open fully revealed.
       step: clampStep(parsed.step),
     };
