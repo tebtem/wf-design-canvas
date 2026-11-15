@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useCanvas } from '../state/CanvasContext';
 import { initialState } from '../state/reducer';
 import { parseState } from '../state/persist';
-import { clearLinkParams, pendingOptIn, setPendingOptIn } from '../workshop/session';
+import { accountSignedInEmail, clearLinkParams, markAccountSignedIn, pendingOptIn, setPendingOptIn } from '../workshop/session';
 import { timeAgo } from '../workshop/summary';
 import type { SavedCanvas } from './api';
 import { ACCOUNT_READY_EVENT, SIGNED_IN_EVENT } from './AccountSync';
@@ -47,14 +47,22 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
   const refresh = async (signedInEmail: string) => {
     setView({ kind: 'signedIn', email: signedInEmail });
     setCurrent(activeSlot());
-    setCanvases(await (await api()).listCanvases().catch(() => []));
+    const list = await (await api()).listCanvases().catch(() => null);
+    if (!list) setError('Your saved canvases could not be loaded. Check your internet connection and try again.');
+    setCanvases(list ?? []);
     setNow(Date.now());
   };
 
   const check = async () => {
     const a = await api();
     const acct = await a.currentAccount().catch(() => null);
-    if (acct) await refresh(acct.email);
+    if (acct && !accountSignedInEmail()) {
+      // Signed in (for example as a facilitator) but this canvas was never connected to the account.
+      markAccountSignedIn(acct.email);
+      setView({ kind: 'signedIn', email: acct.email });
+      window.addEventListener(ACCOUNT_READY_EVENT, () => void refresh(acct.email), { once: true });
+      window.dispatchEvent(new Event(SIGNED_IN_EVENT));
+    } else if (acct) await refresh(acct.email);
     else setView({ kind: 'signedOut' });
   };
 
@@ -328,7 +336,7 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
                 ))}
               </ul>
               <p className="ws-hint">
-                {canvases.length} of 3 canvases saved.
+                {canvases.length} of 3 canvases saved. Canvases save automatically as you work.
                 {!current &&
                   canvases.length >= 3 &&
                   ' The canvas on screen is not saved to your account. Delete one to save it.'}

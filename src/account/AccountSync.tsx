@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useCanvas } from '../state/CanvasContext';
 import { parseState } from '../state/persist';
 import { workAmount } from '../state/backup';
-import { accountSignedInEmail } from '../workshop/session';
+import { accountSignedInEmail, hostSignedInEmail, markAccountSignedIn } from '../workshop/session';
 import {
   activeSlot,
   hasUnsentAccountChanges,
@@ -35,10 +35,12 @@ export function AccountSync() {
     let live = true;
     const start = async () => {
       ready.current = false;
-      if (!accountSignedInEmail()) return;
+      // Facilitators who signed in before accounts existed have only the host flag; treat them as signed in too.
+      if (!accountSignedInEmail() && !hostSignedInEmail()) return;
       const api = await import('./api');
       const acct = await api.currentAccount().catch(() => null);
       if (!acct || !live) return;
+      if (!accountSignedInEmail()) markAccountSignedIn(acct.email);
       const list = await api.listCanvases().catch(() => null);
       if (!list || !live) return;
       const local = latest.current;
