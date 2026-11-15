@@ -251,6 +251,7 @@ export default function FacilitatorApp({ workshop, onExit }: Props) {
             <CommentsPanel
               name={person?.name ?? 'this participant'}
               comments={comments[selected] ?? []}
+              canvasJson={canvases[selected]?.state}
               onAdd={(text, cellId) => addComment(code, selected, text, cellId)}
               onDelete={(id) => deleteComment(code, selected, id)}
             />

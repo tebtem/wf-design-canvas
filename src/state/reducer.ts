@@ -1,5 +1,5 @@
 import { clampMinutes, DRAFT_IDS, MAX_DRAFTS } from './types';
-import { FLOW_MAX, FLOW_ROW, LAST_STEP } from './cells';
+import { FLOW_MAX, FLOW_ROW, flowOrder, LAST_STEP } from './cells';
 import type { BlockMinutes, CanvasDetails, CanvasState, Cell, DraftId, OutlineRow, StickyColor, TimeBlock } from './types';
 
 export type Action =
@@ -278,32 +278,34 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
     case 'load':
       return action.state;
 
-    case 'addFlowRow':
-      return { ...state, flowColumns: Math.min(FLOW_MAX, state.flowColumns + FLOW_ROW) };
+    case 'addFlowRow': {
+      if (state.flowColumns >= FLOW_MAX) return state;
+      const order = flowOrder(state);
+      const unused = Array.from({ length: FLOW_MAX }, (_, i) => i).filter((i) => !order.includes(i));
+      const next = [...order, ...unused.slice(0, FLOW_ROW)];
+      return { ...state, flowColumns: next.length, flowOrder: next };
+    }
 
     case 'removeFlowRow': {
       if (state.flowColumns <= FLOW_ROW) return state;
-      const next = state.flowColumns - FLOW_ROW;
+      const order = flowOrder(state);
+      const removed = new Set(order.slice(-FLOW_ROW).map((n) => `flow.${n}`));
       // Clear the removed columns so they come back empty if added again.
-      const cells = Object.fromEntries(
-        Object.entries(state.cells).filter(([id]) => !(id.startsWith('flow.') && Number(id.slice(5)) >= next)),
-      );
-      return { ...state, flowColumns: next, cells };
+      const cells = Object.fromEntries(Object.entries(state.cells).filter(([id]) => !removed.has(id)));
+      const next = order.slice(0, -FLOW_ROW);
+      return { ...state, flowColumns: next.length, flowOrder: next, cells };
     }
 
     case 'moveFlowColumn': {
-      // Swaps two columns' names and stickies, so a function can step left or right.
+      // Positions, not cell numbers: the column at `from` moves to `to` and the rest shift over.
+      // Cells keep their ids, so comments tied to a column move with it.
+      const order = flowOrder(state);
       const { from, to } = action;
-      const ok = (n: number) => Number.isInteger(n) && n >= 0 && n < state.flowColumns;
+      const ok = (n: number) => Number.isInteger(n) && n >= 0 && n < order.length;
       if (from === to || !ok(from) || !ok(to)) return state;
-      const cells = { ...state.cells };
-      const a = cells[`flow.${from}`];
-      const b = cells[`flow.${to}`];
-      delete cells[`flow.${from}`];
-      delete cells[`flow.${to}`];
-      if (b) cells[`flow.${from}`] = b;
-      if (a) cells[`flow.${to}`] = a;
-      return { ...state, cells };
+      const next = [...order];
+      next.splice(to, 0, ...next.splice(from, 1));
+      return { ...state, flowOrder: next };
     }
 
     case 'addDraft':

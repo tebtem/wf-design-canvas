@@ -20,7 +20,7 @@ interface Props {
   nameLabel?: string;
   /** id for the name field, so focus can move to it. */
   nameId?: string;
-  /** Extra controls shown under the name field, e.g. the Flow column move buttons. */
+  /** Controls shown at the top of the cell, e.g. the Flow column drag grip. */
   headingControls?: ReactNode;
 }
 
@@ -61,6 +61,7 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           </>
         )}
       </h3>
+      {headingControls}
       <CellComments cellId={cellId} cellTitle={fullTitle} />
       {nameLabel && (
         <div className="note-cell__heading">
@@ -90,7 +91,6 @@ export function NoteCell({ cellId, title, accessibleTitle, hideTitle, className 
           </span>
         </div>
       )}
-      {headingControls}
       <SortableContext items={cell.stickies.map((s) => s.id)} strategy={rectSortingStrategy}>
         {cell.stickies.length > 0 && (
           <ul className="sticky-list" aria-label={`Sticky notes in ${fullTitle}`}>

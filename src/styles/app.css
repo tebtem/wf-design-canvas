@@ -1034,29 +1034,42 @@ button {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
-.flow-move {
+.flow-slot {
   display: flex;
-  justify-content: space-between;
-  gap: 4px;
-  margin: 2px 0 6px;
+  min-width: 0;
 }
-.flow-move__btn {
+.flow-slot > .note-cell {
+  flex: 1;
+}
+.flow-slot.is-dragging {
+  position: relative;
+  z-index: 2;
+  opacity: 0.85;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+.flow-grip {
+  align-self: center;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
-  min-height: 32px;
-  border: 1px solid var(--navy-soft);
+  width: 44px;
+  height: 24px;
+  margin: -4px 0 4px;
+  border: 0;
   border-radius: 6px;
-  background: var(--white);
-  color: var(--navy-deep);
-  cursor: pointer;
+  background: transparent;
+  color: var(--navy-soft);
+  cursor: grab;
+  touch-action: none;
 }
-.flow-move__btn:hover:not(:disabled) {
-  background: var(--divider);
+.flow-grip svg {
+  transform: rotate(90deg); /* dots run sideways, like a tab you pull */
 }
-.flow-move__btn:disabled {
-  visibility: hidden; /* keeps both buttons in place; disabled buttons are also skipped by Tab */
+.flow-grip:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+.flow-slot.is-dragging .flow-grip {
+  cursor: grabbing;
 }
 .flow-actions {
   display: flex;

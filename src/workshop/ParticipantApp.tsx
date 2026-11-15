@@ -23,9 +23,9 @@ import {
 } from './api';
 import { formatCode, formatRejoinCode, spellCode } from './code';
 import { hasUnsent, setUnsent, workshopCanvasKey, type ActiveWorkshop } from './session';
-import { parseState, saveState } from '../state/persist';
+import { parseState, readState, saveState } from '../state/persist';
 import { CanvasView, CommentList, Gallery, useAnnouncer } from './ui';
-import { cellTitle, clampStep, LAST_STEP, REVEAL_STEPS, STEP_ANCHORS } from '../state/cells';
+import { cellLabel, clampStep, LAST_STEP, REVEAL_STEPS, STEP_ANCHORS } from '../state/cells';
 import { CommentMarkersProvider } from '../components/CommentMarkers';
 
 type View = { kind: 'mine' } | { kind: 'gallery' } | { kind: 'other'; uid: string; name: string };
@@ -223,7 +223,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
     if (!fresh.length) return;
     setCommentToasts((list) => [...list, ...fresh].slice(-3));
     const last = fresh[fresh.length - 1];
-    announce(`New comment from your facilitator${last.cellId ? ` about ${cellTitle(last.cellId)}` : ''}: ${last.text}`);
+    announce(`New comment from your facilitator${last.cellId ? ` about ${cellLabel(last.cellId, readState(workshopCanvasKey(code)))}` : ''}: ${last.text}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comments, commentsLoaded]);
 
@@ -352,7 +352,7 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
           )}
         </div>
         <div id="ws-comments" className="ws-bar__comments" hidden={!showComments}>
-          <CommentList comments={comments} />
+          <CommentList comments={comments} canvas={readState(workshopCanvasKey(code))} />
         </div>
       </section>
 
@@ -475,12 +475,12 @@ export default function ParticipantApp({ workshop, onLeave }: Props) {
           {commentToasts.map((c) => (
             <div key={c.id} className="ws-toast ws-toast--comment">
               <p className="ws-toast__title">
-                Comment from your facilitator{c.cellId ? ` on ${cellTitle(c.cellId)}` : ''}
+                Comment from your facilitator{c.cellId ? ` on ${cellLabel(c.cellId, readState(workshopCanvasKey(code)))}` : ''}
               </p>
               <p className="ws-toast__text">{c.text}</p>
               <div className="ws-toast__actions">
                 <button type="button" className="btn btn--small btn--primary" onClick={() => goToCell(c)}>
-                  {c.cellId ? `Go to ${cellTitle(c.cellId)}` : 'See all comments'}
+                  {c.cellId ? `Go to ${cellLabel(c.cellId, readState(workshopCanvasKey(code)))}` : 'See all comments'}
                 </button>
                 <button
                   type="button"
