@@ -18,9 +18,12 @@ export const workshopsEnabled = Boolean(firebaseConfig.apiKey && firebaseConfig.
 /** Days a workshop stays online before it expires and is deleted. */
 export const RETENTION_DAYS = 90; // long enough for an 8-week course, with room to spare
 
-/** Whether an email may host workshops. The database rules enforce the same list. */
-export function isAllowedHostEmail(email: string): boolean {
-  const e = email.trim().toLowerCase();
-  const domain = e.split('@')[1] ?? '';
-  return allowlist.emails.includes(e) || allowlist.domains.includes(domain);
+/**
+ * Whether an email's domain may host workshops. Other facilitators are approved individually with
+ * `npm run hosts -- add <email>`, which marks their account in Firebase so no emails are listed here.
+ * The database rules enforce the same.
+ */
+export function isHostDomain(email: string): boolean {
+  const domain = email.trim().toLowerCase().split('@')[1] ?? '';
+  return allowlist.domains.includes(domain);
 }

@@ -70,10 +70,12 @@ export function HostPanel({ emailLink, onEnter }: Props) {
     let live = true;
     (async () => {
       const a = await api();
+      let justSignedIn = false;
       if (emailLink && a.isHostLink(window.location.href)) {
         try {
           await a.completeHostSignIn(window.location.href);
           clearLinkParams();
+          justSignedIn = true;
         } catch (err) {
           if (!live) return;
           if ((err as Error).message.startsWith('Confirm')) return setView({ kind: 'confirm' });
@@ -85,6 +87,7 @@ export function HostPanel({ emailLink, onEnter }: Props) {
       if (!live) return;
       if (host) await showSignedIn(host);
       else setView((v) => (v.kind === 'checking' ? { kind: 'signedOut' } : v));
+      if (!host && justSignedIn) setError(a.NOT_A_HOST);
     })();
     return () => {
       live = false;
@@ -122,6 +125,10 @@ export function HostPanel({ emailLink, onEnter }: Props) {
       clearLinkParams();
       const host = await a.currentHost();
       if (host) await showSignedIn(host);
+      else {
+        setView({ kind: 'signedOut' });
+        setError(a.NOT_A_HOST);
+      }
     });
   };
 

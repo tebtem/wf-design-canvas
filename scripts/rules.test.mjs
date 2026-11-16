@@ -34,14 +34,15 @@ const S = 'ABC234';
 const meta = (extra = {}) => ({ title: 'Test', facilitator: 'fac', createdAt: TS, expiresAt: Date.now() + 89 * DAY, canView: false, step: 0, ...extra });
 const canvas = (text) => ({ state: JSON.stringify({ version: 1, text }), updatedAt: TS });
 
-// Only approved hosts (verified email on the allowlist) can start workshops.
+// Only approved hosts (verified email at an approved domain, or marked as a host) can start workshops.
 const tryCreate = (ctx, uid, code) =>
   ctx.ref().update({ [`sessions/${code}/meta`]: meta({ facilitator: uid }), [`expiries/${code}`]: meta().expiresAt });
 await check('anonymous users cannot host', assertFails(tryCreate(db('anon1'), 'anon1', 'HHH234')));
 await check('unlisted emails cannot host', assertFails(tryCreate(db('x1', verified('someone@example.com')), 'x1', 'HHH235')));
 await check('look-alike domains cannot host', assertFails(tryCreate(db('x2', verified('a@womenfacilitating.com.evil.io')), 'x2', 'HHH236')));
 await check('unverified emails cannot host', assertFails(tryCreate(db('x3', { email: 'a@womenfacilitating.com', email_verified: false }), 'x3', 'HHH237')));
-await check('listed outside emails can host', assertSucceeds(tryCreate(db('x4', verified('annie@theteamtogether.com')), 'x4', 'HHH238')));
+await check('approved outside emails can host', assertSucceeds(tryCreate(db('x4', { ...verified('cofounder@example.com'), host: true }), 'x4', 'HHH238')));
+await check('the host mark needs a verified email', assertFails(tryCreate(db('x6', { email: 'x@example.com', email_verified: false, host: true }), 'x6', 'HHH23A')));
 await check('host creates a session with its expiry index and host list entry', assertSucceeds(fac.ref().update({ [`sessions/${S}/meta`]: meta(), [`expiries/${S}`]: meta().expiresAt, [`hosts/fac/${S}`]: Date.now() })));
 await check('host reads their workshop list', assertSucceeds(fac.ref('hosts/fac').get()));
 await check("others cannot read a host's list", assertFails(eve.ref('hosts/fac').get()));
@@ -122,7 +123,7 @@ await check('aliased device counts as a member when sharing is on', assertSuccee
 await check('host cannot alias into a participant', assertFails(fac.ref(`sessions/${S}/aliases/fac`).set({ pid: 'alice', key: KEY })));
 
 // Co-facilitators: any approved, signed-in facilitator gets the host view of a workshop.
-const co = db('co', verified('shannon@theteamtogether.com'));
+const co = db('co', { ...verified('cofounder@example.com'), host: true });
 await check('co-facilitator reads members', assertSucceeds(co.ref(`sessions/${S}/members`).get()));
 await check('co-facilitator reads every canvas', assertSucceeds(co.ref(`sessions/${S}/canvases`).get()));
 await check('co-facilitator reads comments', assertSucceeds(co.ref(`sessions/${S}/comments`).get()));

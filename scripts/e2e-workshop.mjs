@@ -61,11 +61,18 @@ await visitor.goto(APP_URL);
 await openWorkshop(visitor);
 if (await visitor.getByRole('radio', { name: 'Host a workshop' }).count()) fail('participants should not see Host a workshop');
 await axe(visitor, 'workshop dialog');
-// Unapproved emails cannot get a sign-in link.
+// Unapproved emails can sign in but are told they cannot host.
 await visitor.goto(`${APP_URL}?host`);
 await visitor.getByLabel('Facilitator email').fill('someone@example.com');
 await visitor.getByRole('button', { name: 'Email me a sign-in link' }).click();
+await visitor.getByText('Check your inbox').waitFor();
+{
+  const { oobCodes } = await (await fetch(AUTH_EMU)).json();
+  const link = oobCodes.filter((c) => c.email === 'someone@example.com' && c.requestType === 'EMAIL_SIGNIN').pop();
+  await visitor.goto(`${APP_URL}?apiKey=demo-key&oobCode=${link.oobCode}&mode=signIn&lang=en`);
+}
 await until(async () => (await visitor.getByRole('alert').textContent())?.includes('not set up to host'), 'unapproved email error');
+if (await visitor.getByLabel('Workshop name').count()) fail('unapproved emails should not be able to start a workshop');
 await axe(visitor, 'facilitator sign-in');
 await visitor.close();
 
@@ -233,7 +240,7 @@ step('host view works on a second device');
 
 // A co-founder co-facilitates by entering the code in their facilitator panel.
 const cohost = await newPage();
-await hostSignIn(cohost, 'taylor@taylorelyse.com');
+await hostSignIn(cohost, 'cohost@womenfacilitating.com');
 await cohost.getByLabel('Workshop code').fill(code.toLowerCase());
 await cohost.getByRole('button', { name: 'Open host view' }).click();
 await cohost.getByRole('heading', { level: 1, name: 'Team offsite' }).waitFor();
@@ -380,7 +387,7 @@ step('free accounts work');
 // Phone width.
 const phone = await newPage();
 await phone.setViewportSize({ width: 375, height: 800 });
-await hostSignIn(phone, 'taylor@taylorelyse.com');
+await hostSignIn(phone, 'cohost@womenfacilitating.com');
 await phone.getByRole('button', { name: 'Start workshop' }).click();
 await phone.getByRole('heading', { level: 1, name: 'Workshop' }).waitFor();
 const w = await phone.evaluate(() => document.documentElement.scrollWidth);

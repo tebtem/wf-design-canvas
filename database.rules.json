@@ -6,10 +6,10 @@
       ],
       "$code": {
         ".validate": "$code.matches(/^[A-HJKMNP-Z2-9]{6}$/)",
-        ".write": "auth != null && !newData.exists() && (data.child('meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')) || data.child('meta/expiresAt').val() < now)",
+        ".write": "auth != null && !newData.exists() && (data.child('meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true)) || data.child('meta/expiresAt').val() < now)",
         "meta": {
           ".read": "auth != null && data.child('expiresAt').val() > now",
-          ".write": "auth != null && newData.exists() && ((!data.exists() && newData.child('facilitator').val() === auth.uid && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com'))) || ((data.child('facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com'))) && data.child('expiresAt').val() > now))",
+          ".write": "auth != null && newData.exists() && ((!data.exists() && newData.child('facilitator').val() === auth.uid && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true))) || ((data.child('facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true))) && data.child('expiresAt').val() > now))",
           ".validate": "newData.hasChildren(['title', 'facilitator', 'createdAt', 'expiresAt', 'canView'])",
           "title": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"
@@ -46,10 +46,10 @@
           }
         },
         "members": {
-          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && ((root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com'))) || ((root.child('sessions/' + $code + '/members/' + auth.uid).exists() || root.child('sessions/' + $code + '/aliases/' + auth.uid).exists()) && root.child('sessions/' + $code + '/meta/canView').val() === true))",
+          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && ((root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true))) || ((root.child('sessions/' + $code + '/members/' + auth.uid).exists() || root.child('sessions/' + $code + '/aliases/' + auth.uid).exists()) && root.child('sessions/' + $code + '/meta/canView').val() === true))",
           "$uid": {
             ".read": "auth != null && (auth.uid === $uid || root.child('sessions/' + $code + '/aliases/' + auth.uid + '/pid').val() === $uid)",
-            ".write": "auth != null && auth.uid === $uid && newData.exists() && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && !((root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com'))))",
+            ".write": "auth != null && auth.uid === $uid && newData.exists() && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && !((root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true))))",
             ".validate": "newData.hasChildren(['name', 'joinedAt'])",
             "name": {
               ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60"
@@ -63,7 +63,7 @@
           }
         },
         "canvases": {
-          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && ((root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com'))) || ((root.child('sessions/' + $code + '/members/' + auth.uid).exists() || root.child('sessions/' + $code + '/aliases/' + auth.uid).exists()) && root.child('sessions/' + $code + '/meta/canView').val() === true))",
+          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && ((root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true))) || ((root.child('sessions/' + $code + '/members/' + auth.uid).exists() || root.child('sessions/' + $code + '/aliases/' + auth.uid).exists()) && root.child('sessions/' + $code + '/meta/canView').val() === true))",
           "$uid": {
             ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && ((auth.uid === $uid || root.child('sessions/' + $code + '/aliases/' + auth.uid + '/pid').val() === $uid) || ((root.child('sessions/' + $code + '/members/' + auth.uid).exists() || root.child('sessions/' + $code + '/aliases/' + auth.uid).exists()) && root.child('sessions/' + $code + '/meta/spotlight/uid').val() === $uid))",
             ".write": "auth != null && (auth.uid === $uid || root.child('sessions/' + $code + '/aliases/' + auth.uid + '/pid').val() === $uid) && newData.exists() && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && root.child('sessions/' + $code + '/members/' + $uid).exists()",
@@ -80,11 +80,11 @@
           }
         },
         "comments": {
-          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')))",
+          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true)))",
           "$uid": {
             ".read": "auth != null && (auth.uid === $uid || root.child('sessions/' + $code + '/aliases/' + auth.uid + '/pid').val() === $uid) && root.child('sessions/' + $code + '/meta/expiresAt').val() > now",
             "$cid": {
-              ".write": "auth != null && (root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com'))) && root.child('sessions/' + $code + '/meta/expiresAt').val() > now",
+              ".write": "auth != null && (root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true))) && root.child('sessions/' + $code + '/meta/expiresAt').val() > now",
               ".validate": "newData.hasChildren(['text', 'createdAt'])",
               "text": {
                 ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 1000"
@@ -102,7 +102,7 @@
           }
         },
         "presence": {
-          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')))",
+          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true)))",
           "$uid": {
             ".write": "auth != null && (auth.uid === $uid || root.child('sessions/' + $code + '/aliases/' + auth.uid + '/pid').val() === $uid) && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (!newData.exists() || root.child('sessions/' + $code + '/members/' + $uid).exists())",
             ".validate": "newData.val() === true"
@@ -116,7 +116,7 @@
           }
         },
         "rejoinKeys": {
-          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')))",
+          ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true)))",
           "$uid": {
             ".read": "auth != null && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && (auth.uid === $uid || root.child('sessions/' + $code + '/aliases/' + auth.uid + '/pid').val() === $uid)",
             ".write": "auth != null && auth.uid === $uid && !data.exists() && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && newData.parent().parent().child('rejoin/' + newData.val()).val() === auth.uid",
@@ -126,7 +126,7 @@
         "aliases": {
           "$uid": {
             ".read": "auth != null && auth.uid === $uid",
-            ".write": "auth != null && auth.uid === $uid && newData.exists() && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && !((root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com'))))",
+            ".write": "auth != null && auth.uid === $uid && newData.exists() && root.child('sessions/' + $code + '/meta/expiresAt').val() > now && !((root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true))))",
             ".validate": "newData.hasChildren(['pid', 'key']) && newData.child('key').val().matches(/^[A-HJKMNP-Z2-9]{8}$/) && root.child('sessions/' + $code + '/rejoin/' + newData.child('key').val()).val() === newData.child('pid').val()",
             "pid": {
               ".validate": "newData.isString()"
@@ -175,7 +175,7 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         "$code": {
-          ".write": "auth != null && auth.uid === $uid && (!newData.exists() || newData.parent().parent().parent().child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (newData.parent().parent().parent().child('sessions/' + $code + '/meta').exists() && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com'))))",
+          ".write": "auth != null && auth.uid === $uid && (!newData.exists() || newData.parent().parent().parent().child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (newData.parent().parent().parent().child('sessions/' + $code + '/meta').exists() && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true))))",
           ".validate": "newData.isNumber()"
         }
       }
@@ -184,7 +184,7 @@
       ".read": false,
       ".indexOn": ".value",
       "$code": {
-        ".write": "auth != null && (newData.exists() ? (!data.exists() && newData.parent().parent().child('sessions/' + $code + '/meta/facilitator').val() === auth.uid && newData.val() === newData.parent().parent().child('sessions/' + $code + '/meta/expiresAt').val()) : (data.val() < now || root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com'))))",
+        ".write": "auth != null && (newData.exists() ? (!data.exists() && newData.parent().parent().child('sessions/' + $code + '/meta/facilitator').val() === auth.uid && newData.val() === newData.parent().parent().child('sessions/' + $code + '/meta/expiresAt').val()) : (data.val() < now || root.child('sessions/' + $code + '/meta/facilitator').val() === auth.uid || (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.host === true))))",
         ".validate": "newData.isNumber()"
       }
     }

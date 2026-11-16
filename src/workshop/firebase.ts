@@ -12,9 +12,10 @@ import {
   signInWithEmailLink,
   signOut,
   type Auth,
+  type User,
 } from 'firebase/auth';
 import { connectDatabaseEmulator, getDatabase, type Database } from 'firebase/database';
-import { firebaseConfig, isAllowedHostEmail, useEmulator } from './config';
+import { firebaseConfig, isHostDomain, useEmulator } from './config';
 import { track } from '../analytics';
 import {
   accountLinkUrl,
@@ -55,12 +56,25 @@ export class HostSignInError extends Error {
   name = 'HostSignInError';
 }
 
-/** Emails a one-time sign-in link to an approved facilitator. */
+export const NOT_A_HOST = 'This email is not set up to host workshops. Contact Women Facilitating to be added.';
+
+let claimsRefreshed = false;
+/**
+ * Approved facilitators: a verified email at an approved domain, or an account marked as a host
+ * (`npm run hosts -- add <email>`). The mark is fetched fresh once per page load so new approvals apply.
+ */
+async function hasHostAccess(u: User | null): Promise<boolean> {
+  if (!u?.email || u.isAnonymous) return false;
+  if (isHostDomain(u.email)) return true;
+  const force = !claimsRefreshed;
+  claimsRefreshed = true;
+  const result = await u.getIdTokenResult(force).catch(() => u.getIdTokenResult());
+  return result.claims.host === true;
+}
+
+/** Emails a one-time sign-in link for the facilitator view (whether they may host is checked after sign-in). */
 export async function sendHostLink(email: string): Promise<void> {
   const e = email.trim().toLowerCase();
-  if (!isAllowedHostEmail(e)) {
-    throw new HostSignInError('This email is not set up to host workshops. Contact Women Facilitating to be added.');
-  }
   await sendSignInLinkToEmail(fb().auth, e, { url: hostLinkUrl(), handleCodeInApp: true });
   setPendingHostEmail(e);
 }
@@ -79,7 +93,20 @@ export const isHostLink = (url: string) => isSignInWithEmailLink(fb().auth, url)
  * link. Someone in a workshop on this device keeps their participant identity: it is upgraded to the
  * account rather than replaced (unless that email already has an account).
  */
-export async function completeHostSignIn(url: string, email = pendingHostEmail()): Promise<string> {
+export function completeHostSignIn(url: string, email = pendingHostEmail()): Promise<string> {
+  // A link works only once, so a second call for the same link (two parts of the page opening it at
+  // once) shares the first sign-in instead of failing with "already used". A failure can be retried.
+  let pending = signInsInFlight.get(url);
+  if (!pending) {
+    pending = signInWithLink(url, email);
+    signInsInFlight.set(url, pending);
+    pending.catch(() => signInsInFlight.delete(url));
+  }
+  return pending;
+}
+const signInsInFlight = new Map<string, Promise<string>>();
+
+async function signInWithLink(url: string, email: string | null): Promise<string> {
   if (!email) throw new HostSignInError('Confirm your email to finish signing in.');
   const e = email.trim().toLowerCase();
   const { auth } = fb();
@@ -108,7 +135,7 @@ export async function completeHostSignIn(url: string, email = pendingHostEmail()
   setPendingHostEmail(null);
   track(isNew ? 'account-created' : 'account-signed-in');
   markAccountSignedIn(e);
-  if (isAllowedHostEmail(e)) markHostSignedIn(e);
+  if (await hasHostAccess(auth.currentUser)) markHostSignedIn(e);
   return e;
 }
 
@@ -143,7 +170,7 @@ export async function currentHost(): Promise<{ uid: string; email: string } | nu
   const { auth } = fb();
   await auth.authStateReady();
   const u = auth.currentUser;
-  if (u?.email && !u.isAnonymous && isAllowedHostEmail(u.email)) return { uid: u.uid, email: u.email };
+  if (u?.email && (await hasHostAccess(u))) return { uid: u.uid, email: u.email };
   clearHostSignedIn();
   return null;
 }

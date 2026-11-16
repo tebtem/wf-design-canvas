@@ -299,4 +299,4 @@ export async function listMyWorkshops(): Promise<HostedWorkshop[]> {
   return found.filter((w): w is HostedWorkshop => w !== null).sort((a, b) => b.createdAt - a.createdAt);
 }
 
-export { completeHostSignIn, currentHost, isHostLink, sendHostLink, signOutHost } from './firebase';
+export { completeHostSignIn, currentHost, isHostLink, NOT_A_HOST, sendHostLink, signOutHost } from './firebase';

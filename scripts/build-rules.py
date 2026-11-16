@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-# Who may host workshops. Shared with the app (src/workshop/config.ts) so both agree.
+# Domains whose addresses may host workshops. Shared with the app (src/workshop/config.ts) so both agree.
 ALLOW = json.loads((ROOT / "src/workshop/host-allowlist.json").read_text())
 
 S = "root.child('sessions/' + $code + '"
@@ -25,11 +25,12 @@ def _escape(text):
     return re.sub(r"([.])", r"[\1]", text)
 
 _domains = "|".join(_escape(d.lower()) for d in ALLOW["domains"])
-_emails = " || ".join(f"auth.token.email === '{e.lower()}'" for e in ALLOW["emails"])
-# Hosts sign in with an email link (which verifies the address) and must be on the allowlist.
+# Hosts sign in with an email link (which verifies the address). They are approved by domain, or
+# individually with a "host" mark on their account (npm run hosts -- add <email>), so no personal
+# emails appear in these public rules or in the app.
 HOST_ALLOWED = (
     "(auth.token.email_verified === true && "
-    f"(auth.token.email.matches(/^[^@]+@({_domains})$/) || {_emails}))"
+    f"(auth.token.email.matches(/^[^@]+@({_domains})$/) || auth.token.host === true))"
 )
 
 # Co-facilitating: the workshop's creator or any approved facilitator has the host view.
