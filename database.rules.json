@@ -171,6 +171,80 @@
         }
       }
     },
+    "team": {
+      "$id": {
+        ".read": "(auth != null && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')) && (root.child('team/' + $id + '/owner').val() === auth.uid || root.child('team/' + $id + '/members/' + auth.token.email.toLowerCase().replace('.', ',')).exists()))",
+        ".write": "auth != null && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')) && (data.exists() ? data.child('owner').val() === auth.uid : newData.child('owner').val() === auth.uid)",
+        ".validate": "$id.matches(/^[A-Za-z0-9_-]{6,40}$/) && newData.hasChildren(['owner', 'state', 'updatedAt'])",
+        "owner": {
+          ".validate": "newData.isString() && (!data.exists() || newData.val() === data.val())"
+        },
+        "ownerEmail": {
+          ".validate": "newData.isString() && newData.val().length <= 254"
+        },
+        "name": {
+          ".write": "(auth != null && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')) && (root.child('team/' + $id + '/owner').val() === auth.uid || root.child('team/' + $id + '/members/' + auth.token.email.toLowerCase().replace('.', ',')).exists()))",
+          ".validate": "newData.isString() && newData.val().length <= 120"
+        },
+        "state": {
+          ".write": "(auth != null && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')) && (root.child('team/' + $id + '/owner').val() === auth.uid || root.child('team/' + $id + '/members/' + auth.token.email.toLowerCase().replace('.', ',')).exists()))",
+          ".validate": "newData.isString() && newData.val().length <= 300000 && (!newData.parent().child('lock').exists() || newData.parent().child('lock/uid').val() === auth.uid || newData.parent().child('lock/at').val() < now - 30000)"
+        },
+        "updatedAt": {
+          ".write": "(auth != null && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')) && (root.child('team/' + $id + '/owner').val() === auth.uid || root.child('team/' + $id + '/members/' + auth.token.email.toLowerCase().replace('.', ',')).exists()))",
+          ".validate": "newData.val() === now"
+        },
+        "members": {
+          "$email": {
+            ".write": "auth != null && auth.token.email_verified === true && $email === auth.token.email.toLowerCase().replace('.', ',') && !newData.exists()",
+            ".validate": "newData.val() === true && ($email.matches(/^[^@]+@(womenfacilitating,com)$/) || $email === 'taylor@taylorelyse,com' || $email === 'shannon@theteamtogether,com' || $email === 'anniergrace@gmail,com' || $email === 'annie@theteamtogether,com')"
+          }
+        },
+        "lock": {
+          ".write": "(auth != null && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')) && (root.child('team/' + $id + '/owner').val() === auth.uid || root.child('team/' + $id + '/members/' + auth.token.email.toLowerCase().replace('.', ',')).exists())) && (newData.exists() || data.child('uid').val() === auth.uid || data.child('at').val() < now - 30000)",
+          ".validate": "newData.hasChildren(['uid', 'email', 'at']) && (!data.exists() || data.child('uid').val() === auth.uid || data.child('at').val() < now - 30000)",
+          "uid": {
+            ".validate": "newData.val() === auth.uid"
+          },
+          "email": {
+            ".validate": "newData.isString() && newData.val().length <= 254"
+          },
+          "at": {
+            ".validate": "newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "presence": {
+          "$uid": {
+            ".write": "auth.uid === $uid && (auth != null && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')) && (root.child('team/' + $id + '/owner').val() === auth.uid || root.child('team/' + $id + '/members/' + auth.token.email.toLowerCase().replace('.', ',')).exists()))",
+            ".validate": "newData.hasChildren(['email', 'at'])",
+            "email": {
+              ".validate": "newData.isString() && newData.val().length <= 254"
+            },
+            "at": {
+              ".validate": "newData.val() === now"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "teamIndex": {
+      "$email": {
+        ".read": "auth != null && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')) && $email === auth.token.email.toLowerCase().replace('.', ',')",
+        "$id": {
+          ".write": "auth != null && (auth.token.email_verified === true && (auth.token.email.matches(/^[^@]+@(womenfacilitating[.]com)$/) || auth.token.email === 'taylor@taylorelyse.com' || auth.token.email === 'shannon@theteamtogether.com' || auth.token.email === 'anniergrace@gmail.com' || auth.token.email === 'annie@theteamtogether.com')) && ($email === auth.token.email.toLowerCase().replace('.', ',') || root.child('team/' + $id + '/owner').val() === auth.uid || newData.parent().parent().parent().child('team/' + $id + '/owner').val() === auth.uid)",
+          ".validate": "newData.val() === true && ($email.matches(/^[^@]+@(womenfacilitating,com)$/) || $email === 'taylor@taylorelyse,com' || $email === 'shannon@theteamtogether,com' || $email === 'anniergrace@gmail,com' || $email === 'annie@theteamtogether,com')"
+        }
+      }
+    },
     "hosts": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",

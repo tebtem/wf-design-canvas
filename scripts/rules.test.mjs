@@ -155,6 +155,58 @@ await check('unverified emails cannot save', assertFails(db('uv', { email: 'u@ex
 await check('extra fields are rejected', assertFails(acct.ref('users/acct/canvases/c2').set({ ...saved, x: 1 })));
 await check('an account deletes everything', assertSucceeds(acct.ref('users/acct').remove()));
 
+// Facilitator canvases: unlimited, shared between approved facilitators, one editor at a time.
+const tay = db('tay', verified('taylor@taylorelyse.com'));
+const sha = db('sha', verified('shannon@theteamtogether.com'));
+const ann = db('ann', verified('annie@theteamtogether.com'));
+const outsider = db('out', verified('someone@example.com'));
+const k = (e) => e.replace(/\./g, ',');
+const T1 = 'teamCanvas01';
+const teamDoc = (owner, ownerEmail) => ({ owner, ownerEmail, name: 'Retreat', state: JSON.stringify({ version: 1 }), updatedAt: TS });
+await check('facilitator creates a canvas and lists it', assertSucceeds(tay.ref().update({ [`team/${T1}`]: teamDoc('tay', 'taylor@taylorelyse.com'), [`teamIndex/${k('taylor@taylorelyse.com')}/${T1}`]: true })));
+await check('facilitators are not limited to three', assertSucceeds(tay.ref().update({ 'team/teamCanvas02': teamDoc('tay', 't'), 'team/teamCanvas03': teamDoc('tay', 't'), 'team/teamCanvas04': teamDoc('tay', 't'), 'team/teamCanvas05': teamDoc('tay', 't') })));
+await check('non-facilitators cannot create facilitator canvases', assertFails(outsider.ref('team/outCanvas01').set(teamDoc('out', 'someone@example.com'))));
+await check('cannot create a canvas owned by someone else', assertFails(sha.ref('team/teamCanvas09').set(teamDoc('tay', 'x'))));
+await check('owner reads their canvas', assertSucceeds(tay.ref(`team/${T1}`).get()));
+await check('unshared: other facilitators cannot read it', assertFails(sha.ref(`team/${T1}`).get()));
+await check('owner shares with a facilitator', assertSucceeds(tay.ref().update({ [`team/${T1}/members/${k('shannon@theteamtogether.com')}`]: true, [`teamIndex/${k('shannon@theteamtogether.com')}/${T1}`]: true })));
+await check('owner shares with a domain facilitator', assertSucceeds(tay.ref(`team/${T1}/members/${k('a.b@womenfacilitating.com')}`).set(true)));
+await check('cannot share with someone off the allowlist', assertFails(tay.ref(`team/${T1}/members/${k('someone@example.com')}`).set(true)));
+await check('cannot share with a look-alike domain', assertFails(tay.ref(`team/${T1}/members/${k('a@womenfacilitating.com.evil.io')}`).set(true)));
+await check('members cannot share it further', assertFails(sha.ref(`team/${T1}/members/${k('annie@theteamtogether.com')}`).set(true)));
+await check('shared: member reads it', assertSucceeds(sha.ref(`team/${T1}`).get()));
+await check('member reads their own list', assertSucceeds(sha.ref(`teamIndex/${k('shannon@theteamtogether.com')}`).get()));
+await check("cannot read someone else's list", assertFails(ann.ref(`teamIndex/${k('shannon@theteamtogether.com')}`).get()));
+await check('cannot add a canvas to someone else\'s list', assertFails(ann.ref(`teamIndex/${k('shannon@theteamtogether.com')}/fakeCanvas1`).set(true)));
+await check('still not readable by others', assertFails(ann.ref(`team/${T1}`).get()));
+await check('member cannot change the owner', assertFails(sha.ref(`team/${T1}/owner`).set('sha')));
+await check('member cannot delete the canvas', assertFails(sha.ref(`team/${T1}`).remove()));
+
+const lock = (uid, email) => ({ uid, email, at: TS });
+await check('member takes the free edit lock', assertSucceeds(sha.ref(`team/${T1}/lock`).set(lock('sha', 'shannon@theteamtogether.com'))));
+await check('editor saves', assertSucceeds(sha.ref(`team/${T1}`).update({ state: JSON.stringify({ version: 1, by: 'sha' }), name: 'X', updatedAt: TS, 'lock/at': TS })));
+await check('owner cannot save while someone else edits', assertFails(tay.ref(`team/${T1}`).update({ state: JSON.stringify({ version: 1, by: 'tay' }), updatedAt: TS })));
+await check('owner cannot take an active lock', assertFails(tay.ref(`team/${T1}/lock`).set(lock('tay', 'taylor@taylorelyse.com'))));
+await check('cannot take the lock as someone else', assertFails(sha.ref(`team/${T1}/lock`).set(lock('tay', 'x'))));
+await check('editor refreshes the lock', assertSucceeds(sha.ref(`team/${T1}/lock/at`).set(TS)));
+await check('editor lets go', assertSucceeds(sha.ref(`team/${T1}/lock`).remove()));
+await check('owner takes the lock once free', assertSucceeds(tay.ref(`team/${T1}/lock`).set(lock('tay', 'taylor@taylorelyse.com'))));
+await check('owner saves holding the lock', assertSucceeds(tay.ref(`team/${T1}`).update({ state: JSON.stringify({ version: 1, by: 'tay' }), updatedAt: TS })));
+await check('member cannot release the owner\'s active lock', assertFails(sha.ref(`team/${T1}/lock`).remove()));
+await env.withSecurityRulesDisabled((c) => c.database().ref(`team/${T1}/lock/at`).set(Date.now() - 60_000));
+await check('a lock idle for 30 seconds can be taken over', assertSucceeds(sha.ref(`team/${T1}/lock`).set(lock('sha', 'shannon@theteamtogether.com'))));
+await check('outsiders cannot take the lock', assertFails(ann.ref(`team/${T1}/lock`).set(lock('ann', 'annie@theteamtogether.com'))));
+
+await check('member marks themselves here', assertSucceeds(sha.ref(`team/${T1}/presence/sha`).set({ email: 'shannon@theteamtogether.com', at: TS })));
+await check('cannot mark someone else here', assertFails(sha.ref(`team/${T1}/presence/tay`).set({ email: 'x', at: TS })));
+await check('non-members cannot mark themselves here', assertFails(ann.ref(`team/${T1}/presence/ann`).set({ email: 'x', at: TS })));
+await check('extra canvas fields are rejected', assertFails(tay.ref(`team/${T1}/extra`).set(1)));
+
+await check('member leaves the canvas', assertSucceeds(sha.ref().update({ [`team/${T1}/members/${k('shannon@theteamtogether.com')}`]: null, [`teamIndex/${k('shannon@theteamtogether.com')}/${T1}`]: null })));
+await check('after leaving, it is unreadable', assertFails(sha.ref(`team/${T1}`).get()));
+await check('cannot remove someone else from a canvas', assertFails(ann.ref(`team/${T1}/members/${k('a.b@womenfacilitating.com')}`).remove()));
+await check('owner deletes the canvas and its list entries', assertSucceeds(tay.ref().update({ [`team/${T1}`]: null, [`teamIndex/${k('taylor@taylorelyse.com')}/${T1}`]: null })));
+
 await check('participants cannot end the session', assertFails(alice.ref(`sessions/${S}`).remove()));
 await check('participants cannot remove the expiry entry', assertFails(alice.ref(`expiries/${S}`).remove()));
 await check('expiry index cannot be listed freely', assertFails(alice.ref('expiries').get()));

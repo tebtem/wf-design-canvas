@@ -20,7 +20,7 @@ interface ToolbarProps {
 
 export function Toolbar({ onWorkshop, guided = false, accounts = false }: ToolbarProps) {
   const accountEmail = useAccountEmail();
-  const { state, dispatch, saveStatus } = useCanvas();
+  const { state, dispatch, saveStatus, readOnly } = useCanvas();
   const layout = effectiveLayout(useLayoutPref());
   const dialogRef = useRef<HTMLDialogElement>(null);
   // "More" disclosure: backup, restore and clear live here to keep the toolbar short.
@@ -102,7 +102,7 @@ export function Toolbar({ onWorkshop, guided = false, accounts = false }: Toolba
             </label>
           ))}
         </fieldset>
-        {guided && state.step < LAST_STEP && (
+        {guided && !readOnly && state.step < LAST_STEP && (
           <button
             type="button"
             className="btn"
@@ -195,29 +195,34 @@ export function Toolbar({ onWorkshop, guided = false, accounts = false }: Toolba
               <DownloadIcon />
               Download backup
             </button>
-            <button
-              type="button"
-              className="more__item"
-              onClick={() => {
-                setMoreOpen(false);
-                moreBtn.current?.focus();
-                fileRef.current?.click();
-              }}
-            >
-              <UploadIcon />
-              Restore backup
-            </button>
-            <button
-              type="button"
-              className="more__item more__item--danger"
-              onClick={() => {
-                setMoreOpen(false);
-                dialogRef.current?.showModal();
-              }}
-            >
-              <XIcon />
-              Clear canvas
-            </button>
+            {/* Shared canvases while someone else is editing: nothing that changes the canvas. */}
+            {!readOnly && (
+              <>
+                <button
+                  type="button"
+                  className="more__item"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    moreBtn.current?.focus();
+                    fileRef.current?.click();
+                  }}
+                >
+                  <UploadIcon />
+                  Restore backup
+                </button>
+                <button
+                  type="button"
+                  className="more__item more__item--danger"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    dialogRef.current?.showModal();
+                  }}
+                >
+                  <XIcon />
+                  Clear canvas
+                </button>
+              </>
+            )}
           </div>
         </div>
         <input

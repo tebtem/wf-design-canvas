@@ -772,3 +772,125 @@ html:has(.ws-toast) {
   overflow-wrap: anywhere;
   margin-bottom: 6px;
 }
+
+/* Facilitator canvases: sharing */
+.acct__actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+@media (max-width: 520px) {
+  .ws-host__list li {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'title' 'meta' 'open';
+    gap: 6px;
+  }
+  .acct__actions {
+    justify-content: flex-start;
+  }
+}
+.acct-share {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+.acct-share__title {
+  margin: 0;
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+.acct-share__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.acct-share__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--divider);
+  overflow-wrap: anywhere;
+}
+.acct-share .ws-form {
+  width: 100%;
+}
+.acct-share__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.acct-share__row .ws-input {
+  flex: 1 1 200px;
+  width: auto;
+}
+
+/* Shared canvas bar: who is editing, who else is here */
+.share-bar {
+  max-width: 1200px;
+  margin: 0 auto 8px;
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--navy);
+  border-left: 6px solid var(--frame);
+}
+.share-bar.is-editing {
+  background: var(--brand-yellow-light);
+  border-left-color: var(--navy);
+}
+.share-bar__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.share-bar__status {
+  margin: 0;
+  font-weight: 700;
+}
+.share-bar__here {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--navy-soft);
+}
+.share-bar.is-editing .share-bar__here {
+  color: var(--navy);
+}
+.share-bar__error {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+.share-bar .btn[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.share-gone {
+  max-width: 1200px;
+  margin: 0 auto 8px;
+}
+@media (max-width: 760px) {
+  .share-bar,
+  .share-gone {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+}
+.acct__shared {
+  display: block;
+  overflow-wrap: anywhere;
+}

@@ -28,7 +28,10 @@ function Step({ shown, children }: { shown: boolean; children: ReactNode }) {
   return shown ? <>{children}</> : <div className="step-hidden">{children}</div>;
 }
 
-/** The canvas itself, stacked in one column. Read-only canvases drop the page heading so the host view keeps its own. */
+/**
+ * The canvas itself, stacked in one column. Read-only canvases in the host view drop the page heading
+ * so the host view keeps its own; the solo canvas keeps it while view only (shared canvases).
+ */
 export function CanvasBody({ label, step: forcedStep, guided = false }: Props) {
   const { state, dispatch, readOnly } = useCanvas();
   const step = forcedStep ?? (guided ? state.step : LAST_STEP);
@@ -51,7 +54,7 @@ export function CanvasBody({ label, step: forcedStep, guided = false }: Props) {
 
   return (
     <div className={`canvas canvas--${layout}${readOnly ? ' canvas--readonly' : ''}`}>
-      <Header asHeading={!readOnly} />
+      <Header asHeading={!readOnly || guided} />
       <main id="canvas" className={`canvas-body canvas-body--${layout}`} tabIndex={-1} aria-label={label}>
         <StickyDnd step={step}>
           {/* Two columns in the canvas layout; in the stacked layout they read top to bottom. */}

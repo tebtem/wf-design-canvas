@@ -5,6 +5,7 @@
 import { get, ref, remove, serverTimestamp, set } from 'firebase/database';
 import type { CanvasState } from '../state/types';
 import { currentAccount, fb } from '../workshop/firebase';
+import { isAllowedHostEmail } from '../workshop/config';
 
 export {
   completeHostSignIn as completeEmailSignIn,
@@ -57,6 +58,9 @@ export const deleteCanvas = async (slot: Slot) => remove(ref(fb().db, path(await
 /** Removes all saved canvases, then the account itself. */
 export async function deleteAccount(): Promise<void> {
   const { deleteSignedInUser } = await import('../workshop/firebase');
+  const a = await currentAccount();
+  // Facilitators: delete the canvases they own and leave the ones shared with them.
+  if (a && isAllowedHostEmail(a.email)) await (await import('./team')).removeAllTeamCanvases();
   await remove(ref(fb().db, `users/${await uid()}`));
   await deleteSignedInUser();
 }

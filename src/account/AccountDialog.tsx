@@ -4,17 +4,36 @@ import { initialState } from '../state/reducer';
 import { parseState } from '../state/persist';
 import { clearLinkParams, pendingOptIn, setPendingOptIn } from '../workshop/session';
 import { timeAgo } from '../workshop/summary';
-import type { SavedCanvas } from './api';
+import { isAllowedHostEmail } from '../workshop/config';
+import type { Slot } from './api';
+import type { TeamCanvas } from './team';
 import { ACCOUNT_READY_EVENT, SIGNED_IN_EVENT } from './AccountSync';
 import {
   activeSlot,
   announceAccountChange,
+  flushTeam,
+  isSlot,
+  isTeamKey,
   OPEN_ACCOUNT_EVENT,
+  releaseTeam,
   setActiveSlot,
   setUnsentAccountChanges,
-  type SlotId,
+  teamKey,
+  type CanvasKey,
 } from './session';
 import { track } from '../analytics';
+
+/** A saved canvas: one of the three account slots, or a facilitator canvas (unlimited, shareable). */
+interface Item {
+  key: CanvasKey;
+  name: string;
+  state: string;
+  updatedAt: number;
+  slot?: Slot;
+  team?: TeamCanvas;
+  /** Facilitator canvases shared with you belong to someone else. */
+  owned: boolean;
+}
 
 type View =
   | { kind: 'checking' }
@@ -24,12 +43,19 @@ type View =
   | { kind: 'signedIn'; email: string };
 
 const api = () => import('./api');
+const teamApi = () => import('./team');
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const reason = (err: unknown) =>
   ['HostSignInError', 'WorkshopError'].includes((err as Error)?.name)
     ? (err as Error).message
-    : 'Something went wrong. Check your internet connection and try again.';
+    : (err as Error)?.name === 'ShareError'
+      ? (err as Error).message
+      : 'Something went wrong. Check your internet connection and try again.';
 
-/** Free accounts: create one or sign in by email link, then open, start or delete up to three canvases. */
+/**
+ * Free accounts: create one or sign in by email link, then open, start or delete up to three canvases.
+ * Facilitators (the host allowlist) can save as many as they like and share them with each other.
+ */
 export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   const uid = useId();
@@ -37,18 +63,41 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
   const [view, setView] = useState<View>({ kind: 'checking' });
   const [email, setEmail] = useState('');
   const [optIn, setOptIn] = useState(false);
-  const [canvases, setCanvases] = useState<SavedCanvas[] | null>(null);
-  const [current, setCurrent] = useState<SlotId | null>(activeSlot());
+  const [canvases, setCanvases] = useState<Item[] | null>(null);
+  const [current, setCurrent] = useState<CanvasKey | null>(activeSlot());
+  const [host, setHost] = useState(false);
+  const [sharing, setSharing] = useState<Item | null>(null);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareError, setShareError] = useState('');
+  const shareHeading = useRef<HTMLHeadingElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
   const [now, setNow] = useState(0);
 
+  const loadItems = async (signedInEmail: string): Promise<Item[]> => {
+    const a = await api();
+    const slots = await a.listCanvases().catch(() => []);
+    const items: Item[] = slots.map((c) => ({ key: c.slot, name: c.name, state: c.state, updatedAt: c.updatedAt, slot: c.slot, owned: true }));
+    if (isAllowedHostEmail(signedInEmail)) {
+      const t = await teamApi();
+      const me = await a.currentAccount();
+      const shared = await t.listTeamCanvases().catch(() => []);
+      items.push(
+        ...shared.map((c) => ({ key: teamKey(c.id), name: c.name, state: c.state, updatedAt: c.updatedAt, team: c, owned: c.owner === me?.uid })),
+      );
+    }
+    return items.sort((x, y) => y.updatedAt - x.updatedAt);
+  };
+
   const refresh = async (signedInEmail: string) => {
     setView({ kind: 'signedIn', email: signedInEmail });
+    setHost(isAllowedHostEmail(signedInEmail));
     setCurrent(activeSlot());
-    setCanvases(await (await api()).listCanvases().catch(() => []));
+    const items = await loadItems(signedInEmail);
+    setCanvases(items);
     setNow(Date.now());
+    return items;
   };
 
   const check = async () => {
@@ -79,6 +128,7 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
     if (d && !d.open) d.showModal();
     setError('');
     setNote('');
+    setSharing(null);
     void check();
   };
 
@@ -118,7 +168,7 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
 
   const sendLink = (e: FormEvent) => {
     e.preventDefault();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+    if (!EMAIL_RE.test(email.trim())) {
       setError('Enter a valid email address.');
       document.getElementById(`${uid}-email`)?.focus();
       return;
@@ -130,20 +180,24 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
     });
   };
 
-  /** Saves what is on screen to its slot before switching away. */
+  /** Saves what is on screen before switching away. */
   const flush = async () => {
     const slot = activeSlot();
-    if (slot) await (await api()).saveCanvas(slot, state);
+    if (isSlot(slot)) await (await api()).saveCanvas(slot, state);
+    else if (isTeamKey(slot)) await flushTeam();
     setUnsentAccountChanges(false);
   };
 
-  const openCanvas = (c: SavedCanvas) =>
+  const signedInEmail = () => (view as { email: string }).email;
+  const title = (c: Item) => c.name || 'Untitled canvas';
+
+  const openCanvas = (c: Item) =>
     run(async () => {
-      if (c.slot === activeSlot()) return ref.current?.close();
+      if (c.key === activeSlot()) return ref.current?.close();
       await flush();
       const next = parseState(c.state);
       if (next) dispatch({ type: 'load', state: next });
-      setActiveSlot(c.slot);
+      setActiveSlot(c.key);
       ref.current?.close();
       window.scrollTo(0, 0);
     });
@@ -151,36 +205,130 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
   const newCanvas = () =>
     run(async () => {
       const a = await api();
-      const free = a.SLOTS.find((s) => !canvases?.some((c) => c.slot === s));
-      if (!free) return;
-      await flush();
       const fresh = initialState();
-      dispatch({ type: 'load', state: fresh });
-      setActiveSlot(free);
-      await a.saveCanvas(free, fresh);
+      if (host) {
+        // Facilitators: no limit, and every new canvas can be shared.
+        await flush();
+        const id = await (await teamApi()).createTeamCanvas(fresh);
+        dispatch({ type: 'load', state: fresh });
+        setActiveSlot(teamKey(id));
+      } else {
+        const free = a.SLOTS.find((s) => !canvases?.some((c) => c.slot === s));
+        if (!free) return;
+        await flush();
+        dispatch({ type: 'load', state: fresh });
+        setActiveSlot(free);
+        await a.saveCanvas(free, fresh);
+      }
       ref.current?.close();
       window.scrollTo(0, 0);
     });
 
-  const removeCanvas = (c: SavedCanvas) =>
+  /** Before removing the open canvas from this list, switch to the next one (or a blank canvas). */
+  const switchAwayFrom = (c: Item) => {
+    if (c.key !== activeSlot()) return;
+    const rest = (canvases ?? []).filter((x) => x.key !== c.key);
+    const next = rest[0] ? parseState(rest[0].state) : null;
+    dispatch({ type: 'load', state: next ?? initialState() });
+    setActiveSlot(rest[0]?.key ?? (c.slot ?? null));
+  };
+
+  const removeCanvas = (c: Item) =>
     run(async () => {
-      const name = c.name || 'Untitled canvas';
-      if (!window.confirm(`Delete "${name}" from your account? This cannot be undone.`)) return;
-      const a = await api();
-      await a.deleteCanvas(c.slot);
-      if (c.slot === activeSlot()) {
-        const rest = (canvases ?? []).filter((x) => x.slot !== c.slot);
-        const next = rest[0] ? parseState(rest[0].state) : null;
-        dispatch({ type: 'load', state: next ?? initialState() });
-        setActiveSlot(rest[0]?.slot ?? c.slot);
+      const shared = (c.team?.members.length ?? 0) > 0;
+      const msg = shared
+        ? `Delete "${title(c)}"? It is also removed for everyone you shared it with. This cannot be undone.`
+        : `Delete "${title(c)}" from your account? This cannot be undone.`;
+      if (!window.confirm(msg)) return;
+      if (c.team) {
+        switchAwayFrom(c);
+        await (await teamApi()).deleteTeamCanvas(c.team);
+      } else if (c.slot) {
+        await (await api()).deleteCanvas(c.slot);
+        switchAwayFrom(c);
       }
-      setNote(`"${name}" deleted.`);
-      await refresh((view as { email: string }).email);
+      setNote(`"${title(c)}" deleted.`);
+      await refresh(signedInEmail());
+    });
+
+  const leaveCanvas = (c: Item) =>
+    run(async () => {
+      if (!c.team) return;
+      const owner = c.team.ownerEmail;
+      if (!window.confirm(`Remove "${title(c)}" from your canvases? ${owner} can share it with you again.`)) return;
+      switchAwayFrom(c);
+      await (await teamApi()).leaveTeamCanvas(c.team.id);
+      setNote(`"${title(c)}" removed from your canvases.`);
+      await refresh(signedInEmail());
+    });
+
+  const openShare = (c: Item) => {
+    setSharing(c);
+    setShareEmail('');
+    setShareError('');
+    setNote('');
+    setError('');
+    window.setTimeout(() => shareHeading.current?.focus(), 0);
+  };
+
+  const closeShare = () => {
+    const key = sharing?.key;
+    setSharing(null);
+    setShareError('');
+    // Back to the Share button of the canvas that was being shared.
+    window.setTimeout(() => document.getElementById(`${uid}-share-${key}`)?.focus(), 0);
+  };
+
+  const shareInvalid = (msg: string) => {
+    setShareError(msg);
+    document.getElementById(`${uid}-share-email`)?.focus();
+  };
+
+  const share = (e: FormEvent) => {
+    e.preventDefault();
+    if (!sharing) return;
+    const to = shareEmail.trim().toLowerCase();
+    const me = signedInEmail().toLowerCase();
+    if (!EMAIL_RE.test(to)) return shareInvalid('Enter a valid email address.');
+    if (!isAllowedHostEmail(to)) return shareInvalid('Canvases can only be shared with approved facilitators.');
+    if (to === me) return shareInvalid('That is your own email. Enter the email of the person to share with.');
+    if (sharing.team?.members.includes(to)) return shareInvalid(`Already shared with ${to}.`);
+    setShareError('');
+    void run(async () => {
+      const t = await teamApi();
+      let id = sharing.team?.id;
+      if (!id && sharing.slot) {
+        // Saved in one of the three account slots: move it to facilitator canvases so it can be shared.
+        const open = sharing.key === activeSlot();
+        if (open) await flush();
+        const s = open ? state : parseState(sharing.state);
+        if (!s) return;
+        id = await t.createTeamCanvas(s);
+        await (await api()).deleteCanvas(sharing.slot);
+        if (open) setActiveSlot(teamKey(id));
+      }
+      if (!id) return;
+      await t.shareTeamCanvas(id, to);
+      const items = await refresh(signedInEmail());
+      setSharing(items.find((c) => c.key === teamKey(id!)) ?? null);
+      setShareEmail('');
+      setNote(`Shared with ${to}. It appears in their canvases next time they open My canvases.`);
+    });
+  };
+
+  const unshare = (email: string) =>
+    run(async () => {
+      if (!sharing?.team) return;
+      await (await teamApi()).unshareTeamCanvas(sharing.team.id, email);
+      const items = await refresh(signedInEmail());
+      setSharing(items.find((c) => c.key === sharing.key) ?? null);
+      setNote(`Stopped sharing with ${email}.`);
     });
 
   const signOut = () =>
     run(async () => {
       await flush();
+      await releaseTeam();
       await (await api()).signOut();
       // Your canvases stay in your account; this browser no longer keeps a copy.
       setActiveSlot(null);
@@ -198,6 +346,7 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
         )
       )
         return;
+      await releaseTeam();
       await (await api()).deleteAccount();
       setActiveSlot(null);
       dispatch({ type: 'reset' });
@@ -305,35 +454,124 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
           </p>
           {canvases === null ? (
             <p className="ws-hint">Loading your canvases…</p>
-          ) : (
-            <>
-              <ul className="ws-host__list" aria-label="Saved canvases">
-                {canvases.map((c) => (
-                  <li key={c.slot}>
-                    <span className="ws-host__title">
-                      {c.name || 'Untitled canvas'}
-                      {c.slot === current && <span className="acct__current"> (open now)</span>}
-                    </span>
-                    <span className="ws-hint">Saved {timeAgo(c.updatedAt, now)}</span>
-                    <span className="acct__actions">
-                      <button type="button" className="btn btn--small" onClick={() => openCanvas(c)}>
-                        {c.slot === current ? 'Keep working' : 'Open'}
-                        <span className="sr-only"> {c.name || 'Untitled canvas'}</span>
-                      </button>
-                      <button type="button" className="btn btn--small" onClick={() => removeCanvas(c)}>
-                        Delete<span className="sr-only"> {c.name || 'Untitled canvas'}</span>
-                      </button>
-                    </span>
+          ) : sharing ? (
+            <div className="acct-share">
+              <h3 ref={shareHeading} tabIndex={-1} className="acct-share__title">
+                Share “{title(sharing)}”
+              </h3>
+              <p className="ws-hint">
+                Share with other facilitators. One person edits at a time, and everyone else sees the changes as they
+                happen.
+              </p>
+              <ul className="acct-share__list" aria-label="People with access">
+                <li>
+                  <span>{view.email}</span>
+                  <span className="ws-hint">Owner (you)</span>
+                </li>
+                {(sharing.team?.members ?? []).map((m) => (
+                  <li key={m}>
+                    <span>{m}</span>
+                    <button type="button" className="btn btn--small" onClick={() => unshare(m)}>
+                      Stop sharing<span className="sr-only"> with {m}</span>
+                    </button>
                   </li>
                 ))}
               </ul>
-              <p className="ws-hint">
-                {canvases.length} of 3 canvases saved.
-                {!current &&
-                  canvases.length >= 3 &&
-                  ' The canvas on screen is not saved to your account. Delete one to save it.'}
-              </p>
-              {canvases.length < 3 && (
+              <form className="ws-form" noValidate onSubmit={share}>
+                <label htmlFor={`${uid}-share-email`}>Facilitator&apos;s email</label>
+                <div className="acct-share__row">
+                  <input
+                    id={`${uid}-share-email`}
+                    className="ws-input"
+                    type="email"
+                    autoComplete="off"
+                    value={shareEmail}
+                    onChange={(e) => setShareEmail(e.target.value)}
+                    aria-invalid={Boolean(shareError) || undefined}
+                    aria-describedby={shareError ? `${uid}-share-err` : `${uid}-share-hint`}
+                  />
+                  <button type="submit" className="btn btn--primary" aria-disabled={busy}>
+                    {busy ? 'Sharing…' : 'Share'}
+                  </button>
+                </div>
+                {shareError ? (
+                  <p id={`${uid}-share-err`} className="ws-error" role="alert">
+                    {shareError}
+                  </p>
+                ) : (
+                  <p id={`${uid}-share-hint`} className="ws-hint">
+                    Only facilitators approved to host workshops can be added.
+                  </p>
+                )}
+              </form>
+              <button type="button" className="btn" onClick={closeShare}>
+                Back to my canvases
+              </button>
+            </div>
+          ) : (
+            <>
+              <ul className="ws-host__list" aria-label="Saved canvases">
+                {canvases.map((c) => {
+                  const shareInfo = c.team
+                    ? c.owned
+                      ? c.team.members.length
+                        ? `Shared with ${c.team.members.join(', ')}`
+                        : ''
+                      : `Shared by ${c.team.ownerEmail}`
+                    : '';
+                  return (
+                    <li key={c.key}>
+                      <span className="ws-host__title">
+                        {title(c)}
+                        {c.key === current && <span className="acct__current"> (open now)</span>}
+                      </span>
+                      <span className="ws-hint">
+                        Saved {timeAgo(c.updatedAt, now)}
+                        {shareInfo && <span className="acct__shared">{shareInfo}</span>}
+                      </span>
+                      <span className="acct__actions">
+                        <button type="button" className="btn btn--small" onClick={() => openCanvas(c)}>
+                          {c.key === current ? 'Keep working' : 'Open'}
+                          <span className="sr-only"> {title(c)}</span>
+                        </button>
+                        {host && c.owned && (
+                          <button
+                            type="button"
+                            id={`${uid}-share-${c.key}`}
+                            className="btn btn--small"
+                            onClick={() => openShare(c)}
+                          >
+                            Share<span className="sr-only"> {title(c)}</span>
+                          </button>
+                        )}
+                        {c.owned ? (
+                          <button type="button" className="btn btn--small" onClick={() => removeCanvas(c)}>
+                            Delete<span className="sr-only"> {title(c)}</span>
+                          </button>
+                        ) : (
+                          <button type="button" className="btn btn--small" onClick={() => leaveCanvas(c)}>
+                            Remove<span className="sr-only"> {title(c)} from my canvases</span>
+                          </button>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {host ? (
+                <p className="ws-hint">
+                  {canvases.length} {canvases.length === 1 ? 'canvas' : 'canvases'}. As a facilitator you can save as
+                  many as you like and share them with other facilitators.
+                </p>
+              ) : (
+                <p className="ws-hint">
+                  {canvases.length} of 3 canvases saved.
+                  {!current &&
+                    canvases.length >= 3 &&
+                    ' The canvas on screen is not saved to your account. Delete one to save it.'}
+                </p>
+              )}
+              {(host || canvases.length < 3) && (
                 <button type="button" className="btn" onClick={newCanvas}>
                   Start a new canvas
                 </button>
