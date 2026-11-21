@@ -5,6 +5,7 @@ import { hhmmOf, totalWithBreaks } from '../../state/reducer';
 import { DRAFT_NAMES, type DraftId, type TimeBlock } from '../../state/types';
 import { DownIcon, GripIcon, UpIcon, XIcon } from '../Icons';
 import type { DragData } from './dnd';
+import { TimeField } from '../TimeField';
 
 interface Props {
   divider: TimeBlock;
@@ -63,7 +64,18 @@ export function DayDivider({ divider, draftId, day, start, total, breaks, index,
       )}
       <span className="day-divider__name">{name}</span>
       <span className="day-divider__meta">
-        starts {hhmmOf(start)}
+        starts{' '}
+        <TimeField
+          kind="clock"
+          value={start}
+          label={`${name} start time, ${DRAFT_NAMES[draftId]}`}
+          readOnly={readOnly}
+          onCommit={(t) => {
+            dispatch({ type: 'setDayStart', id: divider.id, start: t });
+            announce(`${name} starts at ${hhmmOf(t)}.`);
+          }}
+          onInvalid={announce}
+        />
         {total > 0 && ` · ${totalWithBreaks(total, breaks)}`}
       </span>
       {!readOnly && (

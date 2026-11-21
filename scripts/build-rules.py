@@ -35,6 +35,20 @@ HOST_ALLOWED = (
 # Co-facilitating: the workshop's creator or any approved facilitator has the host view.
 HOST = f"({S}/meta/facilitator').val() === auth.uid || {HOST_ALLOWED})"
 
+# Facilitator canvases ("team"): emails are stored as database keys with "." written as ",".
+MY_KEY = "auth.token.email.toLowerCase().replace('.', ',')"
+_kdomains = "|".join(d.lower().replace(".", ",") for d in ALLOW["domains"])
+_kemails = " || ".join(f"$email === '{e.lower().replace('.', ',')}'" for e in ALLOW["emails"])
+# A facilitator canvas can only be shared with (and listed for) emails on the allowlist.
+KEY_ALLOWED = f"($email.matches(/^[^@]+@({_kdomains})$/) || {_kemails})"
+T = "root.child('team/' + $id + '"
+T_OWNER = f"{T}/owner').val() === auth.uid"
+T_MEMBER = f"({SIGNED_IN} && {HOST_ALLOWED} && ({T_OWNER} || {T}/members/' + {MY_KEY}).exists()))"
+# One person edits a shared canvas at a time. A lock idle for 30 seconds can be taken over.
+LOCK_IDLE = 30000
+NEW_LOCK = "newData.parent().child('lock"
+LOCK_OK = f"(!{NEW_LOCK}').exists() || {NEW_LOCK}/uid').val() === auth.uid || {NEW_LOCK}/at').val() < now - {LOCK_IDLE})"
+
 def all_of(*parts):
     return " && ".join(parts)
 
@@ -171,6 +185,58 @@ rules = {
           },
         },
         "$other": {".validate": False},
+      },
+    },
+
+    # Facilitators: unlimited canvases, shared with other facilitators. Owner shares and deletes;
+    # anyone shared on it reads it, and edits it while holding the lock.
+    "team": {
+      "$id": {
+        ".read": T_MEMBER,
+        ".write": f"{SIGNED_IN} && {HOST_ALLOWED} && (data.exists() ? data.child('owner').val() === auth.uid : newData.child('owner').val() === auth.uid)",
+        ".validate": "$id.matches(/^[A-Za-z0-9_-]{6,40}$/) && newData.hasChildren(['owner', 'state', 'updatedAt'])",
+        "owner": {".validate": "newData.isString() && (!data.exists() || newData.val() === data.val())"},
+        "ownerEmail": {".validate": "newData.isString() && newData.val().length <= 254"},
+        "name": {".write": T_MEMBER, ".validate": "newData.isString() && newData.val().length <= 120"},
+        "state": {".write": T_MEMBER, ".validate": f"newData.isString() && newData.val().length <= 300000 && {LOCK_OK}"},
+        "updatedAt": {".write": T_MEMBER, ".validate": "newData.val() === now"},
+        "members": {
+          "$email": {
+            # Anyone shared on a canvas can remove themselves.
+            ".write": f"{SIGNED_IN} && auth.token.email_verified === true && $email === {MY_KEY} && !newData.exists()",
+            ".validate": f"newData.val() === true && {KEY_ALLOWED}",
+          },
+        },
+        "lock": {
+          ".write": f"{T_MEMBER} && (newData.exists() || data.child('uid').val() === auth.uid || data.child('at').val() < now - {LOCK_IDLE})",
+          ".validate": f"newData.hasChildren(['uid', 'email', 'at']) && (!data.exists() || data.child('uid').val() === auth.uid || data.child('at').val() < now - {LOCK_IDLE})",
+          "uid": {".validate": "newData.val() === auth.uid"},
+          "email": {".validate": "newData.isString() && newData.val().length <= 254"},
+          "at": {".validate": "newData.val() === now"},
+          "$other": {".validate": False},
+        },
+        "presence": {
+          "$uid": {
+            ".write": f"auth.uid === $uid && {T_MEMBER}",
+            ".validate": "newData.hasChildren(['email', 'at'])",
+            "email": {".validate": "newData.isString() && newData.val().length <= 254"},
+            "at": {".validate": "newData.val() === now"},
+            "$other": {".validate": False},
+          },
+        },
+        "$other": {".validate": False},
+      },
+    },
+
+    # Which facilitator canvases each facilitator can open (their own and ones shared with them).
+    "teamIndex": {
+      "$email": {
+        ".read": f"{SIGNED_IN} && {HOST_ALLOWED} && $email === {MY_KEY}",
+        "$id": {
+          # You keep your own list; a canvas's owner adds and removes the people they share with.
+          ".write": f"{SIGNED_IN} && {HOST_ALLOWED} && ($email === {MY_KEY} || root.child('team/' + $id + '/owner').val() === auth.uid || newData.parent().parent().parent().child('team/' + $id + '/owner').val() === auth.uid)",
+          ".validate": f"newData.val() === true && {KEY_ALLOWED}",
+        },
       },
     },
 

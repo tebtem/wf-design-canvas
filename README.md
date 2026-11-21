@@ -9,7 +9,7 @@ An interactive version of the "Designing Facilitated Experiences" canvas!
 - **Formatting:** sticky notes, Activities and Moves + Materials support bold (Ctrl/Cmd+B), italic (Ctrl/Cmd+I) and bullets (start a line with "- "). Activities also take a title (start a line with "# "). There is no toolbar. Notes show as formatted text and switch into the editor when clicked; the editor downloads the first time someone heads for a note. Only those styles are kept, so pasted or synced content cannot carry anything else. Block details keep their simple automatic bullets.
 - **Breaks:** add a Break from the bank (15 min, resizable) or mark any block as a break with its cup button. Breaks are striped with a cup icon in Time Blocks and the outline, where their two text columns merge into one notes cell. Totals show break time separately ("3 hr · 45 min of breaks").
 - **Multi-day sessions:** Add next day puts a Day 2 divider in a draft; blocks after it are the next day and the clock starts again. Each day has its own start time (typed on its first row in the outline) and total. Dividers move and remove like blocks. The outline groups rows by day, and each day prints on its own page.
-- **Session Outline** is a run-of-show table built from a session draft: each time block becomes a row with its start and end time and length, plus Activities and Moves + Materials to fill in. Type the first start time to set when the session begins (all times, including the time blocks, follow it), or type any end time or length to resize that block; each row starts when the one above ends. It shows the Working Title, and with more than one draft you choose which draft it follows.
+- **Session Outline** is a run-of-show table built from a copy of a session draft: Bring in Session Draft 1 (or pick another draft) copies its time blocks in as rows, each with its start and end time and length, plus Activities and Moves + Materials to fill in. From then on the outline is its own: type the first start time of a day, or any end time, length or block name, and only the outline changes. Time Blocks stays the play space and keeps its original draft for reference, with its own start times (typed at the top of each draft and on each day divider). Changes in Time Blocks do not reach the outline. When the draft it came from has changed (order, lengths, names, breaks, days or start times), a notice above the table says so. Choosing Replace with Session Draft N (in the notice or next to the draft picker) which asks first, matches the outline to the draft again, and keeps Activities and Moves + Materials notes for blocks still in the draft. It shows the Working Title. Canvases saved before this start with a copy of the draft they followed.
 - A **backup reminder** appears in the corner once a solo canvas has real work in it (8+ notes, blocks or details) and no backup in the last week; Remind me later waits 3 days. Workshop canvases are saved online, so they do not show it.
 - **Sharing:** link previews (title, description, image in `public/og-image.png`) for LinkedIn, Slack and email, and every printout ends with "Made with the Facilitation Design Canvas™ · canvas.womenfacilitating.com".
 - The **More** menu holds Save as PDF, Download backup, Restore backup and Clear canvas. **Download backup** saves the canvas as a file; **Restore backup** loads it on any device (it replaces the current canvas after confirming).
@@ -20,6 +20,16 @@ An interactive version of the "Designing Facilitated Experiences" canvas!
 ## Free accounts
 
 Anyone can create a free account (or sign in) from **Account** in the toolbar (or the backup reminder): an email link signs them in, no password. Signed-in canvases save online automatically and open on any device; **My canvases** lists up to three, with Start a new canvas, Open and Delete, plus Sign out (clears that browser's copy) and Delete my account. A canvas made before signing up moves into the account. Participants who sign up keep their workshop access (their anonymous identity is upgraded). An unchecked "Email me about upcoming facilitation courses and bootcamps" box adds confirmed emails to the MailerLite **Canvas** group via `api/subscribe.js`. Facilitators are simply accounts on the host allowlist.
+
+### Facilitator canvases (shared, unlimited)
+
+Anyone on the host allowlist (`src/workshop/host-allowlist.json`) gets unlimited canvases and can share them with other facilitators.
+
+- **Unlimited:** Start a new canvas in My canvases has no limit for facilitators. Their new canvases are saved as facilitator canvases (`team/<id>` in the database). Older canvases in the three account slots still open as before; sharing one moves it into facilitator canvases.
+- **Share:** My canvases > Share on a canvas you own. Enter another facilitator's email (only allowlisted emails are accepted, and the database rules enforce the same list). Stop sharing removes them. People it is shared with see "Shared by …" in their list and can Remove it from their canvases. Only the owner can share or delete.
+- **One editor at a time:** a bar above a shared canvas says who is editing and who else has it open. Everyone else sees the canvas view only, updating live (well under a second after each change). Edit takes over when nobody is editing, Done editing hands it back, and opening a shared canvas nobody else has open starts editing straight away. If the editor has no keyboard, mouse or touch activity for 30 to 40 seconds, others see Take over editing. Closing the tab lets go too. Changes of editor are announced to screen readers.
+- If the owner stops sharing or deletes a canvas someone has open, they are told, and what is on screen stays only in their browser.
+- Test it with `npm run e2e:share` (same setup as the workshop end-to-end check below).
 
 ## Workshop mode
 
@@ -56,7 +66,7 @@ For local development put the same `VITE_FIREBASE_*` values in `.env.local`.
 Needs Java (for the database emulator) and `npm i -g firebase-tools`.
 
 ```bash
-npm run test:rules          # 108 security rule checks against the emulator
+npm run test:rules          # 146 security rule checks against the emulator
 npm run emulators           # terminal 1
 npm run dev:emulator        # terminal 2: app wired to the emulators
 ```
@@ -66,6 +76,7 @@ End to end with three browsers (host and two participants):
 ```bash
 npx vite build --mode emulator --outDir dist-emu && npx vite preview --outDir dist-emu --port 4174
 npm run e2e:workshop
+npm run e2e:share           # shared facilitator canvases (two browsers)
 ```
 
 ## Privacy, terms and analytics

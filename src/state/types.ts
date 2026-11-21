@@ -73,12 +73,20 @@ export interface OutlineRow {
   moves: string;
 }
 
-/** Session Outline: rows come from one draft's time blocks; text is kept per block id. */
+/**
+ * Session Outline: its own copy of one draft's time blocks, brought in on request. Changes made in
+ * the outline stay here; the drafts (Time Blocks) never change because of it. Text is kept per block id.
+ */
 export interface Outline {
+  /** The draft it was (or will be) brought in from. */
   draft: DraftId;
   /** Session start time, in minutes after midnight (0 means times read 00:00, 00:15...). */
   start: number;
   rows: Record<string, OutlineRow>;
+  /** The outline's own blocks; null until a draft is brought in. */
+  blocks: TimeBlock[] | null;
+  /** What the draft looked like when it was brought in (see draftSignature), to tell when it has changed. */
+  sourceSig?: string;
 }
 
 export interface CanvasState {
@@ -86,6 +94,8 @@ export interface CanvasState {
   details: CanvasDetails;
   cells: Record<string, Cell>;
   drafts: Record<DraftId, TimeBlock[]>;
+  /** When each draft's first day starts, in minutes after midnight (Time Blocks has its own clock). */
+  draftStart: Record<DraftId, number>;
   /** Solo guided mode: sections are revealed up to this step (see REVEAL_STEPS). */
   step: number;
   outline: Outline;

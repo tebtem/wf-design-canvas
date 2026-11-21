@@ -13,7 +13,8 @@
     "test": "vitest run",
     "e2e": "node scripts/e2e.mjs",
     "test:rules": "firebase emulators:exec --project demo-wf-canvas --only database,auth 'node scripts/rules.test.mjs'",
-    "e2e:workshop": "node scripts/e2e-workshop.mjs"
+    "e2e:workshop": "node scripts/e2e-workshop.mjs",
+    "e2e:share": "node scripts/e2e-share.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

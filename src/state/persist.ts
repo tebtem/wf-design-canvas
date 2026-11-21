@@ -1,6 +1,6 @@
-import { emptyDetails, initialState } from './reducer';
+import { draftSignature, emptyDetails, initialState } from './reducer';
 import { clampStep, FLOW_MAX, FLOW_ROW, isValidFlowOrder } from './cells';
-import { clampMinutes, DRAFT_IDS, STICKY_COLORS, type CanvasDetails, type Outline, type CanvasState, type Cell, type TimeBlock } from './types';
+import { clampMinutes, DRAFT_IDS, STICKY_COLORS, type CanvasDetails, type DraftId, type Outline, type CanvasState, type Cell, type TimeBlock } from './types';
 
 /** Blocks saved before notes existed get an empty notes field. */
 const migrateBlocks = (blocks: TimeBlock[] = []) =>
@@ -30,13 +30,32 @@ function migrateCells(cells: Record<string, Cell>): Record<string, Cell> {
   );
 }
 
-function migrateOutline(o: Partial<Outline> | undefined, draftCount: number): Outline {
+/**
+ * The outline's own blocks. Canvases saved before the outline kept a copy followed their draft, so
+ * they start with a copy of it and look the same as before.
+ */
+function migrateOutlineBlocks(o: Partial<Outline> | undefined, drafts: Record<DraftId, TimeBlock[]>, draft: DraftId) {
+  if (Array.isArray(o?.blocks)) return migrateBlocks(o.blocks);
+  if (o?.blocks === null) return null;
+  return drafts[draft].length ? drafts[draft].map((b) => ({ ...b })) : null;
+}
+
+function migrateOutline(o: Partial<Outline> | undefined, draftCount: number, drafts: Record<DraftId, TimeBlock[]>): Outline {
   const draft = o?.draft && DRAFT_IDS.slice(0, draftCount).includes(o.draft) ? o.draft : 'd1';
   const rows = Object.fromEntries(
     Object.entries(o?.rows ?? {}).map(([id, r]) => [id, { activities: str(r?.activities), moves: str(r?.moves) }]),
   );
   const start = typeof o?.start === 'number' && o.start >= 0 && o.start < 1440 ? Math.round(o.start) : 0;
-  return { draft, start, rows };
+  const blocks = migrateOutlineBlocks(o, drafts, draft);
+  const sourceSig = typeof o?.sourceSig === 'string' ? o.sourceSig : undefined;
+  return { draft, start, rows, blocks, ...(sourceSig ? { sourceSig } : {}) };
+}
+
+/** Each draft's start time. Before drafts had their own, they used the outline's. */
+function migrateDraftStart(parsed: Partial<CanvasState>, outlineStart: number): Record<DraftId, number> {
+  const ok = (v: unknown) => (typeof v === 'number' && v >= 0 && v < 1440 ? Math.round(v) : outlineStart);
+  const saved = parsed.draftStart;
+  return { d1: ok(saved?.d1), d2: ok(saved?.d2), d3: ok(saved?.d3) };
 }
 
 /** A saved column order, with the column count it implies; null for canvases saved before reordering. */
@@ -74,13 +93,21 @@ export function parseState(raw: string | null | undefined): CanvasState | null {
     // Never hide a draft that has blocks in it.
     const order = migrateFlowOrder(parsed);
     const draftCount = Math.max(1, Math.min(3, Math.floor(saved)), d3.length ? 3 : d2.length ? 2 : 1);
+    const drafts = { d1: migrateBlocks(parsed.drafts.d1), d2, d3 };
+    const outline = migrateOutline(parsed.outline, draftCount, drafts);
+    const draftStart = migrateDraftStart(parsed, outline.start);
+    // Older canvases followed their draft, so the copy they start with matches it.
+    if (outline.blocks && !outline.sourceSig && !Array.isArray(parsed.outline?.blocks)) {
+      outline.sourceSig = draftSignature(drafts[outline.draft], draftStart[outline.draft]);
+    }
     return {
       version: 1,
       details: migrateDetails(parsed.details),
       cells: migrateCells(parsed.cells ?? {}),
-      drafts: { d1: migrateBlocks(parsed.drafts.d1), d2, d3 },
+      drafts,
+      draftStart,
       draftCount,
-      outline: migrateOutline(parsed.outline, draftCount),
+      outline,
       ...(order ? { flowColumns: order.length, flowOrder: order } : { flowColumns: migrateFlowColumns(parsed) }),
       // Canvases saved before the guide existed open fully revealed.
       step: clampStep(parsed.step),

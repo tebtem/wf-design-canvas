@@ -203,6 +203,66 @@ describe('session outline', () => {
   });
 });
 
+describe('outline keeps its own copy of a draft', () => {
+  it('brings a draft in, then changes stay in the outline', async () => {
+    let s = reducer(initialState(), { type: 'addBlock', draftId: 'd1', id: 'b1', minutes: 30 });
+    s = reducer(s, { type: 'editBlock', id: 'b1', label: 'Opening' });
+    s = reducer(s, { type: 'setDraftStart', draftId: 'd1', start: 540 });
+    expect(s.outline.blocks).toBeNull();
+
+    s = reducer(s, { type: 'importOutline', draft: 'd1' });
+    expect(s.outline.blocks).toEqual([expect.objectContaining({ id: 'b1', minutes: 30, label: 'Opening' })]);
+    expect(s.outline.start).toBe(540);
+
+    // Outline changes leave the draft alone.
+    s = reducer(s, { type: 'setOutlineMinutes', blockId: 'b1', minutes: 47 });
+    s = reducer(s, { type: 'setOutlineLabel', blockId: 'b1', label: 'Opening circle' });
+    s = reducer(s, { type: 'setOutlineStart', start: 600 });
+    expect(s.drafts.d1[0]).toMatchObject({ minutes: 30, label: 'Opening' });
+    expect(s.draftStart.d1).toBe(540);
+    expect(s.outline.blocks?.[0]).toMatchObject({ minutes: 45, label: 'Opening circle' });
+
+    // Draft changes leave the outline alone until it is brought in again.
+    s = reducer(s, { type: 'addBlock', draftId: 'd1', id: 'b2', minutes: 15 });
+    s = reducer(s, { type: 'setBlockMinutes', id: 'b1', minutes: 60 });
+    expect(s.outline.blocks).toHaveLength(1);
+
+    const { draftChangedSinceImport } = await import('./reducer');
+    expect(draftChangedSinceImport(s)).toBe(true);
+    // Bringing it in again matches the draft, keeping notes on blocks still in it.
+    s = reducer(s, { type: 'setOutlineRow', blockId: 'b1', field: 'moves', value: 'Markers' });
+    s = reducer(s, { type: 'setOutlineRow', blockId: 'gone', field: 'moves', value: 'Old' });
+    s = reducer(s, { type: 'importOutline', draft: 'd1' });
+    expect(s.outline.blocks?.map((b) => [b.id, b.minutes, b.label])).toEqual([
+      ['b1', 60, 'Opening'],
+      ['b2', 15, ''],
+    ]);
+    expect(s.outline.rows).toEqual({ b1: { activities: '', moves: 'Markers' } });
+    expect(draftChangedSinceImport(s)).toBe(false);
+    // Outline edits alone do not count as the draft changing; block details do not either.
+    s = reducer(s, { type: 'setOutlineMinutes', blockId: 'b1', minutes: 20 });
+    s = reducer(s, { type: 'editBlock', id: 'b1', notes: 'Details' });
+    expect(draftChangedSinceImport(s)).toBe(false);
+    s = reducer(s, { type: 'setDraftStart', draftId: 'd1', start: 480 });
+    expect(draftChangedSinceImport(s)).toBe(true);
+  });
+
+  it('gives older canvases a copy of their draft so they look the same', async () => {
+    let s = reducer(initialState(), { type: 'addBlock', draftId: 'd1', id: 'b1', minutes: 30 });
+    s = reducer(s, { type: 'setOutlineStart', start: 540 });
+    const legacy = JSON.parse(JSON.stringify(s));
+    delete legacy.outline.blocks;
+    delete legacy.draftStart;
+    const loaded = parseState(JSON.stringify(legacy));
+    expect(loaded?.outline.blocks).toEqual([expect.objectContaining({ id: 'b1', minutes: 30 })]);
+    expect(loaded?.draftStart.d1).toBe(540);
+    const { draftChangedSinceImport } = await import('./reducer');
+    expect(draftChangedSinceImport(loaded!)).toBe(false);
+    // A new canvas that has not brought a draft in yet stays that way.
+    expect(parseState(JSON.stringify(initialState()))?.outline.blocks).toBeNull();
+  });
+});
+
 describe('backups', () => {
   it('round-trips a canvas and rejects other files', async () => {
     const { backupJson, readBackup, backupFileName } = await import('./backup');

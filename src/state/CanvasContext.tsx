@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReducer, useRef, useState, type Dispatch, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState, type Dispatch, type ReactNode } from 'react';
 import { reducer, type Action } from './reducer';
 import { readState, saveState, STORAGE_KEY } from './persist';
 import { initialState } from './reducer';
@@ -12,6 +12,8 @@ interface Ctx {
   saveStatus: SaveStatus;
   /** True when showing someone else's canvas: nothing can be edited. */
   readOnly: boolean;
+  /** Shared canvases: turns editing off while someone else holds the edit lock. */
+  setViewOnly: (viewOnly: boolean) => void;
 }
 
 const CanvasContext = createContext<Ctx | null>(null);
@@ -28,6 +30,15 @@ export function CanvasProvider({ children, storageKey = STORAGE_KEY, initial }: 
   const [state, dispatch] = useReducer(reducer, undefined, () => readState(storageKey) ?? initial?.() ?? initialState());
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const loaded = useRef(state);
+  const [viewOnly, setViewOnly] = useState(false);
+  const viewOnlyRef = useRef(viewOnly);
+  useEffect(() => {
+    viewOnlyRef.current = viewOnly;
+  }, [viewOnly]);
+  // While view only, the canvas still follows changes loaded from elsewhere, but nothing else.
+  const guarded = useCallback<Dispatch<Action>>((a) => {
+    if (!viewOnlyRef.current || a.type === 'load') dispatch(a);
+  }, []);
 
   useEffect(() => {
     if (state === loaded.current) return;
@@ -38,7 +49,9 @@ export function CanvasProvider({ children, storageKey = STORAGE_KEY, initial }: 
   }, [state, storageKey]);
 
   return (
-    <CanvasContext.Provider value={{ state, dispatch, saveStatus, readOnly: false }}>{children}</CanvasContext.Provider>
+    <CanvasContext.Provider value={{ state, dispatch: guarded, saveStatus, readOnly: viewOnly, setViewOnly }}>
+      {children}
+    </CanvasContext.Provider>
   );
 }
 
@@ -47,7 +60,7 @@ const noop = () => {};
 /** Shows a canvas without letting anyone change it. */
 export function ReadOnlyCanvasProvider({ state, children }: { state: CanvasState; children: ReactNode }) {
   return (
-    <CanvasContext.Provider value={{ state, dispatch: noop, saveStatus: 'idle', readOnly: true }}>
+    <CanvasContext.Provider value={{ state, dispatch: noop, saveStatus: 'idle', readOnly: true, setViewOnly: noop }}>
       {children}
     </CanvasContext.Provider>
   );

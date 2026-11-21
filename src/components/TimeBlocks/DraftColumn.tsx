@@ -7,6 +7,7 @@ import { DayDivider } from './DayDivider';
 import { PlusIcon } from '../Icons';
 import { DRAFT_NAMES, hhmm, type DraftId, type TimeBlock } from '../../state/types';
 import { TimeBlockCard } from './TimeBlockCard';
+import { TimeField } from '../TimeField';
 import { XIcon } from '../Icons';
 import { draftDroppableId, type DragData } from './dnd';
 
@@ -22,13 +23,13 @@ interface Props {
 }
 
 export function DraftColumn({ draftId, blocks, announce, onRemove, footer, onAddDay }: Props) {
-  const { state } = useCanvas();
+  const { state, dispatch, readOnly } = useCanvas();
   const data: DragData = { type: 'draft', draftId };
   const { setNodeRef, isOver } = useDroppable({ id: draftDroppableId(draftId), data });
   const headingId = `draft-${draftId}-heading`;
   const total = totalMinutes(blocks);
 
-  const { slots, days } = schedule(blocks, state.outline.start);
+  const { slots, days } = schedule(blocks, state.draftStart[draftId]);
   const multiDay = days.length > 1;
   return (
     <div ref={setNodeRef} className={`draft${isOver ? ' is-over' : ''}`} role="group" aria-labelledby={headingId}>
@@ -40,6 +41,21 @@ export function DraftColumn({ draftId, blocks, announce, onRemove, footer, onAdd
           {blocks.length
             ? `${multiDay ? `${days.length} days · ` : ''}Total ${totalWithBreaks(total, breakMinutes(blocks))}`
             : 'No blocks yet'}
+        </p>
+        {/* Time Blocks keeps its own clock; the Session Outline has a separate one. */}
+        <p className="draft__start">
+          {multiDay ? 'Day 1 starts' : 'Starts'}{' '}
+          <TimeField
+            kind="clock"
+            value={state.draftStart[draftId]}
+            label={`${DRAFT_NAMES[draftId]} start time`}
+            readOnly={readOnly}
+            onCommit={(t) => {
+              dispatch({ type: 'setDraftStart', draftId, start: t });
+              announce(`${DRAFT_NAMES[draftId]} starts at ${hhmm(t)}.`);
+            }}
+            onInvalid={announce}
+          />
         </p>
         {onRemove && (
           <button
@@ -59,8 +75,7 @@ export function DraftColumn({ draftId, blocks, announce, onRemove, footer, onAdd
             <li className="day-divider day-divider--first">
               <span className="day-divider__name">Day 1</span>
               <span className="day-divider__meta">
-                starts {hhmm(days[0].start)}
-                {days[0].total > 0 && ` · ${totalWithBreaks(days[0].total, days[0].breaks)}`}
+                {days[0].total > 0 ? totalWithBreaks(days[0].total, days[0].breaks) : 'No blocks yet'}
               </span>
             </li>
           )}
