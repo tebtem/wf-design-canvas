@@ -33,7 +33,16 @@ function migrateCells(cells: Record<string, Cell>): Record<string, Cell> {
 function migrateOutline(o: Partial<Outline> | undefined, draftCount: number): Outline {
   const draft = o?.draft && DRAFT_IDS.slice(0, draftCount).includes(o.draft) ? o.draft : 'd1';
   const rows = Object.fromEntries(
-    Object.entries(o?.rows ?? {}).map(([id, r]) => [id, { activities: str(r?.activities), moves: str(r?.moves) }]),
+    Object.entries(o?.rows ?? {}).map(([id, r]) => [
+      id,
+      {
+        activities: str(r?.activities),
+        moves: str(r?.moves),
+        // Lengths and names changed in the outline only (the draft keeps its own).
+        ...(typeof r?.minutes === 'number' ? { minutes: clampMinutes(r.minutes) } : {}),
+        ...(typeof r?.label === 'string' ? { label: r.label.slice(0, 120) } : {}),
+      },
+    ]),
   );
   const start = typeof o?.start === 'number' && o.start >= 0 && o.start < 1440 ? Math.round(o.start) : 0;
   return { draft, start, rows };

@@ -22,7 +22,10 @@ export type Action =
   | { type: 'showAll' }
   | { type: 'setOutlineDraft'; draft: DraftId }
   | { type: 'setOutlineStart'; start: number }
-  | { type: 'setOutlineRow'; blockId: string; field: keyof OutlineRow; value: string }
+  | { type: 'setOutlineRow'; blockId: string; field: 'activities' | 'moves'; value: string }
+  | { type: 'setOutlineMinutes'; blockId: string; minutes: number }
+  | { type: 'setOutlineLabel'; blockId: string; label: string }
+  | { type: 'resetOutlineRow'; blockId: string }
   | { type: 'load'; state: CanvasState }
   | { type: 'addFlowRow' }
   | { type: 'removeFlowRow' }
@@ -101,6 +104,18 @@ export interface DayInfo {
  * Works out each block's day and clock time. Day dividers start a new day whose clock begins at the
  * divider's start time (or Day 1's start when none is set).
  */
+/** A draft's blocks as the outline shows them: its own lengths and names where they were changed there. */
+export function outlineBlocks(blocks: TimeBlock[], rows: Record<string, OutlineRow>): TimeBlock[] {
+  return blocks.map((b) => {
+    const r = rows[b.id];
+    if (b.kind === 'day' || !r || (r.minutes === undefined && r.label === undefined)) return b;
+    return { ...b, minutes: r.minutes ?? b.minutes, label: r.label ?? b.label };
+  });
+}
+
+/** Whether the outline changed this block's length or name. */
+export const outlineChanged = (row: OutlineRow | undefined) => row?.minutes !== undefined || row?.label !== undefined;
+
 export function schedule(blocks: TimeBlock[], day1Start: number): { slots: Slot[]; days: DayInfo[] } {
   const days: DayInfo[] = [{ day: 1, start: day1Start, total: 0, breaks: 0 }];
   const slots: Slot[] = [];
@@ -273,6 +288,29 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
         ...state,
         outline: { ...state.outline, rows: { ...state.outline.rows, [action.blockId]: { ...row, [action.field]: action.value } } },
       };
+    }
+
+    // Lengths and names typed in the outline stay in the outline; the draft block keeps its own.
+    // A value matching the draft clears the change.
+    case 'setOutlineMinutes':
+    case 'setOutlineLabel': {
+      const at = findBlock(state, action.blockId);
+      if (!at) return state;
+      const block = state.drafts[at.draftId][at.index];
+      const { minutes, label, ...rest } = state.outline.rows[action.blockId] ?? { activities: '', moves: '' };
+      const next: OutlineRow = { ...rest };
+      const m = action.type === 'setOutlineMinutes' ? clampMinutes(action.minutes) : minutes;
+      const l = action.type === 'setOutlineLabel' ? action.label : label;
+      if (m !== undefined && m !== block.minutes) next.minutes = m;
+      if (l !== undefined && l !== block.label) next.label = l;
+      return { ...state, outline: { ...state.outline, rows: { ...state.outline.rows, [action.blockId]: next } } };
+    }
+
+    case 'resetOutlineRow': {
+      const row = state.outline.rows[action.blockId];
+      if (!row) return state;
+      const { activities, moves } = row;
+      return { ...state, outline: { ...state.outline, rows: { ...state.outline.rows, [action.blockId]: { activities, moves } } } };
     }
 
     case 'load':

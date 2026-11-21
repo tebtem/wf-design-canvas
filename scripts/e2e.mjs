@@ -188,7 +188,7 @@ const outline = page.locator('#section-outline');
 if (!(await outline.getByText('Q3 planning').count())) fail('outline should show the working title');
 await page.getByRole('button', { name: 'Add 15 min block to Session Draft 1' }).click();
 if ((await outline.locator('tbody tr').count()) !== 2) fail('outline should have a row per block');
-// Typeable times: first start sets the session start; end times and lengths resize blocks.
+// Typeable times: first start sets the session start; end times and lengths resize rows (not the draft).
 const startField = page.getByLabel('Session start time');
 await startField.fill('9');
 await startField.press('Enter');
@@ -203,13 +203,16 @@ await len1.fill('42');
 await len1.press('Tab');
 if ((await len1.inputValue()) !== '40') fail(`length should snap to 5 minutes: ${await len1.inputValue()}`);
 if ((await outline.locator('.outline__start').textContent()) !== '09:40') fail('rows below should shift');
+if (!(await page.getByLabel(/^Length in minutes of 45 minute block/).count())) fail('outline lengths should not change the draft');
+if (!(await outline.getByText('Draft: 45 min').count())) fail('a changed length should show the draft length');
 await startField.fill('abc');
 await startField.press('Enter');
 if ((await startField.inputValue()) !== '09:00') fail('invalid time should be ignored');
 if (!(await page.locator('.tblock__time').first().textContent()).includes('09:00')) fail('time blocks should use the session start');
-// The block name shows (and can be edited) at the top of Activities, in sync with Time Blocks.
+// The block name shows at the top of Activities; renaming it there leaves the draft's name alone.
 await page.getByLabel(/^Block name, row 1/).fill('Opening circle');
-if (!(await page.getByLabel(/^Activity for 40 minute block/).inputValue()).includes('Opening circle')) fail('outline block name should update the time block');
+if ((await page.getByLabel(/^Activity for 45 minute block/).inputValue()).includes('Opening circle')) fail('outline name should not change the draft');
+if (!(await outline.getByText('Draft name: none').count())) fail('a changed name should show the draft name');
 // Activities are rich text: a title, bullets, bold and italic.
 const acts = page.getByLabel(/^Activities, 09:00 to 09:40/);
 await acts.click();
@@ -259,10 +262,15 @@ const breakRow = outline.locator('tr.outline__break');
 if ((await breakRow.count()) !== 1 || (await breakRow.locator('td').count()) !== 3) fail('break row should merge its notes cells');
 await page.getByRole('button', { name: /^Break: 15 minute break/ }).click();
 if (await draft1.locator('.tblock--break').count()) fail('cup toggle should turn a break back into an activity');
-await page.getByRole('button', { name: /^Break: 15 minute block/ }).click();
+await page.getByRole('button', { name: /^Break: 15 minute block/ }).last().click();
 await axeCheck(page, 'breaks');
 await page.getByRole('button', { name: /^Remove 15 minute break/ }).click();
 await axeCheck(page, 'session outline');
+// Use draft puts a row back to the draft's length and name, keeping its notes.
+await outline.getByRole('button', { name: /^Use draft for row 1/ }).click();
+if ((await page.getByLabel(/^Length in minutes, row 1/).inputValue()) !== '45') fail('Use draft should restore the length');
+if ((await page.getByLabel(/^Block name, row 1/).inputValue()) !== '') fail('Use draft should restore the name');
+if ((await page.getByLabel(/^Activities, 09:00 to 09:45/).locator('h3').textContent()) !== 'Kickoff and goals') fail('Use draft should keep notes');
 await outline.screenshot({ path: out + 'outline.png' });
 
 // Button alternative.

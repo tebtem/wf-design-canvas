@@ -1,5 +1,5 @@
 import { useCanvas } from '../state/CanvasContext';
-import { breakMinutes, schedule, totalMinutes, totalWithBreaks, visibleDrafts } from '../state/reducer';
+import { breakMinutes, formatMinutes, outlineBlocks, outlineChanged, schedule, totalMinutes, totalWithBreaks, visibleDrafts } from '../state/reducer';
 import { CupIcon } from './Icons';
 import { useState } from 'react';
 import { RichNote } from './RichNote';
@@ -19,12 +19,18 @@ import { TimeField } from './TimeField';
 
 const EMPTY: OutlineRow = { activities: '', moves: '' };
 
-/** Run of show built from a session draft: times come from the blocks, the rest is typed in. */
+/**
+ * Run of show built from a session draft: rows and times come from its blocks, the rest is typed in.
+ * Lengths and names changed here stay in the outline, so the draft keeps its original plan; each
+ * changed row shows the draft's value and can go back to it.
+ */
 export function SessionOutline() {
   const { state, dispatch, readOnly } = useCanvas();
   const drafts = visibleDrafts(state);
   const draft: DraftId = drafts.includes(state.outline.draft) ? state.outline.draft : 'd1';
-  const blocks = state.drafts[draft];
+  const original = state.drafts[draft];
+  const blocks = outlineBlocks(original, state.outline.rows);
+  const draftTotal = totalMinutes(original);
   const title = state.details.title.trim();
   const { slots, days } = schedule(blocks, state.outline.start);
   const multiDay = days.length > 1;
@@ -37,14 +43,14 @@ export function SessionOutline() {
   /** Lengths snap to 5-minute steps; say so when the typed value changed. */
   const setLength = (blockId: string, minutes: number) => {
     const next = clampMinutes(minutes);
-    dispatch({ type: 'setBlockMinutes', id: blockId, minutes: next });
+    dispatch({ type: 'setOutlineMinutes', blockId, minutes: next });
     if (next !== minutes) {
       announce(`Lengths go in ${BLOCK_STEP}-minute steps from ${MIN_BLOCK} to ${MAX_BLOCK}. Set to ${next} minutes.`);
     }
   };
 
   /** Activities allow a title; Moves + Materials and break notes allow bold, italic and bullets. */
-  const field = (blockId: string, key: keyof OutlineRow, label: string, value: string, allowTitle = false) => (
+  const field = (blockId: string, key: 'activities' | 'moves', label: string, value: string, allowTitle = false) => (
     <RichNote
       value={value}
       label={label}
@@ -82,6 +88,9 @@ export function SessionOutline() {
           {blocks.length > 0 && (
             <p className="outline__total">
               {multiDay && `${days.length} days · `}Total {totalWithBreaks(totalMinutes(blocks), breakMinutes(blocks))}
+              {totalMinutes(blocks) !== draftTotal && (
+                <span className="outline__draftref"> (draft: {formatMinutes(draftTotal)})</span>
+              )}
             </p>
           )}
         </div>
@@ -97,7 +106,7 @@ export function SessionOutline() {
             <table className="outline__table">
               <caption id="outline-caption" className="sr-only">
                 Session Outline{title ? ` for ${title}` : ''}, from {DRAFT_NAMES[draft]}. Type the first start time, or
-                any end time or length; the rows below adjust.
+                any end time or length; the rows below adjust. Changes here do not change the draft.
               </caption>
               <thead>
                 <tr>
@@ -144,6 +153,9 @@ export function SessionOutline() {
                       const spoken = `${dayLabel}${hhmm(start)} to ${hhmm(end)}${name ? `, ${name}` : ''}`;
                       const rowName = `${dayLabel}row ${i + 1}${name ? `, ${name}` : ''}`;
                       const row = state.outline.rows[b.id] ?? EMPTY;
+                      const orig = original.find((x) => x.id === b.id) ?? b;
+                      const changedLength = row.minutes !== undefined;
+                      const changedName = row.label !== undefined;
                       return (
                         <tr key={b.id} className={brk ? 'outline__break' : undefined}>
                           <td className="outline__time">
@@ -190,6 +202,19 @@ export function SessionOutline() {
                               onInvalid={announce}
                             />{' '}
                             min
+                            {changedLength && <span className="outline__draftref">Draft: {orig.minutes} min</span>}
+                            {outlineChanged(row) && !readOnly && (
+                              <button
+                                type="button"
+                                className="btn btn--small outline__reset no-print"
+                                onClick={() => {
+                                  dispatch({ type: 'resetOutlineRow', blockId: b.id });
+                                  announce(`${rowName}: back to the draft's length and name.`);
+                                }}
+                              >
+                                Use draft<span className="sr-only"> for {rowName}</span>
+                              </button>
+                            )}
                           </td>
                           {brk ? (
                             // Breaks rarely need both columns: one quiet notes cell.
@@ -199,7 +224,7 @@ export function SessionOutline() {
                           ) : (
                             <>
                               <td>
-                                {/* The block's name from Time Blocks, editable here too (they stay in sync). */}
+                                {/* The block's name from Time Blocks. Renaming it here leaves the draft's name as it was. */}
                                 {readOnly ? (
                                   b.label && <p className="outline__name">{b.label}</p>
                                 ) : (
@@ -210,8 +235,13 @@ export function SessionOutline() {
                                     placeholder="Name this block"
                                     maxLength={120}
                                     autoComplete="off"
-                                    onChange={(e) => dispatch({ type: 'editBlock', id: b.id, label: e.target.value })}
+                                    onChange={(e) =>
+                                      dispatch({ type: 'setOutlineLabel', blockId: b.id, label: e.target.value })
+                                    }
                                   />
+                                )}
+                                {changedName && (
+                                  <p className="outline__draftref">Draft name: {orig.label || 'none'}</p>
                                 )}
                                 {field(b.id, 'activities', `Activities, ${spoken}`, row.activities, true)}
                               </td>
@@ -229,8 +259,8 @@ export function SessionOutline() {
         )}
         {blocks.length > 0 && !readOnly && (
           <p className="outline__hint no-print">
-            Type the first start time of a day, or any end time or length. Each row starts when the one above ends, and
-            changes update your time blocks too.
+            Type the first start time of a day, or any end time or length. Each row starts when the one above ends.
+            Lengths and names you change here stay in the outline; your draft keeps its original plan.
           </p>
         )}
         <p className="sr-only" role="status" aria-live="polite">
