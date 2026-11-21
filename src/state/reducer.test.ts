@@ -203,38 +203,6 @@ describe('session outline', () => {
   });
 });
 
-describe('outline changes leave the draft alone', () => {
-  it('keeps lengths and names typed in the outline separate from the draft', async () => {
-    const { outlineBlocks, outlineChanged } = await import('./reducer');
-    let s = reducer(initialState(), { type: 'addBlock', draftId: 'd1', id: 'b1', minutes: 30 });
-    s = reducer(s, { type: 'editBlock', id: 'b1', label: 'Opening' });
-    s = reducer(s, { type: 'setOutlineMinutes', blockId: 'b1', minutes: 47 });
-    s = reducer(s, { type: 'setOutlineLabel', blockId: 'b1', label: 'Opening circle' });
-    expect(s.drafts.d1[0]).toMatchObject({ minutes: 30, label: 'Opening' });
-    expect(s.outline.rows.b1).toMatchObject({ minutes: 45, label: 'Opening circle' });
-    expect(outlineBlocks(s.drafts.d1, s.outline.rows)[0]).toMatchObject({ minutes: 45, label: 'Opening circle' });
-    expect(outlineChanged(s.outline.rows.b1)).toBe(true);
-
-    // Saved and reloaded, the changes are still there.
-    saveState(s);
-    expect(loadState().outline.rows.b1).toMatchObject({ minutes: 45, label: 'Opening circle' });
-
-    // Typing the draft's value again clears the change.
-    s = reducer(s, { type: 'setOutlineMinutes', blockId: 'b1', minutes: 30 });
-    expect(s.outline.rows.b1.minutes).toBeUndefined();
-
-    // Use draft drops the remaining changes but keeps the notes.
-    s = reducer(s, { type: 'setOutlineRow', blockId: 'b1', field: 'moves', value: 'Markers' });
-    s = reducer(s, { type: 'resetOutlineRow', blockId: 'b1' });
-    expect(s.outline.rows.b1).toEqual({ activities: '', moves: 'Markers' });
-    expect(outlineChanged(s.outline.rows.b1)).toBe(false);
-
-    // Draft changes still flow into rows the outline has not changed.
-    s = reducer(s, { type: 'setBlockMinutes', id: 'b1', minutes: 60 });
-    expect(outlineBlocks(s.drafts.d1, s.outline.rows)[0].minutes).toBe(60);
-  });
-});
-
 describe('backups', () => {
   it('round-trips a canvas and rejects other files', async () => {
     const { backupJson, readBackup, backupFileName } = await import('./backup');

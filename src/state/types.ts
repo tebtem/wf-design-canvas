@@ -71,16 +71,9 @@ export const DETAIL_FIELDS: { key: keyof CanvasDetails; label: string }[] = [
 export interface OutlineRow {
   activities: string;
   moves: string;
-  /** Length used in the outline when it differs from the draft block (the draft keeps its own). */
-  minutes?: number;
-  /** Name used in the outline when it differs from the draft block. */
-  label?: string;
 }
 
-/**
- * Session Outline: rows come from one draft's time blocks; text is kept per block id. Lengths and
- * names changed in the outline are kept here too, so the draft stays as it was.
- */
+/** Session Outline: rows come from one draft's time blocks; text is kept per block id. */
 export interface Outline {
   draft: DraftId;
   /** Session start time, in minutes after midnight (0 means times read 00:00, 00:15...). */

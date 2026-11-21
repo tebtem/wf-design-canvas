@@ -1525,24 +1525,3 @@ div.sticky__text {
     animation: none !important;
   }
 }
-
-/* Session Outline: a length or name changed here, with the draft's value for reference */
-.outline__draftref {
-  display: block;
-  margin: 2px 0 0;
-  padding: 0 6px;
-  font-size: 0.8rem;
-  font-style: italic;
-  color: var(--navy-soft); /* 9:1 on white */
-  white-space: normal;
-}
-.outline__len .outline__draftref {
-  padding: 0;
-}
-.outline__total .outline__draftref {
-  display: inline;
-  padding: 0;
-}
-.outline__reset {
-  margin-top: 4px;
-}
