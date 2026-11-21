@@ -183,12 +183,18 @@ await page.getByRole('button', { name: 'Remove Session Draft 3' }).click();
 await page.waitForTimeout(200);
 if (await page.getByRole('group', { name: 'Session Draft 3' }).count()) fail('draft 3 not removed');
 
-// Session Outline: rows follow the chosen draft's blocks and show the working title.
+// Session Outline: brings in a copy of a draft, shows the working title, then keeps its own changes.
 const outline = page.locator('#section-outline');
 if (!(await outline.getByText('Q3 planning').count())) fail('outline should show the working title');
 await page.getByRole('button', { name: 'Add 15 min block to Session Draft 1' }).click();
+if (await outline.locator('tbody tr').count()) fail('outline should wait until a draft is brought in');
+await outline.getByRole('button', { name: 'Bring in Session Draft 1' }).click();
 if ((await outline.locator('tbody tr').count()) !== 2) fail('outline should have a row per block');
-// Typeable times: first start sets the session start; end times and lengths resize blocks.
+// Re-importing asks first; accept those confirmations.
+const acceptAll = (d) => void d.accept();
+page.on('dialog', acceptAll);
+const bringInAgain = () => outline.getByRole('button', { name: 'Replace with Session Draft 1' }).click();
+// Typeable times: first start sets the session start; end times and lengths resize rows, not the draft.
 const startField = page.getByLabel('Session start time');
 await startField.fill('9');
 await startField.press('Enter');
@@ -203,13 +209,20 @@ await len1.fill('42');
 await len1.press('Tab');
 if ((await len1.inputValue()) !== '40') fail(`length should snap to 5 minutes: ${await len1.inputValue()}`);
 if ((await outline.locator('.outline__start').textContent()) !== '09:40') fail('rows below should shift');
+if (!(await page.getByLabel(/^Length in minutes of 45 minute block/).count())) fail('outline lengths should not change the draft');
 await startField.fill('abc');
 await startField.press('Enter');
 if ((await startField.inputValue()) !== '09:00') fail('invalid time should be ignored');
-if (!(await page.locator('.tblock__time').first().textContent()).includes('09:00')) fail('time blocks should use the session start');
-// The block name shows (and can be edited) at the top of Activities, in sync with Time Blocks.
+if ((await page.locator('.tblock__time').first().textContent()).includes('09:00')) fail('outline start should not change the time blocks');
+// Time Blocks has its own start time.
+const draftStart = page.getByLabel('Session Draft 1 start time');
+await draftStart.fill('8:30');
+await draftStart.press('Enter');
+if (!(await page.locator('.tblock__time').first().textContent()).includes('08:30')) fail('time blocks should use their own start');
+if ((await startField.inputValue()) !== '09:00') fail('draft start should not change the outline');
+// The block name shows at the top of Activities; renaming it there leaves the draft alone.
 await page.getByLabel(/^Block name, row 1/).fill('Opening circle');
-if (!(await page.getByLabel(/^Activity for 40 minute block/).inputValue()).includes('Opening circle')) fail('outline block name should update the time block');
+if ((await page.getByLabel(/^Activity for 45 minute block/).inputValue()).includes('Opening circle')) fail('outline name should not change the draft');
 // Activities are rich text: a title, bullets, bold and italic.
 const acts = page.getByLabel(/^Activities, 09:00 to 09:40/);
 await acts.click();
@@ -234,33 +247,45 @@ await page.keyboard.type('Timer');
 if ((await page.getByLabel(/^Moves and materials, 09:00 to 09:40/).locator('li').count()) !== 2) fail('bullets in Moves + Materials');
 await page.keyboard.press('Escape');
 if (!(await page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? '')).startsWith('Moves and materials')) fail('Escape should keep focus on the field');
-await page.getByLabel('Based on').selectOption('d2');
-if (!(await outline.getByText('Add time blocks to Session Draft 2').count())) fail('empty outline message');
-await page.getByLabel('Based on').selectOption('d1');
-if ((await page.getByLabel(/^Activities, 09:00 to 09:40/).locator('h3').textContent()) !== 'Kickoff and goals') fail('outline text lost when switching drafts');
-// Multi-day: a Day 2 divider starts a fresh clock, in the time blocks and the outline.
+// Picking another draft only brings it in on request (an empty draft cannot be brought in).
+await outline.getByLabel('Draft', { exact: true }).selectOption('d2');
+if (await outline.getByRole('button', { name: /^Replace with/ }).count()) fail('an empty draft should not replace the outline');
+if ((await outline.locator('tbody tr').count()) !== 2) fail('choosing a draft should not change the outline');
+await outline.getByLabel('Draft', { exact: true }).selectOption('d1');
+// Multi-day: a Day 2 divider starts a fresh clock, in the time blocks and (once brought in) the outline.
 await page.getByRole('button', { name: 'Add next day' }).first().click();
 await page.getByRole('button', { name: 'Add 30 min block to Session Draft 1' }).click();
+if (await outline.locator('.outline__day').count()) fail('draft changes should not reach the outline until brought in');
+await bringInAgain();
 if ((await outline.locator('.outline__day').count()) !== 2) fail('outline should group rows by day');
-const day2 = page.getByLabel('Day 2 start time');
-await day2.fill('8:30');
+if ((await page.getByLabel(/^Activities, Day 1, 08:30 to 09:15/).locator('h3').textContent()) !== 'Kickoff and goals') fail('bringing in again should keep notes');
+if ((await page.getByLabel(/^Block name, Day 1, row 1/).inputValue()) !== '') fail('bringing in again should match the draft');
+const day2 = page.getByLabel('Day 2 start time, Session Draft 1');
+await day2.fill('7:45');
 await day2.press('Enter');
-if (!(await page.getByRole('group', { name: 'Session Draft 1' }).getByText('starts 08:30').count())) fail('day divider should show its start');
+if ((await page.getByLabel('Day 2 start time', { exact: true }).inputValue()) === '07:45') fail('draft day start should not change the outline');
+const outlineDay2 = page.getByLabel('Day 2 start time', { exact: true });
+await outlineDay2.fill('10:00');
+await outlineDay2.press('Enter');
+if ((await day2.inputValue()) !== '07:45') fail('outline day start should not change the draft');
 if (!(await draft1.locator('.draft__total').textContent()).startsWith('2 days')) fail('draft total should count days');
 await axeCheck(page, 'multi-day');
 await page.getByRole('button', { name: 'Remove Day 2' }).click();
-if (await outline.locator('.outline__day').count()) fail('removing the day should merge it back');
 await page.getByRole('button', { name: /^Remove 30 minute block/ }).last().click();
+await bringInAgain();
+if (await outline.locator('.outline__day').count()) fail('removing the day should merge it back');
 // Breaks: from the bank or the cup toggle; striped, totaled separately, one notes cell in the outline.
 await page.getByRole('button', { name: 'Add a break to Session Draft 1' }).click();
 if (!(await draft1.locator('.tblock--break').count())) fail('break block should look different');
 if (!(await draft1.locator('.draft__total').textContent()).includes('15 min of breaks')) fail('draft total should show break time');
+await bringInAgain();
 const breakRow = outline.locator('tr.outline__break');
 if ((await breakRow.count()) !== 1 || (await breakRow.locator('td').count()) !== 3) fail('break row should merge its notes cells');
 await page.getByRole('button', { name: /^Break: 15 minute break/ }).click();
 if (await draft1.locator('.tblock--break').count()) fail('cup toggle should turn a break back into an activity');
-await page.getByRole('button', { name: /^Break: 15 minute block/ }).click();
+await page.getByRole('button', { name: /^Break: 15 minute block/ }).last().click();
 await axeCheck(page, 'breaks');
+page.off('dialog', acceptAll);
 await page.getByRole('button', { name: /^Remove 15 minute break/ }).click();
 await axeCheck(page, 'session outline');
 await outline.screenshot({ path: out + 'outline.png' });

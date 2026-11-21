@@ -21,6 +21,11 @@ export type Action =
   | { type: 'nextStep' }
   | { type: 'showAll' }
   | { type: 'setOutlineDraft'; draft: DraftId }
+  | { type: 'importOutline'; draft: DraftId }
+  | { type: 'setOutlineMinutes'; blockId: string; minutes: number }
+  | { type: 'setOutlineLabel'; blockId: string; label: string }
+  | { type: 'setOutlineDayStart'; blockId: string; start: number }
+  | { type: 'setDraftStart'; draftId: DraftId; start: number }
   | { type: 'setOutlineStart'; start: number }
   | { type: 'setOutlineRow'; blockId: string; field: keyof OutlineRow; value: string }
   | { type: 'load'; state: CanvasState }
@@ -38,8 +43,9 @@ export const initialState = (): CanvasState => ({
   details: emptyDetails(),
   cells: {},
   drafts: { d1: [], d2: [], d3: [] },
+  draftStart: { d1: 0, d2: 0, d3: 0 },
   draftCount: 1,
-  outline: { draft: 'd1', start: 0, rows: {} },
+  outline: { draft: 'd1', start: 0, rows: {}, blocks: null },
   flowColumns: FLOW_ROW,
   // A brand-new canvas starts guided; Clear canvas starts the guide over.
   step: 0,
@@ -264,6 +270,35 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
     case 'setOutlineDraft':
       return { ...state, outline: { ...state.outline, draft: action.draft } };
 
+    // Copies a draft into the outline. Notes typed in the outline stay with blocks still in the draft.
+    case 'importOutline': {
+      const blocks = state.drafts[action.draft].map((b) => ({ ...b }));
+      const ids = new Set(blocks.map((b) => b.id));
+      const rows = Object.fromEntries(Object.entries(state.outline.rows).filter(([id]) => ids.has(id)));
+      return { ...state, outline: { draft: action.draft, start: state.draftStart[action.draft], rows, blocks } };
+    }
+
+    // Changes in the outline only touch the outline's own blocks.
+    case 'setOutlineMinutes':
+    case 'setOutlineLabel':
+    case 'setOutlineDayStart': {
+      const blocks = state.outline.blocks;
+      if (!blocks) return state;
+      const next = blocks.map((b) => {
+        if (b.id !== action.blockId) return b;
+        if (action.type === 'setOutlineMinutes') return b.kind === 'day' ? b : { ...b, minutes: clampMinutes(action.minutes) };
+        if (action.type === 'setOutlineLabel') return { ...b, label: action.label };
+        return b.kind === 'day' ? { ...b, start: ((Math.round(action.start) % 1440) + 1440) % 1440 } : b;
+      });
+      return { ...state, outline: { ...state.outline, blocks: next } };
+    }
+
+    case 'setDraftStart':
+      return {
+        ...state,
+        draftStart: { ...state.draftStart, [action.draftId]: ((Math.round(action.start) % 1440) + 1440) % 1440 },
+      };
+
     case 'setOutlineStart':
       return { ...state, outline: { ...state.outline, start: ((Math.round(action.start) % 1440) + 1440) % 1440 } };
 
@@ -308,8 +343,12 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
       return { ...state, flowOrder: next };
     }
 
-    case 'addDraft':
-      return { ...state, draftCount: Math.min(MAX_DRAFTS, state.draftCount + 1) };
+    case 'addDraft': {
+      if (state.draftCount >= MAX_DRAFTS) return state;
+      // A new draft starts at the same time as the first one.
+      const added = DRAFT_IDS[state.draftCount];
+      return { ...state, draftCount: state.draftCount + 1, draftStart: { ...state.draftStart, [added]: state.draftStart.d1 } };
+    }
 
     case 'removeDraft':
     {

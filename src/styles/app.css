@@ -1525,3 +1525,15 @@ div.sticky__text {
     animation: none !important;
   }
 }
+
+/* Each draft's own start time (Time Blocks keeps a separate clock from the Session Outline) */
+.draft__start {
+  order: 3;
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.9rem;
+}
+.draft__start .time-field,
+.day-divider__meta .time-field {
+  width: 4.2em;
+}
