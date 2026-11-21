@@ -1,5 +1,5 @@
 import { useCanvas } from '../state/CanvasContext';
-import { breakMinutes, schedule, totalMinutes, totalWithBreaks, visibleDrafts } from '../state/reducer';
+import { breakMinutes, draftChangedSinceImport, schedule, totalMinutes, totalWithBreaks, visibleDrafts } from '../state/reducer';
 import { CupIcon } from './Icons';
 import { useState } from 'react';
 import { RichNote } from './RichNote';
@@ -50,8 +50,8 @@ export function SessionOutline() {
   };
 
   /** Copies the chosen draft in. Doing it again replaces the outline's times, lengths and names. */
-  const bringIn = () => {
-    const name = DRAFT_NAMES[from];
+  const bringIn = (pick: DraftId = from) => {
+    const name = DRAFT_NAMES[pick];
     if (
       imported &&
       !window.confirm(
@@ -59,10 +59,11 @@ export function SessionOutline() {
       )
     )
       return;
-    dispatch({ type: 'importOutline', draft: from });
+    dispatch({ type: 'importOutline', draft: pick });
     announce(`${name} brought into the Session Outline. Changes you make here will not change your time blocks.`);
   };
   const fromEmpty = state.drafts[from].length === 0;
+  const changed = draftChangedSinceImport(state);
 
   /** Activities allow a title; Moves + Materials and break notes allow bold, italic and bullets. */
   const field = (blockId: string, key: keyof OutlineRow, label: string, value: string, allowTitle = false) => (
@@ -97,8 +98,9 @@ export function SessionOutline() {
                   </select>
                 </>
               )}
-              {!fromEmpty && (
-                <button type="button" className={`btn btn--small${imported ? '' : ' btn--primary'}`} onClick={bringIn}>
+              {/* While the changed-draft notice offers the same replace, it is the only button for it. */}
+              {!fromEmpty && !(changed && from === draft) && (
+                <button type="button" className={`btn btn--small${imported ? '' : ' btn--primary'}`} onClick={() => bringIn()}>
                   {imported ? `Replace with ${DRAFT_NAMES[from]}` : `Bring in ${DRAFT_NAMES[from]}`}
                 </button>
               )}
@@ -112,6 +114,16 @@ export function SessionOutline() {
           )}
         </div>
 
+        {changed && !readOnly && (
+          <div className="ws-notice outline__changed no-print">
+            <span>
+              {DRAFT_NAMES[draft]} has changed since you brought it in. The outline still shows the earlier version.
+            </span>
+            <button type="button" className="btn btn--small" onClick={() => bringIn(draft)}>
+              Replace with {DRAFT_NAMES[draft]}
+            </button>
+          </div>
+        )}
         {!imported ? (
           <p className="outline__empty">
             {fromEmpty

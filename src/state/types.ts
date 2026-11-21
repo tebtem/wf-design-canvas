@@ -85,6 +85,8 @@ export interface Outline {
   rows: Record<string, OutlineRow>;
   /** The outline's own blocks; null until a draft is brought in. */
   blocks: TimeBlock[] | null;
+  /** What the draft looked like when it was brought in (see draftSignature), to tell when it has changed. */
+  sourceSig?: string;
 }
 
 export interface CanvasState {

@@ -107,6 +107,20 @@ export interface DayInfo {
  * Works out each block's day and clock time. Day dividers start a new day whose clock begins at the
  * divider's start time (or Day 1's start when none is set).
  */
+/**
+ * A draft's plan as the outline copies it: order, lengths, names, breaks, days and start times.
+ * Block details are left out because the outline does not show them.
+ */
+export function draftSignature(blocks: TimeBlock[], start: number): string {
+  return JSON.stringify([start, blocks.map((b) => [b.id, b.kind ?? '', b.minutes, b.label, b.isBreak ?? false, b.start ?? null])]);
+}
+
+/** True when the draft the outline came from has changed since it was brought in. */
+export const draftChangedSinceImport = (state: CanvasState) =>
+  state.outline.blocks !== null &&
+  state.outline.sourceSig !== undefined &&
+  state.outline.sourceSig !== draftSignature(state.drafts[state.outline.draft], state.draftStart[state.outline.draft]);
+
 export function schedule(blocks: TimeBlock[], day1Start: number): { slots: Slot[]; days: DayInfo[] } {
   const days: DayInfo[] = [{ day: 1, start: day1Start, total: 0, breaks: 0 }];
   const slots: Slot[] = [];
@@ -275,7 +289,8 @@ export function reducer(state: CanvasState, action: Action): CanvasState {
       const blocks = state.drafts[action.draft].map((b) => ({ ...b }));
       const ids = new Set(blocks.map((b) => b.id));
       const rows = Object.fromEntries(Object.entries(state.outline.rows).filter(([id]) => ids.has(id)));
-      return { ...state, outline: { draft: action.draft, start: state.draftStart[action.draft], rows, blocks } };
+      const sourceSig = draftSignature(state.drafts[action.draft], state.draftStart[action.draft]);
+      return { ...state, outline: { draft: action.draft, start: state.draftStart[action.draft], rows, blocks, sourceSig } };
     }
 
     // Changes in the outline only touch the outline's own blocks.

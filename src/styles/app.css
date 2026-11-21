@@ -1537,3 +1537,6 @@ div.sticky__text {
 .day-divider__meta .time-field {
   width: 4.2em;
 }
+.outline__changed {
+  margin: 0 0 12px;
+}

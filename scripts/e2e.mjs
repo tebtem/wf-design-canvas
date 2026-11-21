@@ -220,6 +220,7 @@ await draftStart.fill('8:30');
 await draftStart.press('Enter');
 if (!(await page.locator('.tblock__time').first().textContent()).includes('08:30')) fail('time blocks should use their own start');
 if ((await startField.inputValue()) !== '09:00') fail('draft start should not change the outline');
+if (!(await outline.getByText('Session Draft 1 has changed since you brought it in').count())) fail('changing the draft start should show the notice');
 // The block name shows at the top of Activities; renaming it there leaves the draft alone.
 await page.getByLabel(/^Block name, row 1/).fill('Opening circle');
 if ((await page.getByLabel(/^Activity for 45 minute block/).inputValue()).includes('Opening circle')) fail('outline name should not change the draft');
@@ -249,15 +250,18 @@ await page.keyboard.press('Escape');
 if (!(await page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? '')).startsWith('Moves and materials')) fail('Escape should keep focus on the field');
 // Picking another draft only brings it in on request (an empty draft cannot be brought in).
 await outline.getByLabel('Draft', { exact: true }).selectOption('d2');
-if (await outline.getByRole('button', { name: /^Replace with/ }).count()) fail('an empty draft should not replace the outline');
+if (await outline.getByRole('button', { name: 'Replace with Session Draft 2' }).count()) fail('an empty draft should not replace the outline');
 if ((await outline.locator('tbody tr').count()) !== 2) fail('choosing a draft should not change the outline');
 await outline.getByLabel('Draft', { exact: true }).selectOption('d1');
 // Multi-day: a Day 2 divider starts a fresh clock, in the time blocks and (once brought in) the outline.
 await page.getByRole('button', { name: 'Add next day' }).first().click();
 await page.getByRole('button', { name: 'Add 30 min block to Session Draft 1' }).click();
 if (await outline.locator('.outline__day').count()) fail('draft changes should not reach the outline until brought in');
+if (!(await outline.getByText('Session Draft 1 has changed since you brought it in').count())) fail('outline should say the draft changed');
+if ((await outline.getByRole('button', { name: 'Replace with Session Draft 1' }).count()) !== 1) fail('one replace button while the notice shows');
 await bringInAgain();
 if ((await outline.locator('.outline__day').count()) !== 2) fail('outline should group rows by day');
+if (await outline.getByText('has changed since you brought it in').count()) fail('notice should clear after bringing it in');
 if ((await page.getByLabel(/^Activities, Day 1, 08:30 to 09:15/).locator('h3').textContent()) !== 'Kickoff and goals') fail('bringing in again should keep notes');
 if ((await page.getByLabel(/^Block name, Day 1, row 1/).inputValue()) !== '') fail('bringing in again should match the draft');
 const day2 = page.getByLabel('Day 2 start time, Session Draft 1');

@@ -1,4 +1,4 @@
-import { emptyDetails, initialState } from './reducer';
+import { draftSignature, emptyDetails, initialState } from './reducer';
 import { clampStep, FLOW_MAX, FLOW_ROW, isValidFlowOrder } from './cells';
 import { clampMinutes, DRAFT_IDS, STICKY_COLORS, type CanvasDetails, type DraftId, type Outline, type CanvasState, type Cell, type TimeBlock } from './types';
 
@@ -46,7 +46,9 @@ function migrateOutline(o: Partial<Outline> | undefined, draftCount: number, dra
     Object.entries(o?.rows ?? {}).map(([id, r]) => [id, { activities: str(r?.activities), moves: str(r?.moves) }]),
   );
   const start = typeof o?.start === 'number' && o.start >= 0 && o.start < 1440 ? Math.round(o.start) : 0;
-  return { draft, start, rows, blocks: migrateOutlineBlocks(o, drafts, draft) };
+  const blocks = migrateOutlineBlocks(o, drafts, draft);
+  const sourceSig = typeof o?.sourceSig === 'string' ? o.sourceSig : undefined;
+  return { draft, start, rows, blocks, ...(sourceSig ? { sourceSig } : {}) };
 }
 
 /** Each draft's start time. Before drafts had their own, they used the outline's. */
@@ -93,12 +95,17 @@ export function parseState(raw: string | null | undefined): CanvasState | null {
     const draftCount = Math.max(1, Math.min(3, Math.floor(saved)), d3.length ? 3 : d2.length ? 2 : 1);
     const drafts = { d1: migrateBlocks(parsed.drafts.d1), d2, d3 };
     const outline = migrateOutline(parsed.outline, draftCount, drafts);
+    const draftStart = migrateDraftStart(parsed, outline.start);
+    // Older canvases followed their draft, so the copy they start with matches it.
+    if (outline.blocks && !outline.sourceSig && !Array.isArray(parsed.outline?.blocks)) {
+      outline.sourceSig = draftSignature(drafts[outline.draft], draftStart[outline.draft]);
+    }
     return {
       version: 1,
       details: migrateDetails(parsed.details),
       cells: migrateCells(parsed.cells ?? {}),
       drafts,
-      draftStart: migrateDraftStart(parsed, outline.start),
+      draftStart,
       draftCount,
       outline,
       ...(order ? { flowColumns: order.length, flowOrder: order } : { flowColumns: migrateFlowColumns(parsed) }),
