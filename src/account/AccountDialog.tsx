@@ -393,7 +393,7 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
           <p>
             {view.kind === 'confirm'
               ? 'Confirm the email you used to request this link.'
-              : 'Create a free account, or sign in. No password needed.'}
+              : 'Create a free account, or sign in.'}
           </p>
           <label htmlFor={`${uid}-email`}>Email</label>
           <input
@@ -409,7 +409,7 @@ export function AccountDialog({ emailLink = false }: { emailLink?: boolean }) {
           {view.kind === 'signedOut' && (
             <label className="ws-check">
               <input type="checkbox" checked={optIn} onChange={(e) => setOptIn(e.target.checked)} />
-              Email me about upcoming facilitation courses and bootcamps
+              Email me about upcoming facilitation design courses
             </label>
           )}
           <p className="ws-hint">
