@@ -45,12 +45,17 @@ type View =
 const api = () => import('./api');
 const teamApi = () => import('./team');
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const reason = (err: unknown) =>
-  ['HostSignInError', 'WorkshopError'].includes((err as Error)?.name)
-    ? (err as Error).message
-    : (err as Error)?.name === 'ShareError'
-      ? (err as Error).message
-      : 'Something went wrong. Check your internet connection and try again.';
+const reason = (err: unknown) => {
+  const e = err as Error & { code?: string };
+  if (['HostSignInError', 'WorkshopError', 'ShareError'].includes(e?.name)) return e.message;
+  console.error('Account action failed', err);
+  const text = `${e?.code ?? ''} ${e?.message ?? ''}`.toLowerCase();
+  if (text.includes('permission') || text.includes('denied')) {
+    return 'The canvas could not be saved: the database refused the change. Sign out and back in, then try again. If it keeps happening, the database rules may need to be republished.';
+  }
+  if (text.includes('not signed in')) return 'You are signed out. Sign in again, then try again.';
+  return 'Something went wrong. Check your internet connection and try again.';
+};
 
 /**
  * Free accounts: create one or sign in by email link, then open, start or delete up to three canvases.
